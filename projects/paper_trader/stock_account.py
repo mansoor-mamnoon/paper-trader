@@ -178,7 +178,7 @@ def cycle(path, observation, mode="stocks-daily"):
                 close = usable[symbol]["bars"][-1]["close"]
                 if state["halted"] or close <= position["stop"] or close >= position["target"]:
                     state["pending"][symbol] = {"side": "SELL", "at": at,
-                        "reason": "Close crossed stop/target or account halted; next-session open"}
+                        "reason": "Close crossed stop/target or account halted; later observed session open"}
                     decision(db, at, symbol, "SELL_SIGNAL", state["pending"][symbol]["reason"])
         candidates = []
         for symbol, quote in usable.items():
@@ -221,11 +221,17 @@ def cycle(path, observation, mode="stocks-daily"):
         state["last_at"] = at
         state["scan_cursor"] = observation.get("next_cursor", 0)
         state["coverage"] = observation["coverage"]
+        seen = state.setdefault("scan_seen", {})
+        for symbol in set(quotes) | set(observation["errors"]):
+            seen[symbol] = at
+        listed = {row["symbol"] for row in observation["universe"]}
+        state["coverage"]["attempted_ever"] = len(listed & set(seen))
+        state["coverage"]["never_attempted"] = len(listed - set(seen))
         state["coverage"]["usable"] = len(usable)
         state["universe"] = observation["universe"]
         state["data_errors"] = observation["errors"]
         state["health"] = {
-            "status": "delayed", "at": at,
+            "status": "error" if not usable else "degraded" if missing else "delayed", "at": at,
             "message": "Daily-price simulation, not live quotes. Prior completed sessions only. "
                        + ("Some holdings lack current marks. " if missing else "")
                        + f"{len(usable)} usable prices; {len(observation['errors'])} provider errors.",

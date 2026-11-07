@@ -4,6 +4,7 @@ import argparse
 import csv
 import json
 import os
+import time
 from pathlib import Path
 
 from . import ledger, stock_account, stock_data
@@ -23,11 +24,12 @@ def export(path, output):
             "data_errors": state.get("data_errors", {}),
             "source": stock_data.SOURCE,
             "benchmark_label": "SPY price-only (dividends excluded)",
-            "simulation": "Prior completed daily bars; next-session open fills; not real-time execution",
+            "simulation": "Prior completed daily bars; latest completed session open after signal; "
+                          "missed runs skip sessions; not real-time execution",
         })
         report["rules"].update(position_cap=0.20, fee=stock_account.FEE,
                                slippage=stock_account.SLIP, cycle_seconds=86400)
-        report["health"]["age_seconds"] = max(0, __import__("time").time() - state["last_at"])
+        report["health"]["age_seconds"] = max(0, time.time() - state["last_at"])
         body = json.dumps(report, allow_nan=False, indent=2)
         for name in ("state", "state.json"):
             target = root / "api" / name

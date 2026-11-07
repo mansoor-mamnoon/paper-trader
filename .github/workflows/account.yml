@@ -19,12 +19,12 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Restore durable account (absence is an error, never a reset)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: account
           path: account
@@ -34,6 +34,8 @@ jobs:
           test -f account/INITIALIZED
           python -c "import sqlite3; c=sqlite3.connect('file:account/account.sqlite?mode=rw', uri=True); assert c.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'; c.close()"
       - name: Evaluate latest completed stock session and export dashboard
+        id: scan
+        continue-on-error: true
         run: python -m projects.paper_trader.stocks --db account/account.sqlite --output account/site
       - name: Apply static dashboard
         run: cp projects/paper_trader/stock_static/* account/site/
@@ -45,10 +47,13 @@ jobs:
           git add account.sqlite site INITIALIZED
           git diff --cached --quiet || git commit -m 'Record stock paper account observation'
           git push origin HEAD:account
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: account/site
       - name: Publish dashboard
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
+      - name: Report scan failure after preserving its evidence
+        if: steps.scan.outcome == 'failure'
+        run: exit 1
