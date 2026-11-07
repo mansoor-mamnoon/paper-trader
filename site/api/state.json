@@ -1,0 +1,1165 @@
+{
+  "account": {
+    "cash": 1000.0,
+    "started_at": 1794077065.9352598,
+    "last_at": 1794077065.9352598,
+    "peak": 1000.0,
+    "max_drawdown": 0,
+    "halted": false,
+    "halt_reason": "",
+    "realized_pnl": 0.0,
+    "fees": 0.0,
+    "mode": "stocks-daily",
+    "id": 1,
+    "at": 1794077065.9352598,
+    "equity": 1000.0,
+    "benchmark": 999.9999999999999,
+    "drawdown": 0.0,
+    "planned_risk": 0.0,
+    "return_pct": 0.0,
+    "benchmark_return_pct": -1.1102230246251565e-14,
+    "unrealized_pnl": 0.0,
+    "end_at": 1799261065.9352598
+  },
+  "positions": [],
+  "pending": {
+    "AAOZ": {
+      "side": "BUY",
+      "at": 1794077065.9352598,
+      "reason": "Positive liquid daily trend; whole shares capped at 20% of equity"
+    },
+    "AEYE": {
+      "side": "BUY",
+      "at": 1794077065.9352598,
+      "reason": "Positive liquid daily trend; whole shares capped at 20% of equity"
+    },
+    "APLZ": {
+      "side": "BUY",
+      "at": 1794077065.9352598,
+      "reason": "Positive liquid daily trend; whole shares capped at 20% of equity"
+    }
+  },
+  "health": {
+    "status": "delayed",
+    "at": 1794077065.9352598,
+    "message": "Daily-price simulation, not live quotes. Prior completed sessions only. 697 usable prices; 104 provider errors.",
+    "age_seconds": 0.08619022369384766
+  },
+  "history": [
+    {
+      "id": 1,
+      "at": 1794077065.9352598,
+      "equity": 1000.0,
+      "cash": 1000.0,
+      "benchmark": 999.9999999999999,
+      "drawdown": 0.0,
+      "planned_risk": 0.0
+    }
+  ],
+  "fills": [],
+  "decisions": [
+    {
+      "id": 700,
+      "at": 1794077065.9352598,
+      "symbol": "APLZ",
+      "action": "BUY_SIGNAL",
+      "reason": "Positive liquid daily trend; whole shares capped at 20% of equity",
+      "evidence": "{}"
+    },
+    {
+      "id": 699,
+      "at": 1794077065.9352598,
+      "symbol": "AEYE",
+      "action": "BUY_SIGNAL",
+      "reason": "Positive liquid daily trend; whole shares capped at 20% of equity",
+      "evidence": "{}"
+    },
+    {
+      "id": 698,
+      "at": 1794077065.9352598,
+      "symbol": "AAOZ",
+      "action": "BUY_SIGNAL",
+      "reason": "Positive liquid daily trend; whole shares capped at 20% of equity",
+      "evidence": "{}"
+    },
+    {
+      "id": 697,
+      "at": 1794077065.9352598,
+      "symbol": "SPY",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 763.3634887695313, \"sma50\": 765.679794921875, \"momentum20d\": -0.055589129930164294, \"average_dollar_volume\": 35681570479.888306, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 696,
+      "at": 1794077065.9352598,
+      "symbol": "ARLU",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 32.31284990310669, \"sma50\": 32.418920059204105, \"momentum20d\": -0.050910692420854, \"average_dollar_volume\": 62083.315143585205, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 695,
+      "at": 1794077065.9352598,
+      "symbol": "ARLP",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 25.742500019073486, \"sma50\": 25.670200119018556, \"momentum20d\": -0.009342056935206955, \"average_dollar_volume\": 8290994.249191284, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 694,
+      "at": 1794077065.9352598,
+      "symbol": "ARLO",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 13.08400001525879, \"sma50\": 13.052199993133545, \"momentum20d\": -0.004838666757111865, \"average_dollar_volume\": 28934912.02210903, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 693,
+      "at": 1794077065.9352598,
+      "symbol": "ARLI",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 25.801999950408934, \"sma50\": 26.109800033569336, \"momentum20d\": -0.00929511130731242, \"average_dollar_volume\": 4000.7000064849854, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 692,
+      "at": 1794077065.9352598,
+      "symbol": "ARL",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 17.87049994468689, \"sma50\": 16.640200004577636, \"momentum20d\": 0.3659573417149997, \"average_dollar_volume\": 55838.650245666504, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 691,
+      "at": 1794077065.9352598,
+      "symbol": "ARKY",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 19.67799997329712, \"sma50\": 20.1146000289917, \"momentum20d\": -0.07594312830223171, \"average_dollar_volume\": 1503861.4587593079, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 690,
+      "at": 1794077065.9352598,
+      "symbol": "ARKX",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 30.035750007629396, \"sma50\": 31.367299957275392, \"momentum20d\": -0.11739132289077747, \"average_dollar_volume\": 16177288.380403519, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 689,
+      "at": 1794077065.9352598,
+      "symbol": "ARKW",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 153.7150016784668, \"sma50\": 157.54680114746094, \"momentum20d\": -0.16943874697168182, \"average_dollar_volume\": 16484282.348480225, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 688,
+      "at": 1794077065.9352598,
+      "symbol": "ARKT",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 19.112749767303466, \"sma50\": 19.565219917297362, \"momentum20d\": -0.08678064319460299, \"average_dollar_volume\": 3335.2149963378906, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 687,
+      "at": 1794077065.9352598,
+      "symbol": "ARKR",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 4.540000009536743, \"sma50\": 4.679399995803833, \"momentum20d\": 0.0022371877743214696, \"average_dollar_volume\": 10491.850187778473, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 686,
+      "at": 1794077065.9352598,
+      "symbol": "ARKQ",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 112.93049964904785, \"sma50\": 118.79409957885743, \"momentum20d\": -0.15148569962646175, \"average_dollar_volume\": 13026969.215431213, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 685,
+      "at": 1794077065.9352598,
+      "symbol": "ARKO",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 3.9487499713897707, \"sma50\": 4.197399978637695, \"momentum20d\": -0.03406328475820819, \"average_dollar_volume\": 2625865.802781582, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 684,
+      "at": 1794077065.9352598,
+      "symbol": "ARKK",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 82.48649978637695, \"sma50\": 85.46219970703125, \"momentum20d\": -0.1580004823493426, \"average_dollar_volume\": 415294060.3527832, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 683,
+      "at": 1794077065.9352598,
+      "symbol": "ARKI",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 22.396999835968018, \"sma50\": 22.93699996948242, \"momentum20d\": -0.10355032877176584, \"average_dollar_volume\": 2808.7499809265137, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 682,
+      "at": 1794077065.9352598,
+      "symbol": "ARKG",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 49.16849994659424, \"sma50\": 49.733799896240235, \"momentum20d\": -0.11403505967101246, \"average_dollar_volume\": 287389430.12348175, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 681,
+      "at": 1794077065.9352598,
+      "symbol": "ARKF",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 44.674750328063965, \"sma50\": 45.5218000793457, \"momentum20d\": -0.12145406095323508, \"average_dollar_volume\": 6308744.306221008, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 680,
+      "at": 1794077065.9352598,
+      "symbol": "ARKE",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 20.14650011062622, \"sma50\": 20.572600021362305, \"momentum20d\": -0.0916824455598888, \"average_dollar_volume\": 8823.400001525879, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 679,
+      "at": 1794077065.9352598,
+      "symbol": "ARKD",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 20.492749977111817, \"sma50\": 20.92843997955322, \"momentum20d\": -0.09043565804547804, \"average_dollar_volume\": 2049.2749977111816, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 678,
+      "at": 1794077065.9352598,
+      "symbol": "ARKB",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 26.6582501411438, \"sma50\": 26.817500076293946, \"momentum20d\": -0.07991203263579705, \"average_dollar_volume\": 39018525.83642006, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 677,
+      "at": 1794077065.9352598,
+      "symbol": "ARIS",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 16.088500118255617, \"sma50\": 17.6646000289917, \"momentum20d\": -0.09694173759791391, \"average_dollar_volume\": 29543232.672348022, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 676,
+      "at": 1794077065.9352598,
+      "symbol": "ARIA",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 23.879500007629396, \"sma50\": 25.078600006103514, \"momentum20d\": -0.18126661109292808, \"average_dollar_volume\": 10947.69998550415, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 675,
+      "at": 1794077065.9352598,
+      "symbol": "ARI",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 5.2035000085830685, \"sma50\": 5.969399995803833, \"momentum20d\": -0.628205125266043, \"average_dollar_volume\": 28428836.148855686, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 674,
+      "at": 1794077065.9352598,
+      "symbol": "ARHS",
+      "action": "CANDIDATE",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 11.421499919891357, \"sma50\": 9.903299942016602, \"momentum20d\": 0.46439630493998396, \"average_dollar_volume\": 25500712.4536705, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 673,
+      "at": 1794077065.9352598,
+      "symbol": "ARGX",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 869.8617492675781, \"sma50\": 930.6705004882813, \"momentum20d\": 0.12385002854121963, \"average_dollar_volume\": 362930619.1308594, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 672,
+      "at": 1794077065.9352598,
+      "symbol": "ARGT",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 83.32350006103516, \"sma50\": 88.42659988403321, \"momentum20d\": -0.16813459575579592, \"average_dollar_volume\": 13727399.68170166, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 671,
+      "at": 1794077065.9352598,
+      "symbol": "ARES",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 122.72949981689453, \"sma50\": 125.10019989013672, \"momentum20d\": 0.1429789654692124, \"average_dollar_volume\": 295982652.7022934, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 670,
+      "at": 1794077065.9352598,
+      "symbol": "AREC",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 1.1562000155448913, \"sma50\": 1.6724800086021423, \"momentum20d\": -0.3144654022035125, \"average_dollar_volume\": 2875015.798267126, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 669,
+      "at": 1794077065.9352598,
+      "symbol": "ARE",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 42.55399990081787, \"sma50\": 47.20119987487793, \"momentum20d\": -0.015600947278803123, \"average_dollar_volume\": 122069934.1947174, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 668,
+      "at": 1794077065.9352598,
+      "symbol": "ARDX",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 3.102999985218048, \"sma50\": 3.35, \"momentum20d\": -0.12195117696277546, \"average_dollar_volume\": 15323450.363656282, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 667,
+      "at": 1794077065.9352598,
+      "symbol": "ARDT",
+      "action": "CANDIDATE",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 12.485999870300294, \"sma50\": 11.441399898529053, \"momentum20d\": 0.5309733579690754, \"average_dollar_volume\": 10329573.51694107, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 666,
+      "at": 1794077065.9352598,
+      "symbol": "ARDC",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 11.445500040054322, \"sma50\": 11.699000034332276, \"momentum20d\": 0.004366828957883762, \"average_dollar_volume\": 2008710.24787426, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 665,
+      "at": 1794077065.9352598,
+      "symbol": "ARCX",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 6.601099991798401, \"sma50\": 9.603299989700318, \"momentum20d\": -0.2512873375524828, \"average_dollar_volume\": 318039.1140651703, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 664,
+      "at": 1794077065.9352598,
+      "symbol": "ARCT",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 10.820499849319457, \"sma50\": 13.098999919891357, \"momentum20d\": -0.2467248505181422, \"average_dollar_volume\": 7298861.4382267, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 663,
+      "at": 1794077065.9352598,
+      "symbol": "ARCP",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 24.588500022888184, \"sma50\": 24.602399978637695, \"momentum20d\": 0.022203985292083228, \"average_dollar_volume\": 196111.59915924072, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 662,
+      "at": 1794077065.9352598,
+      "symbol": "ARCO",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 7.459000062942505, \"sma50\": 7.623800058364868, \"momentum20d\": -0.1016730970131644, \"average_dollar_volume\": 13879165.539660454, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 661,
+      "at": 1794077065.9352598,
+      "symbol": "ARCM",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 100.08805084228516, \"sma50\": 100.07854019165039, \"momentum20d\": -0.0004497792970051817, \"average_dollar_volume\": 15011.375045776367, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 660,
+      "at": 1794077065.9352598,
+      "symbol": "ARCLU",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 10.238000011444091, \"sma50\": 10.226999950408935, \"momentum20d\": 0.00786626579212446, \"average_dollar_volume\": 410.0, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 659,
+      "at": 1794077065.9352598,
+      "symbol": "ARCLR",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 0.16850000470876694, \"sma50\": 0.16640000343322753, \"momentum20d\": 0.0, \"average_dollar_volume\": 610.7499936968088, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 658,
+      "at": 1794077065.9352598,
+      "symbol": "ARCL",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 10.009000205993653, \"sma50\": 10.003000068664551, \"momentum20d\": 0.0, \"average_dollar_volume\": 157818.8038635254, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 657,
+      "at": 1794077065.9352598,
+      "symbol": "ARCIU",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 10.218999862670898, \"sma50\": 10.286699867248535, \"momentum20d\": -0.00976556933892303, \"average_dollar_volume\": 559.6000051498413, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 656,
+      "at": 1794077065.9352598,
+      "symbol": "ARCI",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 10.050499963760377, \"sma50\": 10.07940013885498, \"momentum20d\": 0.002985048000182955, \"average_dollar_volume\": 779341.8851327896, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 655,
+      "at": 1794077065.9352598,
+      "symbol": "ARCC",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 18.821000003814696, \"sma50\": 19.157800064086913, \"momentum20d\": 0.030711191337595034, \"average_dollar_volume\": 89003957.46637344, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 654,
+      "at": 1794077065.9352598,
+      "symbol": "ARCB",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 130.05899963378906, \"sma50\": 131.18580001831054, \"momentum20d\": -0.011209005422083695, \"average_dollar_volume\": 32916652.035560608, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 653,
+      "at": 1794077065.9352598,
+      "symbol": "ARBK",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 1.657499998807907, \"sma50\": 2.218479993343353, \"momentum20d\": -0.3261904637559465, \"average_dollar_volume\": 15024.34994339943, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 652,
+      "at": 1794077065.9352598,
+      "symbol": "ARBE",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 0.4515999972820282, \"sma50\": 0.5735999989509583, \"momentum20d\": -0.21090913445496273, \"average_dollar_volume\": 400668.997682333, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 651,
+      "at": 1794077065.9352598,
+      "symbol": "ARBB",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 3.9112500190734862, \"sma50\": 4.203259992599487, \"momentum20d\": -0.21395880257784505, \"average_dollar_volume\": 29769.665232896805, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 650,
+      "at": 1794077065.9352598,
+      "symbol": "ARB",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 30.047800064086914, \"sma50\": 29.93486011505127, \"momentum20d\": -0.00033267561741534557, \"average_dollar_volume\": 251291.3947582245, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 649,
+      "at": 1794077065.9352598,
+      "symbol": "ARAY",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 0.14649999961256982, \"sma50\": 0.21060000091791153, \"momentum20d\": -0.521739141702201, \"average_dollar_volume\": 307906.0003262758, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 648,
+      "at": 1794077065.9352598,
+      "symbol": "ARAI",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 0.11739999912679196, \"sma50\": 0.18121999993920326, \"momentum20d\": -0.3684210268331688, \"average_dollar_volume\": 334072.76062030345, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 647,
+      "at": 1794077065.9352598,
+      "symbol": "AR",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 39.03400058746338, \"sma50\": 37.54880027770996, \"momentum20d\": 0.005013935864209618, \"average_dollar_volume\": 180559158.6577034, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 646,
+      "at": 1794077065.9352598,
+      "symbol": "AQWA",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 18.571850109100343, \"sma50\": 18.417560005187987, \"momentum20d\": 0.04661487964757449, \"average_dollar_volume\": 72071.08992576599, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 645,
+      "at": 1794077065.9352598,
+      "symbol": "AQST",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 4.0470000267028805, \"sma50\": 4.532000036239624, \"momentum20d\": -0.2447699295727509, \"average_dollar_volume\": 9772376.570900679, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 644,
+      "at": 1794077065.9352598,
+      "symbol": "AQNB",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 25.54504985809326, \"sma50\": 25.94402000427246, \"momentum20d\": -0.008949472480819232, \"average_dollar_volume\": 354266.46894454956, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 643,
+      "at": 1794077065.9352598,
+      "symbol": "AQN",
+      "action": "CANDIDATE",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 5.366999983787537, \"sma50\": 5.32079999923706, \"momentum20d\": 0.08023480170246722, \"average_dollar_volume\": 21408728.970911503, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 642,
+      "at": 1794077065.9352598,
+      "symbol": "AQMS",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 1.5055000007152557, \"sma50\": 2.0806999945640565, \"momentum20d\": -0.3817733926506238, \"average_dollar_volume\": 69170.02514839172, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 641,
+      "at": 1794077065.9352598,
+      "symbol": "AQLT",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 31.657750129699707, \"sma50\": 31.804199981689454, \"momentum20d\": -0.05717366496176135, \"average_dollar_volume\": 754212.507724762, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 640,
+      "at": 1794077065.9352598,
+      "symbol": "AQLG",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 26.083499908447266, \"sma50\": 26.22, \"momentum20d\": -0.05056604349388272, \"average_dollar_volume\": 2608.3499908447266, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 639,
+      "at": 1794077065.9352598,
+      "symbol": "AQEC",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 26.12525005340576, \"sma50\": 25.95046001434326, \"momentum20d\": -0.01644893913446832, \"average_dollar_volume\": 716078.2605934143, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 638,
+      "at": 1794077065.9352598,
+      "symbol": "AQB",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 1.104150003194809, \"sma50\": 1.0768999969959259, \"momentum20d\": -0.06857140035045262, \"average_dollar_volume\": 79336.4902600646, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 637,
+      "at": 1794077065.9352598,
+      "symbol": "APYX",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 2.5859999775886537, \"sma50\": 2.738099980354309, \"momentum20d\": 0.1312741945387046, \"average_dollar_volume\": 445927.89722919464, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 636,
+      "at": 1794077065.9352598,
+      "symbol": "APXTU",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 10.274000215530396, \"sma50\": 10.278520164489747, \"momentum20d\": 0.0009736392173147479, \"average_dollar_volume\": 873.700008392334, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 635,
+      "at": 1794077065.9352598,
+      "symbol": "APXT",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 10.15175004005432, \"sma50\": 10.143000087738038, \"momentum20d\": 0.0014771387215355425, \"average_dollar_volume\": 1188104.9968624115, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 634,
+      "at": 1794077065.9352598,
+      "symbol": "APXM",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 32.22560005187988, \"sma50\": 32.16431995391846, \"momentum20d\": -0.006970213216532017, \"average_dollar_volume\": 18053.504810333252, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 633,
+      "at": 1794077065.9352598,
+      "symbol": "APWC",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 1.2149999976158141, \"sma50\": 1.2962000060081482, \"momentum20d\": -0.19565216076772163, \"average_dollar_volume\": 5857.399909496307, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 632,
+      "at": 1794077065.9352598,
+      "symbol": "APVO",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 1.5010500073432922, \"sma50\": 1.738120002746582, \"momentum20d\": -0.3072625497415755, \"average_dollar_volume\": 79825.38947939873, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 631,
+      "at": 1794077065.9352598,
+      "symbol": "APUS",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 3.424499988555908, \"sma50\": 3.519700005054474, \"momentum20d\": -0.46115539163671315, \"average_dollar_volume\": 658583.13346982, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 630,
+      "at": 1794077065.9352598,
+      "symbol": "APUR",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 10.04950017929077, \"sma50\": 10.035800132751465, \"momentum20d\": 0.001992077474070042, \"average_dollar_volume\": 171590.4541015625, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 629,
+      "at": 1794077065.9352598,
+      "symbol": "APUE",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 47.109449768066405, \"sma50\": 47.213500061035155, \"momentum20d\": -0.0519398818335024, \"average_dollar_volume\": 4847204.652919769, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 628,
+      "at": 1794077065.9352598,
+      "symbol": "APTV",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 43.54449996948242, \"sma50\": 44.12839988708496, \"momentum20d\": -0.09954339466431839, \"average_dollar_volume\": 133695098.55213165, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 627,
+      "at": 1794077065.9352598,
+      "symbol": "APT",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 5.549500036239624, \"sma50\": 5.415800018310547, \"momentum20d\": -0.07191781940413644, \"average_dollar_volume\": 204323.65067481995, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 626,
+      "at": 1794077065.9352598,
+      "symbol": "APRZ",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 40.35799999237061, \"sma50\": 40.4827799987793, \"momentum20d\": -0.046288437277101524, \"average_dollar_volume\": 90336.44599914551, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 625,
+      "at": 1794077065.9352598,
+      "symbol": "APRW",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 37.965000534057616, \"sma50\": 37.879240112304686, \"momentum20d\": -0.00985545354846551, \"average_dollar_volume\": 164864.07234191895, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 624,
+      "at": 1794077065.9352598,
+      "symbol": "APRT",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 47.13970012664795, \"sma50\": 47.04295989990234, \"momentum20d\": -0.019588420133162976, \"average_dollar_volume\": 69867.8503036499, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 623,
+      "at": 1794077065.9352598,
+      "symbol": "APRP",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 33.47629985809326, \"sma50\": 33.402459945678714, \"momentum20d\": -0.017575151591879168, \"average_dollar_volume\": 361652.8367424011, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 622,
+      "at": 1794077065.9352598,
+      "symbol": "APRJ",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 24.67614984512329, \"sma50\": 24.809319801330567, \"momentum20d\": 0.0006899431325229077, \"average_dollar_volume\": 89238.19878578186, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 621,
+      "at": 1794077065.9352598,
+      "symbol": "APRH",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 24.84094982147217, \"sma50\": 25.02087989807129, \"momentum20d\": -0.0006043267458849533, \"average_dollar_volume\": 91035.01958847046, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 620,
+      "at": 1794077065.9352598,
+      "symbol": "APRE",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 0.5346999987959862, \"sma50\": 0.6621799963712692, \"momentum20d\": -0.14238405563837264, \"average_dollar_volume\": 79544.39490556717, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 619,
+      "at": 1794077065.9352598,
+      "symbol": "APRB",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 27.62370014190674, \"sma50\": 27.548220062255858, \"momentum20d\": -0.013357430651353308, \"average_dollar_volume\": 65870.86067199707, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 618,
+      "at": 1794077065.9352598,
+      "symbol": "APPX",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 9.28349997997284, \"sma50\": 11.08987998008728, \"momentum20d\": 0.7825640164888823, \"average_dollar_volume\": 19322835.574314594, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 617,
+      "at": 1794077065.9352598,
+      "symbol": "APPS",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 9.826999950408936, \"sma50\": 10.586000003814696, \"momentum20d\": -0.0047938820011396155, \"average_dollar_volume\": 25713344.397234917, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 616,
+      "at": 1794077065.9352598,
+      "symbol": "APPN",
+      "action": "CANDIDATE",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 47.29899940490723, \"sma50\": 41.5413996887207, \"momentum20d\": 0.28678305330663867, \"average_dollar_volume\": 53581578.42054367, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 615,
+      "at": 1794077065.9352598,
+      "symbol": "APPF",
+      "action": "CANDIDATE",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 215.15975112915038, \"sma50\": 212.57930053710936, \"momentum20d\": 0.1411474232228962, \"average_dollar_volume\": 93360918.1765747, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 614,
+      "at": 1794077065.9352598,
+      "symbol": "APPC",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 7.654999923706055, \"sma50\": 9.154800004959107, \"momentum20d\": 0.7788819075191828, \"average_dollar_volume\": 76187.99872159958, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 613,
+      "at": 1794077065.9352598,
+      "symbol": "APP",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 272.2569999694824, \"sma50\": 293.35519927978515, \"momentum20d\": 0.4121426117313558, \"average_dollar_volume\": 1626826178.4835815, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 612,
+      "at": 1794077065.9352598,
+      "symbol": "APOS",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 25.18175001144409, \"sma50\": 25.327700004577636, \"momentum20d\": 0.0, \"average_dollar_volume\": 1021147.9955196381, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 611,
+      "at": 1794077065.9352598,
+      "symbol": "APOG",
+      "action": "CANDIDATE",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 44.000000190734866, \"sma50\": 40.28340019226074, \"momentum20d\": 0.127617646851512, \"average_dollar_volume\": 13268931.007289886, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 610,
+      "at": 1794077065.9352598,
+      "symbol": "APOC",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 26.705399894714354, \"sma50\": 26.642179985046386, \"momentum20d\": -0.006993278842888473, \"average_dollar_volume\": 789801.8684387207, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 609,
+      "at": 1794077065.9352598,
+      "symbol": "APO",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 114.96650009155273, \"sma50\": 120.73079986572266, \"momentum20d\": -0.016013497694431056, \"average_dollar_volume\": 480935555.54958344, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 608,
+      "at": 1794077065.9352598,
+      "symbol": "APMU",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 24.46579990386963, \"sma50\": 24.35103988647461, \"momentum20d\": 0.027877006044242814, \"average_dollar_volume\": 520131.32274627686, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 607,
+      "at": 1794077065.9352598,
+      "symbol": "APMI",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 9.927500081062316, \"sma50\": 12.591600008010865, \"momentum20d\": -0.5968847291125112, \"average_dollar_volume\": 17961.90004348755, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 606,
+      "at": 1794077065.9352598,
+      "symbol": "APMD",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 17.378999996185303, \"sma50\": 21.646799964904787, \"momentum20d\": -0.18466522633698235, \"average_dollar_volume\": 6908005.076422691, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 605,
+      "at": 1794077065.9352598,
+      "symbol": "APMCU",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 10.029999732971191, \"sma50\": 10.032199935913086, \"momentum20d\": 0.0, \"average_dollar_volume\": 250.74999332427979, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 604,
+      "at": 1794077065.9352598,
+      "symbol": "APMC",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 9.95950002670288, \"sma50\": 9.96300006866455, \"momentum20d\": 0.001004039040515492, \"average_dollar_volume\": 151567.35345363617, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 603,
+      "at": 1794077065.9352598,
+      "symbol": "APLZ",
+      "action": "CANDIDATE",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 34.12949991226196, \"sma50\": 27.22691993713379, \"momentum20d\": 0.6378601023312196, \"average_dollar_volume\": 2826537.5020313263, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 602,
+      "at": 1794077065.9352598,
+      "symbol": "APLY",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 11.907000017166137, \"sma50\": 11.836400051116943, \"momentum20d\": 0.004230134689153786, \"average_dollar_volume\": 949904.4763946533, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 601,
+      "at": 1794077065.9352598,
+      "symbol": "APLX",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 3.8582499980926515, \"sma50\": 6.208499994277954, \"momentum20d\": -0.6316614635611962, \"average_dollar_volume\": 22201182.04603672, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 600,
+      "at": 1794077065.9352598,
+      "symbol": "APLU",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 23.65459985733032, \"sma50\": 23.716019973754882, \"momentum20d\": 0.018336818074083938, \"average_dollar_volume\": 1489895.9726142883, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 599,
+      "at": 1794077065.9352598,
+      "symbol": "APLM",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 20.697949981689455, \"sma50\": 22.711760101318358, \"momentum20d\": -0.11627906976744184, \"average_dollar_volume\": 332517.3760128021, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 598,
+      "at": 1794077065.9352598,
+      "symbol": "APLE",
+      "action": "CANDIDATE",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 17.923499965667723, \"sma50\": 16.708800010681152, \"momentum20d\": 0.15757202814081928, \"average_dollar_volume\": 48815240.32432556, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 597,
+      "at": 1794077065.9352598,
+      "symbol": "APLD",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 18.833499956130982, \"sma50\": 22.91880002975464, \"momentum20d\": -0.3433277031108791, \"average_dollar_volume\": 524153017.5975847, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 596,
+      "at": 1794077065.9352598,
+      "symbol": "APIE",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 38.10300006866455, \"sma50\": 38.63028022766113, \"momentum20d\": -0.022043627036982483, \"average_dollar_volume\": 1894761.0030555725, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 595,
+      "at": 1794077065.9352598,
+      "symbol": "API",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 4.367499947547913, \"sma50\": 4.226399974822998, \"momentum20d\": 0.02941173720662249, \"average_dollar_volume\": 650381.5464425087, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 594,
+      "at": 1794077065.9352598,
+      "symbol": "APHU",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 22.98499984741211, \"sma50\": 24.507799987792968, \"momentum20d\": -0.30053471041415103, \"average_dollar_volume\": 111669.54866409302, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 593,
+      "at": 1794077065.9352598,
+      "symbol": "APHG",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 13.471500015258789, \"sma50\": 14.379799995422363, \"momentum20d\": -0.30194408200440803, \"average_dollar_volume\": 39519.54996109009, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 592,
+      "at": 1794077065.9352598,
+      "symbol": "APH",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 79.33299942016602, \"sma50\": 81.25489990234375, \"momentum20d\": -0.14500231356759818, \"average_dollar_volume\": 1156360403.448944, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 591,
+      "at": 1794077065.9352598,
+      "symbol": "APG",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 41.435500144958496, \"sma50\": 39.8597998046875, \"momentum20d\": 0.013640854197009, \"average_dollar_volume\": 141136544.3792343, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 590,
+      "at": 1794077065.9352598,
+      "symbol": "APEI",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 45.5564998626709, \"sma50\": 44.80439987182617, \"momentum20d\": -0.2212241568598451, \"average_dollar_volume\": 9427245.662784576, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 589,
+      "at": 1794077065.9352598,
+      "symbol": "APDB",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 26.258499717712404, \"sma50\": 26.25299976348877, \"momentum20d\": -0.025689399904293864, \"average_dollar_volume\": 7484.499969482422, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 588,
+      "at": 1794077065.9352598,
+      "symbol": "APD",
+      "action": "CANDIDATE",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 304.56099700927734, \"sma50\": 294.95899780273436, \"momentum20d\": 0.08383696847594835, \"average_dollar_volume\": 337538769.7695923, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 587,
+      "at": 1794077065.9352598,
+      "symbol": "APCB",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 28.478500080108642, \"sma50\": 28.462660064697264, \"momentum20d\": 0.015229335784683329, \"average_dollar_volume\": 1714662.356786728, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 586,
+      "at": 1794077065.9352598,
+      "symbol": "APC",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 15.44800009727478, \"sma50\": 16.630000019073485, \"momentum20d\": -0.0835912978131863, \"average_dollar_volume\": 1741796.908340454, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 585,
+      "at": 1794077065.9352598,
+      "symbol": "APAM",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 34.86250009536743, \"sma50\": 36.430000114440915, \"momentum20d\": 0.16945613086623723, \"average_dollar_volume\": 45534622.30075836, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 584,
+      "at": 1794077065.9352598,
+      "symbol": "APACU",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 10.449999809265137, \"sma50\": 10.424999904632568, \"momentum20d\": 0.0, \"average_dollar_volume\": 1306.249976158142, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 583,
+      "at": 1794077065.9352598,
+      "symbol": "APAC",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 10.302249956130982, \"sma50\": 10.272900066375733, \"momentum20d\": 0.0038948354498649085, \"average_dollar_volume\": 88169.82830524445, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 582,
+      "at": 1794077065.9352598,
+      "symbol": "APA",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 48.81550006866455, \"sma50\": 45.91160011291504, \"momentum20d\": -0.027244986288125883, \"average_dollar_volume\": 287753034.8477745, \"price_at\": 1793975400}"
+    },
+    {
+      "id": 581,
+      "at": 1794077065.9352598,
+      "symbol": "AP",
+      "action": "PASS",
+      "reason": "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+      "evidence": "{\"sma20\": 7.953499889373779, \"sma50\": 8.39639994621277, \"momentum20d\": -0.36324325767723287, \"average_dollar_volume\": 782303.7379598618, \"price_at\": 1793975400}"
+    }
+  ],
+  "events": [
+    {
+      "id": 1,
+      "at": 1794077065.9352598,
+      "kind": "stock_scan",
+      "message": "{\"universe_count\": 13239, \"attempted\": 801, \"succeeded\": 697, \"failed\": 104, \"remaining\": 12438, \"batch_size\": 800, \"scan_start_index\": 0, \"rotation_cycles\": 17, \"scope\": \"US exchange-listed issues; not worldwide or OTC\", \"method\": \"Rotating alphabetical scan; positions, pending orders and SPY every run\", \"usable\": 697}"
+    }
+  ],
+  "rules": {
+    "starting_cash": 1000,
+    "position_cap": 0.2,
+    "trade_risk": 0.01,
+    "aggregate_risk": 0.03,
+    "drawdown_halt": 0.1,
+    "fee": 0.001,
+    "slippage": 0.002,
+    "stop": 0.04,
+    "take_profit": 0.08,
+    "cycle_seconds": 86400,
+    "duration_days": 60
+  },
+  "coverage": {
+    "universe_count": 13239,
+    "attempted": 801,
+    "succeeded": 697,
+    "failed": 104,
+    "remaining": 12438,
+    "batch_size": 800,
+    "scan_start_index": 0,
+    "rotation_cycles": 17,
+    "scope": "US exchange-listed issues; not worldwide or OTC",
+    "method": "Rotating alphabetical scan; positions, pending orders and SPY every run",
+    "usable": 697
+  },
+  "data_errors": {
+    "AAAB": "Fewer than 50 completed daily bars",
+    "AAC.U": "HTTP Error 404: Not Found",
+    "AAC.W": "HTTP Error 404: Not Found",
+    "AACIW": "Fewer than 50 completed daily bars",
+    "AACOW": "Fewer than 50 completed daily bars",
+    "AACPW": "Fewer than 50 completed daily bars",
+    "ABLVW": "Fewer than 50 completed daily bars",
+    "ABR$D": "HTTP Error 404: Not Found",
+    "ABR$E": "HTTP Error 404: Not Found",
+    "ABR$F": "HTTP Error 404: Not Found",
+    "ACAAW": "Non-USD security is not eligible",
+    "ACBE": "Fewer than 50 completed daily bars",
+    "ACBH": "Fewer than 50 completed daily bars",
+    "ACCV": "Fewer than 50 completed daily bars",
+    "ACEM": "Fewer than 50 completed daily bars",
+    "ACHP": "Fewer than 50 completed daily bars",
+    "ACIG": "Fewer than 50 completed daily bars",
+    "ACIN": "Fewer than 50 completed daily bars",
+    "ACIV": "Fewer than 50 completed daily bars",
+    "ACJL": "Fewer than 50 completed daily bars",
+    "ACONW": "Fewer than 50 completed daily bars",
+    "ACP$A": "HTTP Error 404: Not Found",
+    "ACR$C": "HTTP Error 404: Not Found",
+    "ACR$D": "HTTP Error 404: Not Found",
+    "ACSM": "Fewer than 50 completed daily bars",
+    "ACYB": "Fewer than 50 completed daily bars",
+    "ADACW": "Fewer than 50 completed daily bars",
+    "ADC$A": "HTTP Error 404: Not Found",
+    "ADRX": "Fewer than 50 completed daily bars",
+    "ADSEW": "Fewer than 50 completed daily bars",
+    "AEAQW": "Fewer than 50 completed daily bars",
+    "AENTW": "Fewer than 50 completed daily bars",
+    "AERTW": "Fewer than 50 completed daily bars",
+    "AESPR": "Fewer than 50 completed daily bars",
+    "AESPW": "Fewer than 50 completed daily bars",
+    "AFJKR": "Fewer than 50 completed daily bars",
+    "AFRIW": "Fewer than 50 completed daily bars",
+    "AGGB": "Fewer than 50 completed daily bars",
+    "AGLTW": "Fewer than 50 completed daily bars",
+    "AGM$D": "HTTP Error 404: Not Found",
+    "AGM$E": "HTTP Error 404: Not Found",
+    "AGM$F": "HTTP Error 404: Not Found",
+    "AGM$G": "HTTP Error 404: Not Found",
+    "AGM$H": "HTTP Error 404: Not Found",
+    "AGM$I": "HTTP Error 404: Not Found",
+    "AHIC": "Fewer than 50 completed daily bars",
+    "AHL$D": "HTTP Error 404: Not Found",
+    "AHL$E": "HTTP Error 404: Not Found",
+    "AHL$F": "HTTP Error 404: Not Found",
+    "AHRT$A": "HTTP Error 404: Not Found",
+    "AHT$D": "HTTP Error 404: Not Found",
+    "AHT$F": "HTTP Error 404: Not Found",
+    "AHT$G": "HTTP Error 404: Not Found",
+    "AHT$H": "HTTP Error 404: Not Found",
+    "AHT$I": "HTTP Error 404: Not Found",
+    "AHYM": "Fewer than 50 completed daily bars",
+    "AIBE": "Fewer than 50 completed daily bars",
+    "AIBF": "Fewer than 50 completed daily bars",
+    "AIBN": "Fewer than 50 completed daily bars",
+    "AICH": "Fewer than 50 completed daily bars",
+    "AIFR": "Fewer than 50 completed daily bars",
+    "AIIA.R": "HTTP Error 404: Not Found",
+    "AIIA.U": "HTTP Error 404: Not Found",
+    "AIIOW": "Fewer than 50 completed daily bars",
+    "AIMDW": "Fewer than 50 completed daily bars",
+    "AIMG": "Fewer than 50 completed daily bars",
+    "AIOK": "Fewer than 50 completed daily bars",
+    "AIRJW": "Fewer than 50 completed daily bars",
+    "AISPW": "Fewer than 50 completed daily bars",
+    "ALB$A": "HTTP Error 404: Not Found",
+    "ALFUW": "Fewer than 50 completed daily bars",
+    "ALISR": "Fewer than 50 completed daily bars",
+    "ALL$B": "HTTP Error 404: Not Found",
+    "ALL$H": "HTTP Error 404: Not Found",
+    "ALL$I": "HTTP Error 404: Not Found",
+    "ALL$J": "HTTP Error 404: Not Found",
+    "ALOVW": "Fewer than 50 completed daily bars",
+    "ALPXR": "Fewer than 50 completed daily bars",
+    "ALPXW": "Fewer than 50 completed daily bars",
+    "ALTG$A": "HTTP Error 404: Not Found",
+    "ALUB.U": "HTTP Error 404: Not Found",
+    "ALUB.W": "HTTP Error 404: Not Found",
+    "ALVOW": "Fewer than 50 completed daily bars",
+    "AMAC": "Fewer than 50 completed daily bars",
+    "AMACW": "Fewer than 50 completed daily bars",
+    "AMH$G": "HTTP Error 404: Not Found",
+    "AMH$H": "HTTP Error 404: Not Found",
+    "AMODW": "Fewer than 50 completed daily bars",
+    "AMPGZ": "Fewer than 50 completed daily bars",
+    "AMPX.W": "HTTP Error 404: Not Found",
+    "AMRO": "Fewer than 50 completed daily bars",
+    "ANG": "Fewer than 50 completed daily bars",
+    "ANG$D": "HTTP Error 404: Not Found",
+    "ANGHW": "Fewer than 50 completed daily bars",
+    "ANNAW": "Fewer than 50 completed daily bars",
+    "APACR": "Fewer than 50 completed daily bars",
+    "APLMW": "Fewer than 50 completed daily bars",
+    "APMCR": "Fewer than 50 completed daily bars",
+    "APURR": "Fewer than 50 completed daily bars",
+    "APXC": "Fewer than 50 completed daily bars",
+    "APXTW": "Fewer than 50 completed daily bars",
+    "ARCIW": "Fewer than 50 completed daily bars",
+    "ARCLW": "Fewer than 50 completed daily bars",
+    "ARES$B": "HTTP Error 404: Not Found"
+  },
+  "source": "Nasdaq symbol directory; Yahoo Finance unofficial daily chart endpoint",
+  "benchmark_label": "SPY price-only (dividends excluded)",
+  "simulation": "Prior completed daily bars; next-session open fills; not real-time execution"
+}
