@@ -1,0 +1,54 @@
+name: Stock paper account
+on:
+  workflow_dispatch:
+  schedule:
+    # 17:37 New York in winter, 18:37 in summer; after the US session.
+    - cron: '37 22 * * 1-5'
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: stock-account
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Restore durable account (absence is an error, never a reset)
+        uses: actions/checkout@v4
+        with:
+          ref: account
+          path: account
+      - name: Validate account
+        run: |
+          test -s account/account.sqlite
+          test -f account/INITIALIZED
+          python -c "import sqlite3; c=sqlite3.connect('file:account/account.sqlite?mode=rw', uri=True); assert c.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'; c.close()"
+      - name: Evaluate latest completed stock session and export dashboard
+        run: python -m projects.paper_trader.stocks --db account/account.sqlite --output account/site
+      - name: Apply static dashboard
+        run: cp projects/paper_trader/stock_static/* account/site/
+      - name: Save account before deployment
+        working-directory: account
+        run: |
+          git config user.name 'paper-trader[bot]'
+          git config user.email 'paper-trader@users.noreply.github.com'
+          git add account.sqlite site INITIALIZED
+          git diff --cached --quiet || git commit -m 'Record stock paper account observation'
+          git push origin HEAD:account
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: account/site
+      - name: Publish dashboard
+        id: deployment
+        uses: actions/deploy-pages@v4
