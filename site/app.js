@@ -124,7 +124,7 @@ function render(state) {
   }
   put("received", "Dashboard snapshot received " + new Date().toLocaleString() + ". Times use your device’s timezone.");
   put("health-detail",  "Delayed daily stock data · " + (a.mode || "not started") + " · " +
-    (a.last_at ? "observation age " + Math.floor(state.health.age_seconds / 60) + " min" : "no market observation yet"));
+    (a.last_at ? "observation age " + Math.floor(Math.max(0, snapshotAge) / 60) + " min" : "no market observation yet"));
 }
 async function refresh() {
   try {
