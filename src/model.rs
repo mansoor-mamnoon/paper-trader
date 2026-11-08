@@ -41,6 +41,24 @@ pub struct Headline {
     pub published: String,
 }
 
+/// One SEC filing, from the EDGAR submissions feed.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Filing {
+    /// Form type, for example `8-K`, `10-Q`, `4`.
+    pub form: String,
+    /// Filing date, `YYYY-MM-DD`.
+    pub date: String,
+    /// Comma-separated 8-K item codes, for example `2.02,9.01`. Empty for other forms.
+    #[serde(default)]
+    pub items: String,
+    #[serde(default)]
+    pub description: String,
+    pub accession: String,
+    /// Primary document file name inside the accession folder.
+    #[serde(default)]
+    pub document: String,
+}
+
 /// Earnings dates and headlines gathered for one scan.
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Intel {
@@ -49,6 +67,9 @@ pub struct Intel {
     pub earnings: BTreeMap<String, String>,
     #[serde(default)]
     pub news: BTreeMap<String, Vec<Headline>>,
+    /// Recent SEC filings per symbol, newest first.
+    #[serde(default)]
+    pub filings: BTreeMap<String, Vec<Filing>>,
 }
 
 /// One daily scan of the stock universe.
