@@ -16,23 +16,23 @@ text{font-family:'Helvetica Neue',Arial,sans-serif;fill:#0f1115}
 <text class="h" x="36" y="40">THE DESK, EVERY WEEKDAY AFTER THE CLOSE</text>
 
 <!-- row 1 -->
-<rect class="sh" x="42" y="76" width="168" height="150" rx="10"/><rect class="b" x="36" y="70" width="168" height="150" rx="10"/>
+<rect class="sh" x="42" y="76" width="168" height="172" rx="10"/><rect class="b" x="36" y="70" width="168" height="172" rx="10"/>
 <text class="n" x="48" y="92">01</text><text class="t" x="48" y="116">Screen</text>
 <text class="s" x="48" y="140">13k tickers in,</text><text class="s" x="48" y="158">trend, momentum,</text><text class="s" x="48" y="176">liquidity out</text><text class="s" x="48" y="204">219 → 23</text>
 
-<rect class="sh" x="242" y="76" width="168" height="150" rx="10"/><rect class="b" x="236" y="70" width="168" height="150" rx="10"/>
+<rect class="sh" x="242" y="76" width="168" height="172" rx="10"/><rect class="b" x="236" y="70" width="168" height="172" rx="10"/>
 <text class="n" x="248" y="92">02</text><text class="t" x="248" y="116">Triage</text>
 <text class="s" x="248" y="140">scores 0 to 10,</text><text class="s" x="248" y="158">8 stocks a call,</text><text class="s" x="248" y="176">catalyst quality</text><text class="s" x="248" y="204">23 → 4 finalists</text>
 
-<rect class="sh" x="442" y="76" width="236" height="150" rx="10"/><rect class="y" x="436" y="70" width="236" height="150" rx="10"/>
+<rect class="sh" x="442" y="76" width="236" height="172" rx="10"/><rect class="y" x="436" y="70" width="236" height="172" rx="10"/>
 <text class="n" x="448" y="92">03</text><text class="t" x="448" y="116">Research agents</text>
 <text class="s" x="448" y="140">choose their own tools:</text><text class="s" x="448" y="158">read_filing (SEC EDGAR)</text><text class="s" x="448" y="176">more_news · price_action</text><text class="s" x="448" y="204">up to 4 steps each</text>
 
-<rect class="sh" x="710" y="76" width="168" height="150" rx="10"/><rect class="b" x="704" y="70" width="168" height="150" rx="10"/>
+<rect class="sh" x="710" y="76" width="168" height="172" rx="10"/><rect class="b" x="704" y="70" width="168" height="172" rx="10"/>
 <text class="n" x="716" y="92">04</text><text class="t" x="716" y="116">Bull vs bear</text>
 <text class="s" x="716" y="140">two arguments per</text><text class="s" x="716" y="158">finalist, each told</text><text class="s" x="716" y="176">to find the flaw</text><text class="s" x="716" y="204">2 calls a stock</text>
 
-<rect class="sh" x="910" y="76" width="254" height="150" rx="10"/><rect class="y" x="904" y="70" width="254" height="150" rx="10"/>
+<rect class="sh" x="910" y="76" width="254" height="172" rx="10"/><rect class="y" x="904" y="70" width="254" height="172" rx="10"/>
 <text class="n" x="916" y="92">05</text><text class="t" x="916" y="116">The judge</text>
 <text class="s" x="916" y="140">reasons in writing first,</text><text class="s" x="916" y="158">then picks, sizes (25-100%),</text><text class="s" x="916" y="176">calls the regime. risk_off</text><text class="s" x="916" y="194">allows one position.</text><text class="s" x="916" y="212">Hard limits stay in code.</text>
 
@@ -63,9 +63,18 @@ text{font-family:'Helvetica Neue',Arial,sans-serif;fill:#0f1115}
 <rect class="sh" x="42" y="540" width="262" height="58" rx="10"/><rect class="d" x="36" y="534" width="262" height="58" rx="10"/>
 <text class="t" x="50" y="558">0 · no AI</text><text class="s" x="50" y="578">momentum rank, a shadow</text>
 <rect class="sh" x="334" y="540" width="262" height="58" rx="10"/><rect class="d" x="328" y="534" width="262" height="58" rx="10"/>
-<text class="t" x="342" y="558">1 · single shot</text><text class="s" x="342" y="578">one prompt ranks headlines</text>
+<text class="t" x="342" y="558">1 · single shot</text><text class="s" x="342" y="578">Liquid LFM2.5, one prompt</text>
 <rect class="sh" x="626" y="540" width="262" height="58" rx="10"/><rect class="d" x="620" y="534" width="262" height="58" rx="10"/>
 <text class="t" x="634" y="558">2 · committee</text><text class="s" x="634" y="578">triage, debate and judge</text>
 <rect class="sh" x="918" y="540" width="246" height="58" rx="10"/><rect class="y" x="912" y="534" width="246" height="58" rx="10"/>
 <text class="t" x="922" y="558">3 · full desk (live)</text><text class="s" x="922" y="578">adds research agents</text>
+<g class="s" font-weight="700" style="fill:#0f1115">
+<text x="248" y="232">IBM Granite</text>
+<text x="448" y="232">Google Gemma 4</text>
+<text x="716" y="232">Meta Llama · MS Phi</text>
+<text x="916" y="232">Alibaba Qwen3 4B</text>
+<text x="52" y="436">Mistral Ministral 3</text>
+<text x="352" y="436">Hugging Face SmolLM3</text>
+<text x="952" y="446">NVIDIA Nemotron 3</text>
+</g>
 </svg>
