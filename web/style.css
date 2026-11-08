@@ -289,3 +289,57 @@ input[type="search"] { font: 500 14px var(--mono); padding: 8px 16px; border-rad
 .view > .funnel { margin-top: 22px; }
 .lead2 { margin-top: 18px; }
 @media (max-width: 1180px) { .star { display: none; } }
+
+/* ---------- roster ---------- */
+.roster { list-style: none; margin: 14px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.roster li { background: var(--paper); border: 2px solid var(--ink); border-radius: 10px; padding: 12px 14px; display: grid; gap: 4px; align-content: start; }
+.roster strong { font-size: 1.05rem; letter-spacing: -0.02em; line-height: 1.15; }
+
+/* ---------- ops ---------- */
+.mark.ink { background: var(--ink); color: var(--paper); }
+.budget { margin: 6px 0 16px; }
+.budget .row { display: flex; justify-content: space-between; gap: 12px; font: 500 14px var(--mono); margin-bottom: 8px; flex-wrap: wrap; }
+.budget .fill { height: 100%; background: var(--yellow); border-right: 2px solid var(--ink); }
+.small-dd { font-size: 0.9rem; font-weight: 700; line-height: 1.3; }
+.pad { padding: 18px 22px 0; }
+p.pad { padding-top: 0; margin: 0 0 12px; }
+.card.table-card > .head.pad { margin-bottom: 8px; }
+.waterfall { display: grid; gap: 6px; }
+.wf-row { display: grid; grid-template-columns: 150px 1fr 96px auto; gap: 12px; align-items: center; font: 500 13px var(--mono); }
+.wf-row.nested { padding-left: 18px; }
+.wf-row.nested .wf-name { color: var(--soft); }
+.wf-name { overflow-wrap: anywhere; }
+.wf-track, .mini-track { display: block; height: 16px; background: #fff; border: 2px solid var(--ink); border-radius: 4px; overflow: hidden; }
+.wf-bar, .mini-bar { display: block; height: 100%; background: var(--yellow); border-right: 2px solid var(--ink); }
+.wf-row.nested .wf-bar { background: #fff7bf; }
+.hatch, .wf-bar.hatch { background: repeating-linear-gradient(45deg, var(--ink) 0 4px, #fff 4px 8px); }
+.wf-ms { text-align: right; font-variant-numeric: tabular-nums; }
+.mini-track { height: 12px; min-width: 120px; }
+tr.flag td { background: #fff7bf; }
+td.bad { font-weight: 800; color: var(--red); }
+code { font: 500 13px var(--mono); }
+.runs { position: relative; display: flex; align-items: flex-end; gap: 4px; height: 150px; border-bottom: 2px solid var(--ink); padding-top: 6px; }
+.run-col { flex: 1; min-width: 6px; background: var(--ink); border-radius: 3px 3px 0 0; cursor: help; }
+.run-col.degraded { background: var(--yellow); border: 2px solid var(--ink); border-bottom: 0; }
+.run-col.failed { background: repeating-linear-gradient(45deg, var(--ink) 0 4px, #fff 4px 8px); border: 2px solid var(--ink); border-bottom: 0; }
+.run-col:hover, .run-col:focus-visible { outline: 2px solid var(--script); outline-offset: 1px; }
+.budget-line { position: absolute; left: 0; right: 0; border-top: 2px dashed var(--script); pointer-events: none; }
+.sw.yellow { border-top-color: var(--yellow); }
+.sw.hatch { border-top: 4px solid transparent; background: repeating-linear-gradient(90deg, var(--ink) 0 3px, transparent 3px 6px); height: 4px; }
+#ops .outline-pills a.chip { text-decoration: none; }
+@media (max-width: 560px) {
+  .wf-row { grid-template-columns: 1fr auto; gap: 4px 10px; }
+  .wf-name { grid-column: 1; } .wf-ms { grid-column: 2; grid-row: 1; }
+  .wf-track { grid-column: 1 / -1; } .wf-row.nested { padding-left: 10px; }
+  .roster { grid-template-columns: 1fr 1fr; }
+}
+
+.sw.hatch { display: inline-block; width: 22px; height: 10px; border: 2px solid var(--ink); background: repeating-linear-gradient(45deg, var(--ink) 0 3px, #fff 3px 6px); vertical-align: middle; margin-right: 8px; }
+#ops .table-card th, #ops .table-card td { padding: 10px 11px; }
+#ops .table-card th { font-size: 11px; letter-spacing: 0.03em; }
+#ops .table-card td { font-size: 0.92rem; }
+#ops .table-card .table-wrap { scrollbar-width: thin; }
+.pad + .table-wrap, .pad ~ .table-wrap { margin-top: 4px; }
+.wf-row .badge { justify-self: start; }
+@media (max-width: 860px) { .view { scroll-margin-top: 150px; } }
+@media (max-width: 560px) { .small-dd { font-size: 0.8rem; } .budget .row { font-size: 13px; } }
