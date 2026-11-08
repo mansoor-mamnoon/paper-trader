@@ -105,6 +105,7 @@ pub fn gather(symbols: &[String], today: NaiveDate) -> Result<Intel> {
     Ok(Intel {
         earnings,
         news: news.into_inner().unwrap(),
+        filings: std::collections::BTreeMap::new(),
     })
 }
 
