@@ -40,6 +40,7 @@ const ACTIONS = {
   CANDIDATE: ["Passed screen", "info"], PASS: ["Did not qualify", ""],
   REJECT: ["Rejected", ""], EXPIRED: ["Expired", ""], FREEZE: ["Paused", ""],
   SKIP: ["Skipped", ""], CORPORATE_ACTION: ["Split or dividend", "info"], AVOID: ["Analyst veto", ""],
+  DOCTOR_EXIT: ["Doctor: exit", "sell"], DOCTOR_TIGHTEN: ["Doctor: tighten", "info"], DOCTOR_HOLD: ["Doctor: hold", ""],
 };
 const label = (action) => ACTIONS[action] ?? [action, ""];
 
@@ -53,6 +54,9 @@ function describe(d) {
   const e = parseEvidence(d);
   switch (d.action) {
     case "BUY_SIGNAL": return e.thesis ? `${d.symbol}: ${e.thesis}` : `${d.symbol} qualified. A buy is queued for the next session's open.`;
+    case "DOCTOR_EXIT": return `${d.symbol}: the position doctor sold early. ${(d.reason || "").replace(/^Position doctor: /, "")}`;
+    case "DOCTOR_TIGHTEN": return `${d.symbol}: stop moved up to protect the gain. ${d.reason}`;
+    case "DOCTOR_HOLD": return `${d.symbol}: thesis still intact, holding. ${d.reason}`;
     case "AVOID": return `${d.symbol} passed the screen but the analyst passed on it: ${d.reason}`;
     case "SELL_SIGNAL": return `${d.symbol} hit its stop, its target, or the account halted. A sell is queued.`;
     case "BUY_FILLED": return `Bought ${d.symbol} at ${e.price ? money(e.price) : "the next open"}, after fees and slippage.`;
@@ -70,7 +74,7 @@ let journalFilter = "activity";
 let journalLimit = 25;
 
 /* ---------- tabs ---------- */
-const TABS = ["overview", "holdings", "trades", "journal", "lab", "about"];
+const TABS = ["overview", "desk", "holdings", "trades", "journal", "lab", "about"];
 function showTab(name, push = true) {
   if (!TABS.includes(name)) name = "overview";
   for (const id of TABS) $(id).hidden = id !== name;
@@ -224,7 +228,7 @@ function renderOverview(s) {
     : "No scan has run yet.");
 
   const recent = $("recent"); recent.replaceChildren();
-  const items = (s.activity ?? []).slice(0, 5);
+  const items = (s.activity ?? []).filter((d) => d.action !== "DOCTOR_HOLD").slice(0, 5);
   for (const d of items) recent.append(entry(d));
   if (!items.length) recent.append(h("li", {}, h("span", {}), h("p", {class: "muted"}, "No trades or signals yet. The account only acts when a stock passes every rule.")));
 }
@@ -241,6 +245,8 @@ function headlines(d) {
   const list = Array.isArray(e.headlines) ? e.headlines.slice(0, 2) : [];
   const extra = [];
   if (e.earnings_date) extra.push(h("small", {class: "muted"}, `Earnings ${e.earnings_date}`));
+  if (e.key_risk) extra.push(h("small", {class: "muted"}, `Risk: ${e.key_risk}`));
+  if (e.invalidation) extra.push(h("small", {class: "muted"}, `Wrong if: ${e.invalidation}`));
   if (!list.length && !extra.length) return null;
   return h("div", {class: "heads"}, list.map((t) => h("small", {class: "muted"}, `“${t}”`)), extra);
 }
@@ -345,6 +351,54 @@ const PARAM_LABELS = {
 };
 const EVENT_LABELS = {proposed: ["New challenger", "info"], promoted: ["Promoted", "buy"], reverted: ["Reverted", "sell"], retired: ["Retired", ""], rejected: ["Proposal rejected", ""], error: ["Error", "sell"]};
 
+const DEPTHS = ["No AI", "Single-shot", "Committee", "Full desk"];
+const depthOf = (s, id) => {
+  const sc = (s.strategy?.scorecards ?? []).find((x) => x.id === id);
+  if (sc) return sc.depth;
+  const m = /^depth(\d)/.exec(id);
+  return m ? Number(m[1]) : "?";
+};
+
+function renderLadder(s) {
+  const body = $("ladder"); body.replaceChildren();
+  const cards = s.strategy?.scorecards ?? [];
+  const shadows = new Map((s.strategy?.shadows ?? []).map((x) => [x.id, x]));
+  const rows = cards.map((c) => {
+    const p5 = c.scorecard?.kinds?.pick?.["5"] ?? {n: 0};
+    return {c, p5, sh: shadows.get(c.id)};
+  }).sort((a, b) => b.c.depth - a.c.depth);
+  const eligible = rows.filter((r) => r.p5.n >= 5 && r.p5.mean_excess_pct !== null);
+  const best = eligible.length ? eligible.reduce((a, b) => (b.p5.mean_excess_pct > a.p5.mean_excess_pct ? b : a)) : null;
+  for (const r of rows) {
+    const name = `${r.c.depth} · ${DEPTHS[r.c.depth] ?? "?"}`;
+    const portfolio = r.c.kind === "champion" ? `${pct(s.account.return_pct)} (live)`
+      : r.sh && r.sh.return_pct !== null && r.sh.champion_return_pct !== null
+        ? `${pct(r.sh.return_pct)} vs ${pct(r.sh.champion_return_pct)}` : "waiting";
+    const nameCell = h("td", {}, r === best ? h("span", {class: "mark"}, name) : name, r.c.kind === "champion" ? h("span", {class: "badge buy tiny"}, "live") : null);
+    body.append(h("tr", {}, nameCell,
+      h("td", {class: "num"}, portfolio),
+      h("td", {class: "num"}, String(r.p5.n)),
+      h("td", {class: `num ${r.p5.n ? sign(r.p5.mean_excess_pct) : ""}`}, r.p5.n ? pct(r.p5.mean_excess_pct) : "—"),
+      h("td", {class: "num"}, r.p5.n ? `${Math.round(r.p5.hit_rate * 100)}%` : "—")));
+  }
+  if (!rows.length) body.append(h("tr", {}, h("td", {colspan: 5, class: "empty"}, "The ladder appears after the next daily run.")));
+  const total = rows.reduce((m, r) => Math.max(m, r.p5.n), 0);
+  text("ladder-note", total < 20
+    ? `Needs about a week of picks to mean anything. The most any row has is ${total} scored so far.`
+    : "Scores are each pick's return over 5 trading days minus SPY's over the same days. Picks, vetoes and near misses are all tracked, not just trades.");
+  const box = $("calibration"); box.replaceChildren();
+  const cal = (cards.find((c) => c.kind === "champion")?.scorecard?.calibration) ?? [];
+  if (!cal.length) { box.append(h("p", {class: "empty"}, "Calibration shows up once the champion's picks have 5 days of results.")); return; }
+  const scale = Math.max(1, ...cal.map((b) => Math.abs(b.mean_excess_pct ?? 0)));
+  for (const b of cal) {
+    const v = b.mean_excess_pct ?? 0;
+    const width = `${Math.min(50, (Math.abs(v) / scale) * 50)}%`;
+    const bar = h("i", {class: v >= 0 ? "up" : "down", style: `width:${width}`});
+    box.append(h("div", {class: "bar-row"}, h("span", {class: "label"}, `${b.bucket} · n=${b.n}`),
+      h("div", {class: "bar-track2"}, bar), h("strong", {class: sign(v)}, pct(v))));
+  }
+}
+
 function renderLab(s) {
   const lab = s.strategy;
   if (!lab) {
@@ -375,7 +429,7 @@ function renderLab(s) {
   for (const sh of lab.shadows) {
     const diff = sh.return_pct !== null && sh.champion_return_pct !== null ? sh.return_pct - sh.champion_return_pct : null;
     box.append(h("article", {class: "shadow"},
-      h("div", {class: "head"}, h("strong", {}, sh.id), h("span", {class: `badge ${sh.kind === "previous" ? "" : "info"}`}, sh.kind === "previous" ? "Previous strategy" : "Challenger")),
+      h("div", {class: "head"}, h("strong", {}, sh.id), h("span", {class: `badge ${sh.kind === "previous" ? "" : "info"}`}, sh.kind === "previous" ? "Previous strategy" : sh.kind === "ablation" ? `Ablation: depth ${depthOf(s, sh.id)}` : "Challenger")),
       h("p", {class: "muted"}, sh.kind === "previous" ? "The strategy that was replaced. It keeps trading so a bad promotion can be undone." : sh.rationale),
       h("p", {class: "small"}, sh.changes.length ? `Changes: ${sh.changes.map((k) => PARAM_LABELS[k]?.[0] ?? k).join(", ")}` : ""),
       h("div", {class: "versus mini-versus"},
@@ -393,9 +447,121 @@ function renderLab(s) {
   if (!lab.log.length) log.append(h("li", {}, h("span", {}), h("p", {class: "muted"}, "Nothing has changed yet.")));
 }
 
+/* ---------- the desk ---------- */
+const REGIMES = {risk_on: "Risk on", neutral: "Neutral", risk_off: "Risk off"};
+const TOOLS = {read_filing: "Read filing", more_news: "More news", price_action: "Price action", finish: "Done"};
+const clip = (t, n) => (String(t ?? "").length > n ? `${String(t).slice(0, n - 1)}…` : String(t ?? ""));
+const nz = (v, f) => (v === null || v === undefined ? "n/a" : f(v));
+
+function finalistCard(f, d, s) {
+  const judge = d.judge ?? {};
+  const tri = (d.triage ?? []).find((t) => t.symbol === f.symbol);
+  const picked = (judge.picks ?? []).find((p) => p.symbol === f.symbol);
+  const vetoed = (judge.avoid ?? []).find((p) => p.symbol === f.symbol);
+  const verdict = picked
+    ? h("span", {class: "badge buy"}, `PICKED · conviction ${Number(picked.conviction).toFixed(2)} · size ${Math.round((picked.size_fraction ?? 1) * 100)}%`)
+    : vetoed ? h("span", {class: "badge sell"}, "VETOED")
+      : h("span", {class: "badge"}, judge.reasoning ? "PASSED OVER" : "NOT DECIDED");
+  const steps = (f.research?.steps ?? []);
+  const trace = steps.length
+    ? h("ol", {class: "trace"}, steps.map((st) => h("li", {},
+      h("span", {class: "badge info"}, TOOLS[st.action] ?? st.action),
+      h("p", {}, st.thought || ""),
+      st.observation ? h("pre", {class: "obs"}, clip(st.observation, 260)) : null)))
+    : h("p", {class: "muted small"}, "No research steps on this run (desk depth below 3, or no tools available).");
+  const fi = f.research?.findings ?? {};
+  const facts = (fi.key_facts ?? []).length ? h("ul", {class: "facts-list"}, fi.key_facts.map((x) => h("li", {}, x))) : null;
+  const flags = (fi.red_flags ?? []).length ? h("ul", {class: "flags-list"}, fi.red_flags.map((x) => h("li", {}, h("span", {class: "badge sell tiny"}, "flag"), ` ${x}`))) : null;
+  return h("article", {class: "card finalist"},
+    h("div", {class: "head"}, h("h2", {}, f.symbol, tri ? h("span", {class: "score"}, `triage ${Number(tri.score).toFixed(0)}/10`) : null), verdict),
+    tri?.why ? h("p", {class: "muted small"}, tri.why) : null,
+    h("pre", {class: "dossier"}, (f.dossier ?? "").trim()),
+    h("h3", {class: "sub-h"}, "Research trace"), trace,
+    fi.summary ? h("p", {class: "lead2"}, fi.summary) : null, facts, flags,
+    f.bull || f.bear ? h("div", {class: "debate"},
+      h("div", {class: "side bull"}, h("span", {class: "label"}, "Bull"), h("p", {}, f.bull || "No argument returned.")),
+      h("div", {class: "side bear"}, h("span", {class: "label"}, "Bear"), h("p", {}, f.bear || "No argument returned."))) : null,
+    picked ? h("p", {class: "small verdict-line"}, h("strong", {}, "Thesis: "), picked.thesis,
+      picked.key_risk ? h("span", {}, h("br"), h("strong", {}, "Key risk: "), picked.key_risk) : null,
+      picked.invalidation ? h("span", {}, h("br"), h("strong", {}, "Wrong if: "), picked.invalidation) : null) : null,
+    vetoed ? h("p", {class: "small verdict-line"}, h("strong", {}, "Why not: "), vetoed.reason) : null);
+}
+
+function renderDesk(s) {
+  const d = s.strategy?.desk;
+  const regime = $("desk-regime"); regime.replaceChildren();
+  $("desk-funnel").replaceChildren(); $("desk-finalists").replaceChildren();
+  $("desk-judge").replaceChildren(); $("desk-doctor").replaceChildren(); $("desk-memory").replaceChildren();
+  $("desk-degraded").replaceChildren();
+  $("desk-skipped-card").hidden = true;
+  if (!d || !d.at) {
+    text("desk-note", "The desk has not run yet.");
+    regime.append(h("p", {class: "empty"}, "Today's committee transcript appears here after the next daily run."));
+    return;
+  }
+  text("desk-note", `model ${d.model} · desk depth ${d.depth} · ran ${ago(d.at)} · ${Math.max(0, Math.round(d.minutes_left))} min of budget left`);
+  const judge = d.judge ?? {};
+  const rs = d.regime_stats ?? {};
+  const label = REGIMES[judge.regime] ?? "No call";
+  regime.append(
+    h("div", {}, h("span", {class: "label"}, "Market regime"), h("strong", {class: "regime-label"}, h("span", {class: "mark"}, label)),
+      judge.market_view ? h("p", {class: "script small-script"}, judge.market_view) : null),
+    h("dl", {class: "regime-stats"},
+      h("div", {}, h("dt", {}, "Stocks above 50-day avg"), h("dd", {}, nz(rs.pct_above_50d_avg, (v) => `${v.toFixed(0)}%`))),
+      h("div", {}, h("dt", {}, "Median 20-day move"), h("dd", {}, nz(rs.median_20d_return_pct, (v) => pct(v)))),
+      h("div", {}, h("dt", {}, "SPY 20-day move"), h("dd", {}, nz(rs.spy_20d_return_pct, (v) => pct(v)))),
+      h("div", {}, h("dt", {}, "Stocks scanned"), h("dd", {}, nz(rs.stocks_scanned, String)))));
+
+  const picks = (judge.picks ?? []).length;
+  const funnel = [
+    [s.last_scan ? (s.last_scan.candidates ?? 0) + (s.last_scan.rejected ?? 0) : rs.stocks_scanned, "scanned"],
+    [s.last_scan?.candidates ?? "?", "passed the screen"],
+    [(d.triage ?? []).length, "triaged"],
+    [(d.finalists ?? []).length, "finalists"],
+    [picks, "picked"],
+  ];
+  funnel.forEach(([n, name], i) => $("desk-funnel").append(h("li", {}, h("span", {class: "n"}, `0${i + 1}`), h("strong", {}, String(n ?? "?")), h("span", {}, name))));
+
+  const box = $("desk-finalists");
+  if (!(d.finalists ?? []).length) box.append(h("div", {class: "card"}, h("p", {class: "empty"}, "No stock needed a decision today: the account had no open slots or nothing passed the screen.")));
+  for (const f of d.finalists ?? []) box.append(finalistCard(f, d, s));
+
+  const jb = $("desk-judge");
+  jb.append(h("div", {class: "head"}, h("h2", {}, "The judge's reasoning"), judge.regime ? h("span", {class: "badge"}, REGIMES[judge.regime] ?? judge.regime) : null));
+  if (judge.reasoning) {
+    jb.append(h("blockquote", {class: "quote"}, judge.reasoning));
+    for (const p of judge.picks ?? []) {
+      jb.append(h("div", {class: "pick-row"}, h("strong", {}, p.symbol), h("span", {class: "badge buy"}, `conviction ${Number(p.conviction).toFixed(2)} · size ${Math.round((p.size_fraction ?? 1) * 100)}%`),
+        h("p", {}, p.thesis), h("p", {class: "small muted"}, `Key risk: ${p.key_risk || "none given"}. Wrong if: ${p.invalidation || "none given"}.`)));
+    }
+    if (!(judge.picks ?? []).length) jb.append(h("p", {class: "muted"}, "The judge chose no stock today. Choosing nothing is allowed."));
+  } else {
+    jb.append(h("p", {class: "muted"}, "The judge did not return a usable answer, so the triage scores decided instead. See “What was skipped” below."));
+  }
+
+  const dd = $("desk-doctor");
+  if (!(d.doctor ?? []).length) dd.append(h("p", {class: "empty"}, "No holdings to review today."));
+  for (const c of d.doctor ?? []) {
+    const kind = c.action === "exit" ? "sell" : c.action === "tighten" ? "info" : "";
+    dd.append(h("div", {class: "doc-row"}, h("div", {class: "head"}, h("strong", {}, c.symbol), h("span", {class: `badge ${kind}`}, c.action === "tighten" && c.stop_pct ? `tighten to ${(c.stop_pct * 100).toFixed(0)}% below` : c.action)), h("p", {class: "small"}, c.assessment)));
+  }
+
+  const mem = $("desk-memory");
+  if (d.feedback) mem.append(h("p", {class: "small"}, h("strong", {}, "Its own track record: "), d.feedback));
+  else mem.append(h("p", {class: "small muted"}, "Its track record shows up once it has about five scored picks."));
+  const lessons = s.strategy?.lessons ?? [];
+  if (!lessons.length) mem.append(h("p", {class: "small muted"}, "No lessons yet. After a trade closes, the model writes one sentence about what to do differently."));
+  for (const l of lessons) mem.append(h("div", {class: "doc-row"}, h("div", {class: "head"}, h("strong", {}, l.symbol), h("span", {class: `badge ${l.pnl_pct >= 0 ? "buy" : "sell"}`}, pct(l.pnl_pct))), h("p", {class: "small"}, l.lesson)));
+
+  if ((d.degraded ?? []).length) {
+    $("desk-skipped-card").hidden = false;
+    for (const x of d.degraded) $("desk-degraded").append(h("li", {}, x));
+  }
+}
+
 function render(s) {
   state = s;
-  renderLab(s);
+  renderLab(s); renderLadder(s); renderDesk(s);
   renderStatus(s); renderOverview(s); renderHoldings(s); renderTrades(s); renderJournal(); renderAbout(s);
 }
 
