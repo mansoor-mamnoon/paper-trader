@@ -9,6 +9,7 @@ pub mod analyst;
 pub mod crypto;
 pub mod daily;
 pub mod data;
+pub mod desk;
 pub mod edgar;
 pub mod export;
 pub mod http;
