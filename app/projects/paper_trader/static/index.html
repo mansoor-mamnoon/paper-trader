@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0c1421">
+<title>The $1,000 Experiment · Paper trading</title>
+<link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script>
+</head>
+<body>
+<header><div class="brand"><span class="brand-icon">$</span><div>THE $1,000 EXPERIMENT<small>A transparent, 60-day paper account</small></div></div><span class="badge">SIMULATED · NO REAL MONEY</span></header>
+<main>
+<section class="intro"><div><p class="eyebrow">AUTONOMOUS MARKET JOURNAL</p><h1>Every move. Every dollar.</h1><p class="sub">A small account, a fixed rulebook, and nowhere to hide the results.</p></div><div class="status-box"><span id="status" role="status">Connecting…</span><small id="updated">Waiting for the ledger</small></div></section>
+<div id="notice" class="notice" role="alert" hidden></div>
+<section class="metrics" aria-label="Account metrics">
+<article class="primary"><p>Account equity</p><h2 id="equity">—</h2><small id="return">Starting capital: $1,000 simulated</small><small id="total-pnl">Awaiting account data</small></article>
+<article><p>Cash available</p><h2 id="cash">—</h2><small id="exposure">No leveraged positions</small></article>
+<article><p>Realized profit / loss</p><h2 id="realized">—</h2><small id="unrealized">After modeled costs</small></article>
+<article><p>Maximum drawdown</p><h2 id="drawdown">—</h2><small>10% triggers a permanent entry halt</small></article>
+</section>
+<section class="panel chart-panel"><div class="section-heading"><div><p class="eyebrow">THE SCOREBOARD</p><h2>Account vs. buying Bitcoin</h2></div><span id="day" class="muted">Day 0 / 60</span></div><div class="legend"><span class="blue-dot"></span> Paper account <span class="gray-dot"></span> BTC buy &amp; hold <span id="benchmark" class="muted"></span></div><svg id="chart" viewBox="0 0 900 240" role="img" aria-label="Account equity and Bitcoin benchmark in dollars"><title>Equity history</title></svg><div class="chart-footer"><span id="chart-start">First observation pending</span><span id="chart-end"></span></div><p class="footnote">Both include 0.40% modeled fees per side and 0.10% adverse slippage. Holdings are valued at net liquidation proceeds. Bitcoin is a comparison, not a target.</p></section>
+<div class="two-column">
+<section class="panel"><div class="section-heading"><h2>Current holdings</h2><span id="holdings-count" class="badge neutral">Awaiting data</span></div><div class="table-wrap"><table><thead><tr><th>Asset</th><th>Value</th><th>Open P/L</th><th>Stop / target</th></tr></thead><tbody id="positions"></tbody></table></div><p id="empty" class="empty">Waiting for holdings data.</p><p id="pending" class="footnote"></p></section>
+<section class="panel"><div class="section-heading"><h2>The guardrails</h2><span class="badge neutral">LONG ONLY</span></div><div class="rule"><span>Maximum entry allocation</span><strong>25% / asset</strong></div><div class="rule"><span>Planned loss at stop</span><strong>≤ 1% / trade</strong></div><div class="rule"><span>Combined planned risk</span><strong id="risk">≤ 3%</strong></div><div class="rule"><span>Stop / take-profit</span><strong>−4% / +8%</strong></div><div class="rule"><span>Loss limit / experiment length</span><strong>10% / 60 days</strong></div><p class="footnote">Limits are checked at each observation, not continuously. Gaps, outages and fees can push actual losses beyond a stop or the halt threshold. No leverage, shorting or real orders.</p></section>
+</div>
+<section class="panel"><div class="section-heading"><div><p class="eyebrow">WHAT HAPPENED, AND WHY</p><h2>Decision journal</h2><p class="footnote">Latest 120 decisions. CSV contains the full history.</p></div><a href="/export/decisions.csv">Download CSV ↗</a></div><div id="decisions" class="journal"><p class="empty">Waiting for the decision journal.</p></div></section>
+<section class="panel"><div class="section-heading"><div><h2>Executed paper trades</h2><p class="footnote">Latest 200 fills. CSV contains the full history.</p></div><a href="/export/fills.csv">Full ledger CSV ↗</a></div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Action</th><th>Asset</th><th>Quantity</th><th>Fill price</th><th>Fee</th><th>Closed P/L</th></tr></thead><tbody id="fills"></tbody></table></div><p id="no-fills" class="empty">Waiting for the trade ledger.</p></section>
+<section class="panel"><div class="section-heading"><h2>System activity</h2><span class="muted">Latest 30 events</span></div><div id="events" class="journal"><p class="empty">Waiting for worker activity.</p></div><p class="footnote" id="received">No dashboard snapshot received yet.</p></section>
+<section class="panel methodology"><h2>A rulebook, not a promise</h2><div class="two-column"><div><h3>How it makes decisions</h3><p>Every five minutes, the worker reads public Kraken prices for BTC, ETH, SOL and ADA. It buys only when the 20-hour moving average is above the 50-hour average and the last 24-hour return exceeds 1%, using completed hourly candles only.</p><p>A signal queues an order. It can fill only on a later observation with a newer trade timestamp, at least 60 seconds later and no more than an hour later. A weakening trend queues a delayed exit. Stops, targets and a seven-day time limit are standing exit instructions. Each exit starts a 24-hour cooldown.</p></div><div><h3>What this experiment cannot tell you</h3><p>This is deterministic automation, not an LLM choosing trades. No claim of a profitable edge has been established. Conservative modeled fees and fills still cannot reproduce real liquidity, queue priority, exchange outages or market impact.</p><p>The public dashboard is read-only. This Mac must be awake, online and logged in for its background agents to run. After downtime it resumes at current quotes; it never invents missed fills. The free public tunnel has no uptime guarantee and its URL can change when it restarts.</p></div></div></section>
+<footer><span id="health-detail">Public market data · private local SQLite ledger</span><a href="/api/health">Health JSON</a><a href="/export/equity.csv">Equity CSV</a><span>Refreshes every 30 seconds</span></footer>
+</main>
+</body></html>

@@ -1,2 +1,6 @@
-__pycache__/
+*.lock
 *.pyc
+*.sqlite
+*.sqlite-*
+__pycache__/
+logs/
