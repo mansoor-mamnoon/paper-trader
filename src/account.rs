@@ -541,6 +541,23 @@ pub fn screen(strategy: &Strategy, observation: &Observation, at: f64) -> Vec<Sc
             .map(|b| b.close * b.volume)
             .sum::<f64>()
             / 20.0;
+        let momentum_5d = close / bars[n - 6].close - 1.0;
+        let returns: Vec<f64> = bars[n - 21..]
+            .windows(2)
+            .map(|w| w[1].close / w[0].close - 1.0)
+            .collect();
+        let mean_return = returns.iter().sum::<f64>() / returns.len() as f64;
+        let volatility = (returns
+            .iter()
+            .map(|r| (r - mean_return).powi(2))
+            .sum::<f64>()
+            / returns.len() as f64)
+            .sqrt();
+        let max_gap = bars[n - 20..]
+            .iter()
+            .zip(&bars[n - 21..])
+            .map(|(today, yesterday)| (today.open / yesterday.close - 1.0).abs())
+            .fold(0.0, f64::max);
         let earnings_date = observation.intel.earnings.get(symbol).cloned();
         let blackout = earnings_date.as_deref().filter(|date| {
             let days = date
@@ -587,6 +604,9 @@ pub fn screen(strategy: &Strategy, observation: &Observation, at: f64) -> Vec<Sc
                     .get(symbol)
                     .cloned()
                     .unwrap_or_default(),
+                momentum_5d,
+                volatility_20d: volatility,
+                max_gap_20d: max_gap,
             },
             eligible,
             reason,

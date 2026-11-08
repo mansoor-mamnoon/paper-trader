@@ -17,7 +17,7 @@ const API_URL: &str = "https://api.anthropic.com/v1/messages";
 const API_VERSION: &str = "2026-10-21";
 
 /// A stock that passed the quantitative screen, with the context the analyst reads.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Candidate {
     pub symbol: String,
     pub close: f64,
@@ -27,6 +27,14 @@ pub struct Candidate {
     pub avg_dollar_volume: f64,
     pub earnings_date: Option<String>,
     pub headlines: Vec<Headline>,
+    #[serde(default)]
+    pub momentum_5d: f64,
+    /// Standard deviation of daily returns over 20 sessions.
+    #[serde(default)]
+    pub volatility_20d: f64,
+    /// Largest overnight gap, up or down, over 20 sessions.
+    #[serde(default)]
+    pub max_gap_20d: f64,
 }
 
 /// Everything the analyst sees for one decision.
@@ -45,6 +53,31 @@ pub struct Pick {
     pub symbol: String,
     pub conviction: f64,
     pub thesis: String,
+    /// Share of the position cap to use, 0.25 to 1.
+    #[serde(default = "full_size")]
+    pub size_fraction: f64,
+    #[serde(default)]
+    pub key_risk: String,
+    /// What would prove the thesis wrong.
+    #[serde(default)]
+    pub invalidation: String,
+}
+
+fn full_size() -> f64 {
+    1.0
+}
+
+impl Default for Pick {
+    fn default() -> Self {
+        Pick {
+            symbol: String::new(),
+            conviction: 0.0,
+            thesis: String::new(),
+            size_fraction: 1.0,
+            key_risk: String::new(),
+            invalidation: String::new(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -63,6 +96,24 @@ pub struct Review {
     pub source: String,
     #[serde(default)]
     pub error: Option<String>,
+    /// `risk_on`, `neutral` or `risk_off`, when the judge gave one.
+    #[serde(default)]
+    pub regime: Option<String>,
+    /// Calls from the position doctor on stocks already held.
+    #[serde(default)]
+    pub doctor: Vec<DoctorCall>,
+}
+
+/// The position doctor's verdict on one holding.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct DoctorCall {
+    pub symbol: String,
+    /// `hold`, `exit` or `tighten`.
+    pub action: String,
+    pub assessment: String,
+    /// For `tighten`: the new stop as a fraction below the last close.
+    #[serde(default)]
+    pub stop_pct: f64,
 }
 
 pub trait Analyst {
@@ -104,10 +155,19 @@ pub fn parse_review(text: &str, allowed: &BTreeSet<String>, slots: usize) -> Res
             .chars()
             .take(400)
             .collect();
+        let size_fraction = item["size_fraction"]
+            .as_f64()
+            .unwrap_or(1.0)
+            .clamp(0.25, 1.0);
+        let text =
+            |key: &str| -> String { item[key].as_str().unwrap_or("").chars().take(300).collect() };
         picks.push(Pick {
             symbol,
             conviction,
             thesis,
+            size_fraction,
+            key_risk: text("key_risk"),
+            invalidation: text("invalidation"),
         });
     }
     picks.sort_by(|a, b| {
@@ -144,6 +204,8 @@ pub fn parse_review(text: &str, allowed: &BTreeSet<String>, slots: usize) -> Res
             .collect(),
         source: "llm".into(),
         error: None,
+        regime: value["regime"].as_str().map(str::to_string),
+        doctor: Vec::new(),
     })
 }
 
@@ -227,7 +289,7 @@ impl Llm for OpenAiLlm {
     fn complete(&self, system: &str, user: &str, schema: Option<&Value>) -> Result<String> {
         let mut body = json!({
             "model": self.model,
-            "max_tokens": 1500,
+            "max_tokens": 2500,
             "temperature": 0.2,
             "messages": [
                 {"role": "system", "content": system},
@@ -353,12 +415,17 @@ pub fn quant_review(brief: &Brief, error: Option<String>) -> Review {
                 symbol: c.symbol.clone(),
                 conviction: 0.0,
                 thesis: String::new(),
+                size_fraction: 1.0,
+                key_risk: String::new(),
+                invalidation: String::new(),
             })
             .collect(),
         avoid: Vec::new(),
         market_view: String::new(),
         source: "quant".into(),
         error,
+        regime: None,
+        doctor: Vec::new(),
     }
 }
 
@@ -438,6 +505,7 @@ mod tests {
             avg_dollar_volume: 2e6,
             earnings_date: None,
             headlines: vec![],
+            ..Candidate::default()
         };
         Brief {
             date: "2026-11-09".into(),

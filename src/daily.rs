@@ -233,12 +233,14 @@ mod tests {
                         symbol: c.symbol.clone(),
                         conviction: 0.9,
                         thesis: "test thesis".into(),
+                        ..crate::analyst::Pick::default()
                     })
                     .collect(),
                 avoid: vec![],
                 market_view: "calm".into(),
                 source: "llm".into(),
                 error: None,
+                ..Review::default()
             })
         }
     }
