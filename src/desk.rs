@@ -168,52 +168,63 @@ pub fn dossier(c: &Candidate, filings: &[Filing], observation: &Observation) -> 
     out
 }
 
+/// A string the model may not run on past `n` characters, which also bounds how many
+/// tokens it can spend, so a reply cannot be cut off mid-JSON.
+fn text(n: u32) -> Value {
+    json!({"type": "string", "maxLength": n})
+}
+
 fn schema_scores() -> Value {
-    json!({"type":"object","properties":{"scores":{"type":"array","items":{"type":"object","properties":{
-        "symbol":{"type":"string"},"score":{"type":"number"},"why":{"type":"string"}},
+    json!({"type":"object","properties":{"scores":{"type":"array","maxItems":10,"items":{"type":"object","properties":{
+        "symbol":{"type":"string","maxLength":8},"score":{"type":"number"},"why":text(160)},
         "required":["symbol","score","why"]}}},"required":["scores"]})
 }
 
-fn schema_step() -> Value {
+fn schema_step(has_filings: bool) -> Value {
+    let actions: Vec<&str> = if has_filings {
+        vec!["read_filing", "more_news", "price_action", "finish"]
+    } else {
+        vec!["more_news", "price_action", "finish"]
+    };
     json!({"type":"object","properties":{
-        "thought":{"type":"string"},
-        "action":{"type":"string","enum":["read_filing","more_news","price_action","finish"]},
+        "thought":text(240),
+        "action":{"type":"string","enum":actions},
         "arg":{"type":"integer"}},"required":["thought","action","arg"]})
 }
 
 fn schema_findings() -> Value {
-    json!({"type":"object","properties":{"summary":{"type":"string"},
-        "key_facts":{"type":"array","items":{"type":"string"}},
-        "red_flags":{"type":"array","items":{"type":"string"}}},"required":["summary","key_facts","red_flags"]})
+    json!({"type":"object","properties":{"summary":text(450),
+        "key_facts":{"type":"array","maxItems":5,"items":text(200)},
+        "red_flags":{"type":"array","maxItems":4,"items":text(200)}},"required":["summary","key_facts","red_flags"]})
 }
 
 fn schema_argument() -> Value {
-    json!({"type":"object","properties":{"argument":{"type":"string"},"strongest_point":{"type":"string"}},
+    json!({"type":"object","properties":{"argument":text(650),"strongest_point":text(220)},
         "required":["argument","strongest_point"]})
 }
 
 fn schema_judge() -> Value {
     json!({"type":"object","properties":{
-        "reasoning":{"type":"string"},
+        "reasoning":text(1100),
         "regime":{"type":"string","enum":["risk_on","neutral","risk_off"]},
-        "market_view":{"type":"string"},
-        "picks":{"type":"array","items":{"type":"object","properties":{
-            "symbol":{"type":"string"},"conviction":{"type":"number"},"size_fraction":{"type":"number"},
-            "thesis":{"type":"string"},"key_risk":{"type":"string"},"invalidation":{"type":"string"}},
+        "market_view":text(300),
+        "picks":{"type":"array","maxItems":3,"items":{"type":"object","properties":{
+            "symbol":{"type":"string","maxLength":8},"conviction":{"type":"number"},"size_fraction":{"type":"number"},
+            "thesis":text(300),"key_risk":text(200),"invalidation":text(200)},
             "required":["symbol","conviction","size_fraction","thesis","key_risk","invalidation"]}},
-        "avoid":{"type":"array","items":{"type":"object","properties":{
-            "symbol":{"type":"string"},"reason":{"type":"string"}},"required":["symbol","reason"]}}},
+        "avoid":{"type":"array","maxItems":6,"items":{"type":"object","properties":{
+            "symbol":{"type":"string","maxLength":8},"reason":text(200)},"required":["symbol","reason"]}}},
         "required":["reasoning","regime","market_view","picks","avoid"]})
 }
 
 fn schema_doctor() -> Value {
-    json!({"type":"object","properties":{"assessment":{"type":"string"},
+    json!({"type":"object","properties":{"assessment":text(350),
         "action":{"type":"string","enum":["hold","exit","tighten"]},"stop_pct":{"type":"number"}},
         "required":["assessment","action","stop_pct"]})
 }
 
 fn schema_lesson() -> Value {
-    json!({"type":"object","properties":{"summary":{"type":"string"},"lesson":{"type":"string"}},
+    json!({"type":"object","properties":{"summary":text(250),"lesson":text(200)},
         "required":["summary","lesson"]})
 }
 
@@ -224,9 +235,10 @@ contracts, upgrades), a clean trend with steady volatility, and filings that sug
 Use only the facts given. Reply with JSON.";
 
 const RESEARCH: &str = "You are a research analyst deciding whether one stock deserves a buy. Tools: \
-read_filing(arg = the filing number from the list) reads the start of that SEC filing; more_news(arg = 0) shows older headlines; \
-price_action(arg = 0) shows the last 15 sessions; finish(arg = 0) ends the research. Pick the single most useful next step, \
-or finish when you know enough. Do not repeat a tool call. Reply with JSON: thought, action, arg.";
+more_news(arg = 0) shows older headlines; price_action(arg = 0) shows the last 15 sessions; finish(arg = 0) ends the research. \
+Pick the single most useful next step, or finish when you know enough. Never call the same tool twice. Reply with JSON: thought, action, arg.";
+
+const RESEARCH_FILINGS: &str = " Also available: read_filing(arg = the filing number from the list) reads the start of that SEC filing.";
 
 const FINDINGS: &str = "Summarize the research on this stock for a buy decision: one short summary, the key facts that matter, \
 and any red flags. Use only the dossier and the research notes. Reply with JSON.";
@@ -238,8 +250,8 @@ const BEAR: &str = "You are the BEAR analyst in an investment committee debate. 
 stock for the next one to three weeks: what is already priced in, what could gap against us, what is missing from the evidence. \
 Use only the facts given. Name the single strongest point. Reply with JSON.";
 
-const JUDGE_RULES: &str = "\n\nYou are the portfolio manager. Write your 'reasoning' first: weigh each finalist's bull and bear case, \
-the market regime, your lessons and your track record, in four to eight sentences. Then decide. Choose only from the finalists. \
+const JUDGE_RULES: &str = "\n\nYou are the portfolio manager. Write your 'reasoning' first, in at most 150 words: weigh each finalist's bull and bear case, \
+the market regime, your lessons and your track record. Then decide. Choose only from the finalists. \
 Return at most open_slots picks. For each pick give a conviction from 0 to 1, a size_fraction from 0.25 to 1 (smaller when risk is \
 higher), a thesis citing a specific fact, the key risk, and what would prove you wrong. Call the regime risk_off if breadth is weak or \
 the evidence is thin; in risk_off the system allows only one new position. Choosing nothing is a valid answer. \
@@ -429,6 +441,8 @@ impl<'a> Desk<'a> {
         let mut log: Vec<String> = Vec::new();
         let mut steps: Vec<Value> = Vec::new();
         let mut seen_news = 0;
+        let mut tried: std::collections::BTreeSet<(String, i64)> =
+            std::collections::BTreeSet::new();
         for step in 0..RESEARCH_STEPS {
             if !self.budget.has(180) {
                 notes.push(format!(
@@ -446,14 +460,20 @@ impl<'a> Desk<'a> {
                 },
                 RESEARCH_STEPS - step
             );
-            let Ok(decision) = self.ask(RESEARCH, &user, &schema_step()) else {
+            let has_filings = !self.filings(&c.symbol).is_empty();
+            let system = if has_filings {
+                format!("{RESEARCH}{RESEARCH_FILINGS}")
+            } else {
+                RESEARCH.to_string()
+            };
+            let Ok(decision) = self.ask(&system, &user, &schema_step(has_filings)) else {
                 notes.push(format!("research step on {} failed", c.symbol));
                 break;
             };
             let action = decision["action"].as_str().unwrap_or("finish").to_string();
             let arg = decision["arg"].as_i64().unwrap_or(0);
             let thought = clip(decision["thought"].as_str().unwrap_or(""), 240);
-            if action == "finish" {
+            if action == "finish" || !tried.insert((action.clone(), arg)) {
                 steps.push(json!({"thought": thought, "action": "finish"}));
                 break;
             }

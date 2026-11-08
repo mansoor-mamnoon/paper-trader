@@ -48,7 +48,7 @@ if curl -fs "http://127.0.0.1:$PORT/health" >/dev/null 2>&1; then
 fi
 
 THREADS="$( (nproc 2>/dev/null || sysctl -n hw.ncpu) )"
-nohup "$SERVER" -m "$DIR/$MODEL_FILE" -c 8192 -np 1 --host 127.0.0.1 --port "$PORT" -t "$THREADS" >"$DIR/server.log" 2>&1 &
+nohup "$SERVER" -m "$DIR/$MODEL_FILE" -c 16384 -np 1 --host 127.0.0.1 --port "$PORT" -t "$THREADS" >"$DIR/server.log" 2>&1 &
 echo $! >"$PID_FILE"
 
 for _ in $(seq 1 120); do
