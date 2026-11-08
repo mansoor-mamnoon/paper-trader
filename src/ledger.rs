@@ -36,7 +36,13 @@ pub fn connect(path: &str) -> Result<Connection> {
             id INTEGER PRIMARY KEY, at REAL UNIQUE, equity REAL, cash REAL,
             benchmark REAL, drawdown REAL, planned_risk REAL);
         CREATE TABLE IF NOT EXISTS events (
-            id INTEGER PRIMARY KEY, at REAL, kind TEXT, message TEXT);",
+            id INTEGER PRIMARY KEY, at REAL, kind TEXT, message TEXT);
+        CREATE TABLE IF NOT EXISTS picks (
+            id INTEGER PRIMARY KEY, at REAL, symbol TEXT, kind TEXT, rank INTEGER,
+            conviction REAL, price REAL, spy_price REAL, UNIQUE(at, symbol, kind));
+        CREATE TABLE IF NOT EXISTS forward (
+            pick_id INTEGER, horizon INTEGER, ret REAL, spy_ret REAL,
+            PRIMARY KEY (pick_id, horizon));",
     )?;
     db.execute(
         "INSERT OR IGNORE INTO state VALUES (1, ?)",

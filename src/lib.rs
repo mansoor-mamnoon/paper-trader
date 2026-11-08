@@ -16,4 +16,5 @@ pub mod intel;
 pub mod lab;
 pub mod ledger;
 pub mod model;
+pub mod scorecard;
 pub mod strategy;
