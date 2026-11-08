@@ -19,8 +19,8 @@ text{font-family:'Helvetica Neue',Arial,sans-serif;fill:#0f1115}
 </g>
 <text class="n" x="38" y="82">01</text><text class="t" x="38" y="108">Scan</text><text class="s" x="38" y="130">13k US tickers,</text><text class="s" x="38" y="148">rotating batch</text>
 <text class="n" x="213" y="82">02</text><text class="t" x="213" y="108">Screen</text><text class="s" x="213" y="130">trend, momentum,</text><text class="s" x="213" y="148">liquidity</text>
-<text class="n" x="388" y="82">03</text><text class="t" x="388" y="108">Read</text><text class="s" x="388" y="130">headlines and</text><text class="s" x="388" y="148">earnings dates</text>
-<text class="n" x="563" y="82">04</text><text class="t" x="563" y="108">Model picks</text><text class="s" x="563" y="130">open weights,</text><text class="s" x="563" y="148">free, on CPU</text>
+<text class="n" x="388" y="82">03</text><text class="t" x="388" y="108">Gather</text><text class="s" x="388" y="130">news, earnings,</text><text class="s" x="388" y="148">SEC filings</text>
+<text class="n" x="563" y="82">04</text><text class="t" x="563" y="108">The desk</text><text class="s" x="563" y="130">research, debate,</text><text class="s" x="563" y="148">judge. Free, CPU</text>
 <text class="n" x="738" y="82">05</text><text class="t" x="738" y="108">Queue, fill</text><text class="s" x="738" y="130">next open, fees,</text><text class="s" x="738" y="148">slippage</text>
 <text class="n" x="913" y="82">06</text><text class="t" x="913" y="108">Publish</text><text class="s" x="913" y="130">ledger, CSV,</text><text class="s" x="913" y="148">dashboard</text>
 <g fill="none" stroke="#0f1115" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">

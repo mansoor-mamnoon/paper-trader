@@ -21,13 +21,13 @@ text{font-family:'Helvetica Neue',Arial,sans-serif;fill:#0f1115}
 <text class="t" x="58" y="432">Kraken public API</text><text class="s" x="58" y="454">BTC ETH SOL ADA,</text><text class="s" x="58" y="472">hourly candles</text>
 
 <rect class="sh" x="336" y="96" width="282" height="196" rx="12"/><rect class="y" x="330" y="90" width="282" height="196" rx="12"/>
-<text class="t" x="352" y="122">Stock account</text><text class="s" x="352" y="146">1. screen: trend + momentum</text>
-<text class="s" x="352" y="166">2. open-weights model ranks</text><text class="s" x="352" y="186">   by headlines and earnings</text>
-<text class="s" x="352" y="206">3. 3 positions, 20% cap each</text><text class="s" x="352" y="226">4. -4% stop, +8% target</text><text class="s" x="352" y="246">5. 10% drawdown halts buys</text>
+<text class="t" x="352" y="122">Stock account + desk</text><text class="s" x="352" y="146">1. screen: trend + momentum</text>
+<text class="s" x="352" y="166">2. triage, research agents</text><text class="s" x="352" y="186">   with SEC filing tools</text>
+<text class="s" x="352" y="206">3. bull vs bear, then judge</text><text class="s" x="352" y="226">4. doctor, memory, scorecard</text><text class="s" x="352" y="246">5. 3 positions, limits in code</text>
 <text class="s" x="352" y="270">daily, after the close</text>
 
 <rect class="sh" x="336" y="326" width="282" height="76" rx="12"/><rect class="b" x="330" y="320" width="282" height="76" rx="12" stroke-dasharray="7 5"/>
-<text class="t" x="352" y="350">Shadow accounts</text><text class="s" x="352" y="372">challengers and a no-AI control</text><text class="s" x="352" y="388">trade the same data</text>
+<text class="t" x="352" y="350">Depth ladder + challengers</text><text class="s" x="352" y="372">no-AI, single-shot and committee</text><text class="s" x="352" y="388">shadows trade the same data</text>
 
 <rect class="sh" x="336" y="426" width="282" height="86" rx="12"/><rect class="b" x="330" y="420" width="282" height="86" rx="12"/>
 <text class="t" x="352" y="450">Crypto account</text><text class="s" x="352" y="472">own database, 20h/50h trend,</text><text class="s" x="352" y="490">closed candles only</text>
