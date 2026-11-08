@@ -3,10 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="dark light">
+<meta name="color-scheme" content="light">
 <title>Paper Trader · The $1,000 Experiment</title>
-<meta name="description" content="A $1,000 simulated US-stock account that trades by fixed rules. Every decision is public.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234f8cff'/%3E%3Ctext x='16' y='24' font-size='22' font-weight='800' text-anchor='middle' fill='%230c1421' font-family='sans-serif'%3E$%3C/text%3E%3C/svg%3E">
+<meta name="description" content="A $1,000 paper-trading account run by a free open-weights AI. Every decision is public.">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800;900&family=JetBrains+Mono:wght@500;700&family=Kalam:wght@700&display=swap">
 <link rel="stylesheet" href="style.css">
 <script src="app.js" defer></script>
 </head>
@@ -14,7 +16,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top">
   <div class="wrap bar">
-    <a class="brand" href="#overview"><span class="logo" aria-hidden="true">$</span><span>Paper Trader<small>The $1,000 experiment</small></span></a>
+    <a class="brand" href="#overview"><img src="favicon.svg" alt=""><span><b>Paper Trader</b><small>The $1,000 experiment</small></span></a>
     <nav aria-label="Sections" class="tabs" role="tablist">
       <button role="tab" data-tab="overview" aria-selected="true">Overview</button>
       <button role="tab" data-tab="holdings" aria-selected="false">Holdings</button>
@@ -35,13 +37,14 @@
 
 <!-- OVERVIEW -->
 <section id="overview" class="view" role="tabpanel">
-  <div class="hero card">
-    <div class="hero-text">
-      <p class="eyebrow"><span id="status-dot" class="dot"></span><span id="status">Connecting…</span></p>
-      <h1 id="headline">Loading the account…</h1>
-      <p id="subline" class="muted"></p>
-    </div>
-    <div class="versus" aria-label="Account compared with SPY">
+  <div class="hero">
+    <div class="hero-top"><span class="pill" id="day">Day 0 of 60</span><span id="ends" class="mono-note"></span></div>
+    <div class="hero-tags"><span class="tag"><i id="status-dot" class="dot"></i><span id="status">Connecting…</span></span><span class="mono-note">benchmark: SPY, price only</span></div>
+    <h1 id="headline">Loading the account…</h1>
+    <p id="subline" class="sub"></p>
+    <div class="outline-pills"><span>No real money</span><span>Open-weights AI</span><span>Every trade public</span></div>
+    <p id="script-note" class="script"></p>
+    <div class="versus card" aria-label="Account compared with SPY">
       <div><span class="label">Paper account</span><strong id="v-account">—</strong><small id="v-account-pct"></small></div>
       <div class="vs">vs</div>
       <div><span class="label">Buying SPY</span><strong id="v-spy">—</strong><small id="v-spy-pct"></small></div>
@@ -49,7 +52,7 @@
   </div>
 
   <div class="progress card slim">
-    <div class="row"><span><strong id="day">Day 0 of 60</strong></span><span id="ends" class="muted"></span></div>
+    <div class="row"><span>Experiment progress</span><span class="muted">60 days, then it stops</span></div>
     <div class="bar-track" role="progressbar" aria-label="Experiment progress" aria-valuemin="0" aria-valuemax="60" id="progress"><div id="progress-fill"></div></div>
   </div>
 
@@ -62,7 +65,7 @@
 
   <div class="card chart-card">
     <div class="head"><h2>Account vs. SPY</h2>
-      <div class="legend"><span><i class="sw acct"></i>Paper account</span><span><i class="sw spy"></i>SPY (S&amp;P 500 ETF)</span></div></div>
+      <div class="legend"><span><i class="sw"></i>Paper account</span><span><i class="sw spy"></i>SPY (S&amp;P 500 ETF)</span></div></div>
     <div id="chart-wrap" class="chart-wrap"><svg id="chart" viewBox="0 0 900 280" role="img" aria-labelledby="chart-title"><title id="chart-title">Account value and SPY, in dollars</title></svg><div id="chart-tip" class="chart-tip" hidden></div></div>
     <p class="foot muted">Both lines start at $1,000. SPY is price only (no dividends) and has no trading costs.</p>
   </div>
