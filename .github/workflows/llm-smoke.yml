@@ -15,7 +15,10 @@ jobs:
       - name: Install llama.cpp
         run: echo "PAPER_TRADER_LLAMA_SERVER=$(scripts/llm.sh install)" >> "$GITHUB_ENV"
       - name: Check that SEC EDGAR is reachable from the runner
+        # Needs the SEC_CONTACT repository variable; without it this step reports that.
         continue-on-error: true
+        env:
+          PAPER_TRADER_SEC_CONTACT: ${{ vars.SEC_CONTACT }}
         run: cargo run --release --example edgar_live
       - name: Trade a scratch account with the whole desk
         env:

@@ -61,6 +61,9 @@ jobs:
           PAPER_TRADER_MODELS_DIR: ${{ runner.temp }}/models
           PAPER_TRADER_PRUNE_MODELS: "1"
           PAPER_TRADER_DESK_MINUTES: "240"
+          # SEC EDGAR requires a real contact in the user agent. Set a repository variable
+          # named SEC_CONTACT to an email address to turn SEC filings on.
+          PAPER_TRADER_SEC_CONTACT: ${{ vars.SEC_CONTACT }}
           PAPER_TRADER_SKIP_WITHIN_HOURS: ${{ inputs.force && '0' || '16' }}
         run: ./target/release/paper-trader stocks --db account/account.sqlite --output account/site
       - name: Apply static dashboard

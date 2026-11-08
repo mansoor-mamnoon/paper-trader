@@ -162,7 +162,7 @@ The two weak points are the last two, so the repository handles both. The accoun
 
 I also looked at other free routes: an always-free cloud VM, free Hugging Face Spaces, Kaggle scheduled notebooks, and free hosted inference. Each needs an account, a card or a token set up by hand, sleeps when idle, or is hosted rather than local. None beats a runner that already sits next to the repository, so everything stays on Actions. Sources: GitHub's pages on [runner hardware](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) and on [disabling and enabling workflows](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/disable-and-enable-workflows).
 
-If the model server fails to start, the account still trades by momentum ranking and the dashboard says so. The `Model smoke test` workflow runs the whole desk on a scratch account to check timing, disk, determinism and SEC reachability on a real runner without touching the live ledger.
+On a real runner the full desk, with all nine models, nine swaps and four strategies, took 28 minutes with nothing skipped, against 7 minutes on an Apple M2 Pro. The runner had 88 GB of disk free, so pruning each model file after use is a safety margin and not a need. If the model server fails to start, the account still trades by momentum ranking and the dashboard says so. The `Model smoke test` workflow runs the whole desk on a scratch account to check timing, disk and determinism on a real runner without touching the live ledger.
 
 ## Dashboard
 
@@ -254,7 +254,7 @@ The crate is a library plus a thin binary on edition 2024 with 80 unit tests, an
 - Sixty days is too short to separate skill from luck, so a good or bad result says little about the rules. The scorecard exists to get more samples, not to remove this limit.
 - Models of 2 to 5 billion parameters are weak readers of financial news. The depth ladder measures whether they add anything.
 - Determinism holds on one machine. Across runners with different CPUs, floating-point differences can change a token, which the CPU field and the canary hash are there to expose.
-- SEC EDGAR answers only some networks. When it is unreachable the desk works from headlines and says so in the transcript.
+- SEC filings are off until you set `PAPER_TRADER_SEC_CONTACT` (a repository variable named `SEC_CONTACT` in Actions) to a real email address. The SEC's servers refuse requests that do not identify their owner, and the project does not invent a contact for you. Without it the desk works from headlines and says so in the transcript.
 - Prices come from a free Yahoo endpoint with no guarantees. Missing quotes are logged and the symbol is skipped.
 - Stops and targets are checked on daily closes, so a gap can lose more than the stop level.
 - Execution is simplified. Liquidity, queue priority, outages and market impact are not modeled.

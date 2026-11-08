@@ -1,6 +1,6 @@
 use paper_trader::edgar::{Edgar, describe};
 fn main() {
-    let edgar = Edgar::load().expect("ticker map");
+    let edgar = Edgar::load().unwrap_or_else(|e| panic!("{e}"));
     let today = chrono::Utc::now().date_naive();
     for sym in ["AAPL", "ACN", "BRK.B"] {
         let f = edgar.recent_filings(sym, today - chrono::Duration::days(45), 6);

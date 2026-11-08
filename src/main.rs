@@ -177,10 +177,13 @@ fn main() -> Result<()> {
             "No model configured (PAPER_TRADER_LLAMA_SERVER, PAPER_TRADER_LLM_URL or ANTHROPIC_API_KEY): trading by the quantitative ranking only"
         );
     }
-    let edgar = Edgar::load().ok();
-    if edgar.is_none() {
-        eprintln!("SEC EDGAR is unreachable: the desk will work from headlines only");
-    }
+    let edgar = match Edgar::load() {
+        Ok(edgar) => Some(edgar),
+        Err(error) => {
+            eprintln!("SEC filings are off ({error}): the desk will work from headlines only");
+            None
+        }
+    };
     let started = ledger::now();
     let meta = run_meta(options.desk_minutes);
     let run_id =

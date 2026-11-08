@@ -11,8 +11,15 @@ use std::collections::{BTreeMap, VecDeque};
 use std::sync::Mutex;
 use std::time::Duration;
 
-pub const USER_AGENT: &str =
-    "paper-trader research (https://github.com/mansoor-mamnoon/paper-trader)";
+/// The SEC's fair-access policy asks automated clients to identify themselves with a real
+/// contact, and its servers refuse requests that do not carry one. The contact is therefore
+/// a setting, `PAPER_TRADER_SEC_CONTACT`, and EDGAR stays off until someone provides it.
+pub const CONTACT_VAR: &str = "PAPER_TRADER_SEC_CONTACT";
+
+/// The user agent for a contact, in the form the SEC asks for.
+pub fn user_agent(contact: &str) -> String {
+    format!("paper-trader research {}", contact.trim())
+}
 
 const TICKER_URL: &str = "https://www.sec.gov/files/company_tickers.json";
 const FORMS: [&str; 11] = [
@@ -24,6 +31,7 @@ const FORMS: [&str; 11] = [
 #[derive(Debug)]
 pub struct Edgar {
     cik_by_ticker: BTreeMap<String, u64>,
+    agent: String,
 }
 
 /// Parse the SEC company ticker file into upper-case ticker to CIK.
@@ -72,12 +80,27 @@ pub fn parse_submissions(json: &str, limit: usize) -> Vec<Filing> {
 
 impl Edgar {
     pub fn load() -> Result<Self> {
-        let body = http::get(TICKER_URL, USER_AGENT, Duration::from_secs(30))?;
+        let contact = std::env::var(CONTACT_VAR)
+            .ok()
+            .filter(|c| c.contains('@'))
+            .ok_or_else(|| {
+                anyhow!("set {CONTACT_VAR} to an email address to turn SEC filings on")
+            })?;
+        Self::with_contact(&contact)
+    }
+
+    /// Load the ticker map, identifying ourselves to the SEC with `contact`.
+    pub fn with_contact(contact: &str) -> Result<Self> {
+        let agent = user_agent(contact);
+        let body = http::get(TICKER_URL, &agent, Duration::from_secs(30))?;
         let cik_by_ticker = parse_ticker_map(&body);
         if cik_by_ticker.is_empty() {
             return Err(anyhow!("the SEC ticker file was empty or unreadable"));
         }
-        Ok(Edgar { cik_by_ticker })
+        Ok(Edgar {
+            cik_by_ticker,
+            agent,
+        })
     }
 
     fn cik(&self, symbol: &str) -> Option<u64> {
@@ -94,7 +117,7 @@ impl Edgar {
             return Vec::new();
         };
         let url = format!("https://data.sec.gov/submissions/CIK{cik:010}.json");
-        let Ok(body) = http::get(&url, USER_AGENT, Duration::from_secs(20)) else {
+        let Ok(body) = http::get(&url, &self.agent, Duration::from_secs(20)) else {
             return Vec::new();
         };
         parse_submissions(&body, usize::MAX)
@@ -114,7 +137,7 @@ impl Edgar {
             filing.accession.replace('-', ""),
             filing.document
         );
-        let html = http::get(&url, USER_AGENT, Duration::from_secs(30))?;
+        let html = http::get(&url, &self.agent, Duration::from_secs(30))?;
         Ok(truncate(&strip_html(&html), max_chars))
     }
 }
