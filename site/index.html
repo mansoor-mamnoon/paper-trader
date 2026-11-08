@@ -20,6 +20,7 @@
       <button role="tab" data-tab="holdings" aria-selected="false">Holdings</button>
       <button role="tab" data-tab="trades" aria-selected="false">Trades</button>
       <button role="tab" data-tab="journal" aria-selected="false">Journal</button>
+      <button role="tab" data-tab="lab" aria-selected="false">Strategy lab</button>
       <button role="tab" data-tab="about" aria-selected="false">How it works</button>
     </nav>
     <a class="star" href="https://github.com/mansoor-mamnoon/paper-trader" rel="noopener">★ Star on GitHub</a>
@@ -107,15 +108,43 @@
   <button id="more" class="btn" hidden>Show more</button>
 </section>
 
+<!-- STRATEGY LAB -->
+<section id="lab" class="view" role="tabpanel" hidden>
+  <div class="page-head"><h1>Strategy lab</h1><p class="muted">The strategy is not fixed. An AI analyst reads the news and earnings calendar every day, and the system tests its own changes before adopting them.</p></div>
+
+  <div class="two">
+    <section class="card"><div class="head"><h2>Today's analyst</h2><span id="analyst-badge" class="badge">—</span></div>
+      <p id="analyst-view" class="lead"></p><p id="analyst-note" class="muted small"></p></section>
+    <section class="card"><div class="head"><h2>Live strategy</h2><span id="champion-id" class="badge info">—</span></div>
+      <p id="champion-why" class="muted"></p><dl id="champion-params" class="facts"></dl>
+      <details class="playbook"><summary>Read the analyst's playbook</summary><p id="champion-playbook" class="small"></p></details></section>
+  </div>
+
+  <section class="card"><div class="head"><h2>Challengers</h2><span class="muted small" id="lab-rule"></span></div>
+    <div id="shadows" class="shadows"></div></section>
+
+  <div class="two">
+    <section class="card"><div class="head"><h2>Change log</h2></div><ul id="lab-log" class="timeline"></ul></section>
+    <section class="card"><div class="head"><h2>How it improves itself</h2></div>
+      <ol class="mini">
+        <li><strong>Mine.</strong> Once a week it reviews how the live strategy traded: wins, losses, what the analyst said, how buys before earnings behaved.</li>
+        <li><strong>Propose.</strong> The AI suggests one small change, such as a wider stop, an earnings blackout, or a rewritten playbook. Every value must stay inside fixed bounds.</li>
+        <li><strong>Test.</strong> The change trades a separate $1,000 shadow account on the same data for at least two weeks.</li>
+        <li><strong>Decide.</strong> It replaces the live strategy only if it beats it by a clear margin with similar risk. The old strategy keeps running and wins its seat back if the change turns out to be luck.</li>
+      </ol>
+      <p class="small muted">Position size, the three-position cap, costs and the 10% loss halt are written in code. No proposal can change them.</p></section>
+  </div>
+</section>
+
 <!-- ABOUT -->
 <section id="about" class="view" role="tabpanel" hidden>
   <div class="page-head"><h1>How it works</h1><p class="muted">A fake $1,000, a fixed rulebook, and nothing hidden.</p></div>
   <ol class="steps">
-    <li><h3>Scan the market</h3><p>Once a day after the US close, the program loads a rotating batch of US-listed stocks and their recent daily prices. It always includes anything it owns, plus SPY.</p></li>
-    <li><h3>Apply the screen</h3><p>A stock qualifies if it costs at least $5, trades at least $1M a day, closes above its 20-day average (which sits above the 50-day average), and gained more than 2% in 20 days.</p></li>
-    <li><h3>Queue the order</h3><p>The best qualifiers (by 20-day gain) fill up to three slots. An order never fills at the price that triggered it. It waits for a later session.</p></li>
+    <li><h3>Scan the market</h3><p>Once a day after the US close, the program loads a rotating batch of US-listed stocks and their recent daily prices, plus the earnings calendar and recent headlines for the best candidates. It always includes anything it owns, plus SPY.</p></li>
+    <li><h3>Apply the screen</h3><p>By default a stock qualifies if it costs at least $5, trades at least $1M a day, closes above its 20-day average (which sits above the 50-day average), and gained more than 2% in 20 days. The Strategy lab tab shows the values in use now, which can change over time.</p></li>
+    <li><h3>Let the analyst choose</h3><p>An AI analyst reads the headlines and earnings dates for the stocks that passed, and ranks the ones it believes in. It can only choose from that list. Without it, the order is by 20-day gain.</p></li><li><h3>Queue the order</h3><p>Chosen stocks fill up to three slots. An order never fills at the price that triggered it. It waits for a later session.</p></li>
     <li><h3>Fill with costs</h3><p>The order fills at the next session's open, with a 0.10% fee and 0.20% slippage against the account. Whole shares only, and no more than 20% of the account in one stock.</p></li>
-    <li><h3>Exit by rule</h3><p>A close 4% below the entry price, or 8% above it, queues a sell. A 10% drop from the account's peak stops all buying. The experiment ends after 60 days.</p></li>
+    <li><h3>Exit by rule</h3><p>A close below the stop or above the target (4% and 8% by default) queues a sell. A 10% drop from the account's peak stops all buying. The experiment ends after 60 days.</p></li>
   </ol>
   <div class="two">
     <section class="card"><div class="head"><h2>Guardrails</h2></div>
