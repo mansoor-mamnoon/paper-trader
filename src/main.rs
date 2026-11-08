@@ -216,11 +216,13 @@ fn main() -> Result<()> {
             return Err(error);
         }
     };
+    // "Nothing to decide" is normal when every slot is full, so it is not a degradation.
     let degraded: Vec<String> = summary["desk"]["degraded"]
         .as_array()
         .map(|a| {
             a.iter()
                 .filter_map(|v| v.as_str().map(str::to_string))
+                .filter(|d| !d.starts_with("nothing to decide"))
                 .collect()
         })
         .unwrap_or_default();

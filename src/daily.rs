@@ -532,7 +532,11 @@ pub fn run(
         }
     }
     champion_transcript.degraded.extend(notes);
-    for d in &champion_transcript.degraded {
+    for d in champion_transcript
+        .degraded
+        .iter()
+        .filter(|d| !d.starts_with("nothing to decide"))
+    {
         telemetry.event("degraded", "desk", d);
     }
 
