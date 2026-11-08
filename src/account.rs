@@ -3,6 +3,7 @@
 use crate::analyst::{Brief, Candidate, Review};
 use crate::ledger::{self, decision, insert_fill};
 use crate::model::{Observation, Order, Position, Quote, State};
+use crate::scorecard;
 use crate::strategy::{MAX_POSITIONS, POSITION_CAP, Strategy};
 use anyhow::{Result, anyhow, bail};
 use rusqlite::Connection;
@@ -125,7 +126,11 @@ fn fill(
     let pnl;
     if side == "BUY" {
         let capital = equity(state);
-        let shares = (state.cash.min(capital * POSITION_CAP) / (price * (1.0 + FEE))).floor();
+        let shares = (state
+            .cash
+            .min(capital * POSITION_CAP * order.size_fraction.clamp(0.25, 1.0))
+            / (price * (1.0 + FEE)))
+            .floor();
         if state.halted || state.positions.len() >= MAX_POSITIONS || shares < 1.0 {
             decision(
                 db,
@@ -349,9 +354,71 @@ pub fn cycle_with(
                     side: "SELL".into(),
                     at,
                     reason: reason.into(),
+                    size_fraction: 1.0,
                 },
             );
             decision(&db, at, &symbol, "SELL_SIGNAL", reason, json!({}))?;
+        }
+    }
+    if let Some(review) = review {
+        for call in &review.doctor {
+            let Some(position) = state.positions.get(&call.symbol).cloned() else {
+                continue;
+            };
+            let Some(quote) = usable.get(call.symbol.as_str()) else {
+                continue;
+            };
+            let close = quote.bars.last().unwrap().close;
+            let evidence = json!({"assessment": call.assessment, "stop_pct": call.stop_pct});
+            match call.action.as_str() {
+                "exit" if !state.pending.contains_key(&call.symbol) => {
+                    let reason = format!("Position doctor: {}", call.assessment);
+                    state.pending.insert(
+                        call.symbol.clone(),
+                        Order {
+                            side: "SELL".into(),
+                            at,
+                            reason: reason.clone(),
+                            size_fraction: 1.0,
+                        },
+                    );
+                    decision(&db, at, &call.symbol, "DOCTOR_EXIT", &reason, evidence)?;
+                }
+                "tighten" => {
+                    // The doctor may only raise a stop toward the price, never widen it.
+                    let proposed = close * (1.0 - call.stop_pct.clamp(0.01, 0.10));
+                    if proposed > position.stop && proposed < close * 0.995 {
+                        if let Some(held) = state.positions.get_mut(&call.symbol) {
+                            held.stop = proposed;
+                        }
+                        decision(
+                            &db,
+                            at,
+                            &call.symbol,
+                            "DOCTOR_TIGHTEN",
+                            &call.assessment,
+                            evidence,
+                        )?;
+                    } else {
+                        decision(
+                            &db,
+                            at,
+                            &call.symbol,
+                            "DOCTOR_HOLD",
+                            &call.assessment,
+                            evidence,
+                        )?;
+                    }
+                }
+                _ => decision(
+                    &db,
+                    at,
+                    &call.symbol,
+                    "DOCTOR_HOLD",
+                    &call.assessment,
+                    evidence,
+                )?,
+            }
         }
     }
     let screened = screen(strategy, observation, at);
@@ -372,9 +439,14 @@ pub fn cycle_with(
         .collect();
     let queued_buys = state.pending.values().filter(|o| o.side == "BUY").count();
     let mut slots = MAX_POSITIONS.saturating_sub(state.positions.len() + queued_buys);
+    // A risk-off call can only reduce exposure: at most one new position.
+    if review.and_then(|r| r.regime.as_deref()) == Some("risk_off") {
+        slots = slots.min(1);
+    }
+    let mut ordered: Vec<scorecard::PickRow> = Vec::new();
     if !state.halted && missing.is_empty() {
         // (symbol, conviction, thesis) in the order buys are attempted.
-        let ranked: Vec<(String, f64, String)> = if let Some(review) = review {
+        let ranked: Vec<(String, f64, String, f64)> = if let Some(review) = review {
             for avoided in &review.avoid {
                 decision(
                     &db,
@@ -392,7 +464,14 @@ pub fn cycle_with(
                     eligible.contains_key(p.symbol.as_str())
                         && !review.avoid.iter().any(|a| a.symbol == p.symbol)
                 })
-                .map(|p| (p.symbol.clone(), p.conviction, p.thesis.clone()))
+                .map(|p| {
+                    (
+                        p.symbol.clone(),
+                        p.conviction,
+                        p.thesis.clone(),
+                        p.size_fraction,
+                    )
+                })
                 .collect()
         } else {
             let mut by_momentum: Vec<(f64, &str)> = eligible
@@ -402,10 +481,10 @@ pub fn cycle_with(
             by_momentum.sort_by(|a, b| b.partial_cmp(a).unwrap());
             by_momentum
                 .into_iter()
-                .map(|(_, s)| (s.to_string(), 0.0, String::new()))
+                .map(|(_, s)| (s.to_string(), 0.0, String::new(), 1.0))
                 .collect()
         };
-        for (symbol, conviction, thesis) in ranked {
+        for (rank, (symbol, conviction, thesis, size)) in ranked.into_iter().enumerate() {
             if slots == 0 {
                 break;
             }
@@ -415,6 +494,8 @@ pub fn cycle_with(
             {
                 continue;
             }
+            let risk_off = review.and_then(|r| r.regime.as_deref()) == Some("risk_off");
+            let size_fraction = if risk_off { size.min(0.5) } else { size };
             let reason = if thesis.is_empty() {
                 "Positive liquid daily trend; whole shares capped at 20% of equity".to_string()
             } else {
@@ -434,12 +515,59 @@ pub fn cycle_with(
                     side: "BUY".into(),
                     at,
                     reason: reason.clone(),
+                    size_fraction,
                 },
             );
             decision(&db, at, &symbol, "BUY_SIGNAL", &reason, evidence)?;
+            ordered.push(scorecard::PickRow {
+                symbol: symbol.clone(),
+                kind: "pick",
+                rank: rank as i64 + 1,
+                conviction,
+                price: candidate.close,
+            });
             slots -= 1;
         }
     }
+    if let Some(review) = review {
+        let spy_price = usable
+            .get("SPY")
+            .and_then(|q| q.bars.last())
+            .map(|b| b.close);
+        let mut rows = ordered.clone();
+        for avoided in &review.avoid {
+            if let Some(r) = eligible.get(avoided.symbol.as_str()) {
+                rows.push(scorecard::PickRow {
+                    symbol: avoided.symbol.clone(),
+                    kind: "veto",
+                    rank: 0,
+                    conviction: 0.0,
+                    price: r.candidate.close,
+                });
+            }
+        }
+        let taken: BTreeSet<String> = rows.iter().map(|r| r.symbol.clone()).collect();
+        let mut rest: Vec<&Screened> = eligible
+            .values()
+            .copied()
+            .filter(|r| !taken.contains(&r.candidate.symbol))
+            .collect();
+        rest.sort_by(|a, b| {
+            b.candidate
+                .momentum_20d
+                .partial_cmp(&a.candidate.momentum_20d)
+                .unwrap()
+        });
+        rows.extend(rest.into_iter().take(40).map(|r| scorecard::PickRow {
+            symbol: r.candidate.symbol.clone(),
+            kind: "candidate",
+            rank: 0,
+            conviction: 0.0,
+            price: r.candidate.close,
+        }));
+        scorecard::record(&db, at, spy_price, &rows)?;
+    }
+    scorecard::update(&db, observation)?;
     let mut benchmark = 1000.0;
     if let Some(spy) = usable.get("SPY") {
         let price = spy.bars.last().unwrap().close;
@@ -853,5 +981,192 @@ mod tests {
         };
         let (_, drawdown) = update_risk(&mut state);
         assert!(drawdown >= 0.10 && state.halted);
+    }
+
+    fn held_position(path: &str) -> (Vec<Bar>, f64) {
+        let series = bars(60, 50.0, 1.0, None);
+        cycle(
+            path,
+            &observation(
+                series.last().unwrap().at + DAY * 0.5,
+                vec![("UP", series.clone())],
+            ),
+            "stocks-daily",
+        )
+        .unwrap();
+        let mut next = series;
+        next.push(Bar {
+            at: T0 + DAY * 60.0,
+            open: 100.0,
+            close: 105.0,
+            volume: 1_000_000.0,
+        });
+        let at = T0 + DAY * 61.5;
+        cycle(
+            path,
+            &observation(at, vec![("UP", next.clone())]),
+            "stocks-daily",
+        )
+        .unwrap();
+        assert!(snapshot(path).positions.contains_key("UP"));
+        (next, at)
+    }
+
+    fn doctor(action: &str, stop_pct: f64) -> Review {
+        Review {
+            doctor: vec![crate::analyst::DoctorCall {
+                symbol: "UP".into(),
+                action: action.into(),
+                assessment: "test".into(),
+                stop_pct,
+            }],
+            source: "llm".into(),
+            ..Review::default()
+        }
+    }
+
+    #[test]
+    fn doctor_tightens_a_stop_but_never_widens_it() {
+        let path = temp_db("doctor-tighten");
+        let (mut series, at) = held_position(&path);
+        let original = snapshot(&path).positions["UP"].stop;
+        series.push(Bar {
+            at: T0 + DAY * 61.0,
+            open: 106.0,
+            close: 106.0,
+            volume: 1_000_000.0,
+        });
+        let next_at = at + DAY;
+        cycle_with(
+            &path,
+            &observation(next_at, vec![("UP", series.clone())]),
+            "stocks-daily",
+            &Strategy::default(),
+            Some(&doctor("tighten", 0.03)),
+        )
+        .unwrap();
+        let tightened = snapshot(&path).positions["UP"].stop;
+        assert!(tightened > original, "{tightened} vs {original}");
+        series.push(Bar {
+            at: T0 + DAY * 62.0,
+            open: 106.0,
+            close: 106.0,
+            volume: 1_000_000.0,
+        });
+        cycle_with(
+            &path,
+            &observation(next_at + DAY, vec![("UP", series)]),
+            "stocks-daily",
+            &Strategy::default(),
+            Some(&doctor("tighten", 0.10)),
+        )
+        .unwrap();
+        assert!((snapshot(&path).positions["UP"].stop - tightened).abs() < 1e-9);
+    }
+
+    #[test]
+    fn doctor_exit_queues_a_sell() {
+        let path = temp_db("doctor-exit");
+        let (mut series, at) = held_position(&path);
+        series.push(Bar {
+            at: T0 + DAY * 61.0,
+            open: 106.0,
+            close: 106.0,
+            volume: 1_000_000.0,
+        });
+        cycle_with(
+            &path,
+            &observation(at + DAY, vec![("UP", series)]),
+            "stocks-daily",
+            &Strategy::default(),
+            Some(&doctor("exit", 0.0)),
+        )
+        .unwrap();
+        let state = snapshot(&path);
+        assert_eq!(state.pending["UP"].side, "SELL");
+        assert!(state.pending["UP"].reason.starts_with("Position doctor"));
+    }
+
+    #[test]
+    fn risk_off_allows_one_new_position_at_half_size() {
+        let path = temp_db("risk-off");
+        let quotes: Vec<(&str, Vec<Bar>)> = vec![
+            ("AAA", bars(60, 50.0, 1.0, None)),
+            ("BBB", bars(60, 40.0, 1.0, None)),
+            ("CCC", bars(60, 30.0, 1.0, None)),
+        ];
+        let at = quotes[0].1.last().unwrap().at + DAY * 0.5;
+        let pick = |s: &str, c: f64| crate::analyst::Pick {
+            symbol: s.into(),
+            conviction: c,
+            ..crate::analyst::Pick::default()
+        };
+        let review = Review {
+            picks: vec![pick("AAA", 0.9), pick("BBB", 0.8), pick("CCC", 0.7)],
+            regime: Some("risk_off".into()),
+            source: "llm".into(),
+            ..Review::default()
+        };
+        cycle_with(
+            &path,
+            &observation(at, quotes),
+            "stocks-daily",
+            &Strategy::default(),
+            Some(&review),
+        )
+        .unwrap();
+        let state = snapshot(&path);
+        assert_eq!(state.pending.len(), 1);
+        assert!((state.pending["AAA"].size_fraction - 0.5).abs() < 1e-9);
+    }
+
+    #[test]
+    fn every_opinion_is_recorded_for_the_scorecard() {
+        let path = temp_db("scorecard");
+        let quotes: Vec<(&str, Vec<Bar>)> = vec![
+            ("AAA", bars(60, 50.0, 1.0, None)),
+            ("BBB", bars(60, 40.0, 1.0, None)),
+            ("CCC", bars(60, 30.0, 1.0, None)),
+        ];
+        let at = quotes[0].1.last().unwrap().at + DAY * 0.5;
+        let review = Review {
+            picks: vec![crate::analyst::Pick {
+                symbol: "AAA".into(),
+                conviction: 0.9,
+                ..crate::analyst::Pick::default()
+            }],
+            avoid: vec![crate::analyst::Avoid {
+                symbol: "BBB".into(),
+                reason: "weak".into(),
+            }],
+            source: "llm".into(),
+            ..Review::default()
+        };
+        cycle_with(
+            &path,
+            &observation(at, quotes),
+            "stocks-daily",
+            &Strategy::default(),
+            Some(&review),
+        )
+        .unwrap();
+        let db = ledger::connect(&path).unwrap();
+        let kinds: Vec<(String, String)> = {
+            let mut stmt = db
+                .prepare("SELECT symbol, kind FROM picks ORDER BY symbol")
+                .unwrap();
+            stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))
+                .unwrap()
+                .map(Result::unwrap)
+                .collect()
+        };
+        assert_eq!(
+            kinds,
+            vec![
+                ("AAA".into(), "pick".into()),
+                ("BBB".into(), "veto".into()),
+                ("CCC".into(), "candidate".into())
+            ]
+        );
     }
 }

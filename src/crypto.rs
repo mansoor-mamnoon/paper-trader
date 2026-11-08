@@ -341,6 +341,7 @@ fn queue(state: &mut State, symbol: &str, at: f64, side: &str) {
             side: side.to_string(),
             at,
             reason: String::new(),
+            size_fraction: 1.0,
         },
     );
 }

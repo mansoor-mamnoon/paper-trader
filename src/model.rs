@@ -123,6 +123,13 @@ pub struct Order {
     pub at: f64,
     #[serde(default)]
     pub reason: String,
+    /// Share of the position cap this buy may use, 0.25 to 1.
+    #[serde(default = "full_size")]
+    pub size_fraction: f64,
+}
+
+fn full_size() -> f64 {
+    1.0
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
