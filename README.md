@@ -4,15 +4,15 @@
 
 <img src="docs/banner.svg" alt="Paper Trader, the $1,000 experiment" width="100%">
 
-**A $1,000 paper-trading account run by an AI investment committee. It researches with tools, argues with itself, remembers its mistakes, grades every call, and has to prove each layer of AI beats the layer below. All on a free open-weights model.**
+**A $1,000 paper-trading account run by an investment committee of nine open-weights models from nine different companies. They research with tools, argue with each other, remember their mistakes and grade every call, on free GitHub runners with no API key.**
 
 [![Live dashboard](https://img.shields.io/badge/live-dashboard-ffe14d?style=for-the-badge&labelColor=0f1115)](https://mansoor-mamnoon.github.io/paper-trader/)
 [![Tests](https://img.shields.io/github/actions/workflow/status/mansoor-mamnoon/paper-trader/rust.yml?branch=main&style=for-the-badge&label=tests&labelColor=0f1115)](https://github.com/mansoor-mamnoon/paper-trader/actions/workflows/rust.yml)
 ![Rust](https://img.shields.io/badge/rust-2024-ffe14d?style=for-the-badge&logo=rust&logoColor=white&labelColor=0f1115)
-![Model](https://img.shields.io/badge/model-Qwen3%204B%20open%20weights-ffe14d?style=for-the-badge&labelColor=0f1115)
+![Models](https://img.shields.io/badge/models-9%20companies-ffe14d?style=for-the-badge&labelColor=0f1115)
 ![Cost](https://img.shields.io/badge/cost-%240-ffe14d?style=for-the-badge&labelColor=0f1115)
 
-[Live dashboard](https://mansoor-mamnoon.github.io/paper-trader/) · [The desk](#the-desk) · [Does the AI help?](#does-the-ai-help) · [Strategy lab](#strategy-lab) · [Free and autonomous](#free-and-autonomous) · [Run it](#run-it) · [Limits](#limits)
+[Live dashboard](https://mansoor-mamnoon.github.io/paper-trader/) · [The desk](#the-desk) · [Independent models](#independent-models) · [Deterministic runs](#deterministic-runs) · [Logs and metrics](#logs-and-metrics) · [Free and reliable](#free-and-reliable) · [Run it](#run-it) · [Limits](#limits)
 
 </div>
 
@@ -24,12 +24,12 @@
 
 ## What it is
 
-Paper Trader starts with $1,000 of simulated money and looks at US stocks once a day. A quantitative screen finds stocks in an uptrend. Then an investment desk of small open-weights models (Qwen3 4B, Apache-2.0) decides which of them to buy. Every signal, every skipped stock, every argument and every fill goes into a SQLite ledger, and a read-only dashboard on GitHub Pages shows all of it.
+Paper Trader starts with $1,000 of simulated money and looks at US stocks once a day. A quantitative screen finds stocks in an uptrend. Then a desk of small open-weights language models decides which of them to buy. Every signal, every skipped stock, every argument, every model call and every fill goes into SQLite, and a read-only dashboard on GitHub Pages shows all of it.
 
-The question is whether this beats buying SPY after fees and slippage over 60 days, and which parts of the AI deserve the credit if it does. It places no real orders and has no broker connection. Everything runs on GitHub's free runners with no API key, and the backend is Rust.
+The question is whether this beats buying SPY after fees and slippage over 60 days, and which parts of the AI deserve the credit if it does. It places no real orders and has no broker connection. It runs on GitHub's free runners with no API key, and the backend is Rust.
 
 <div align="center">
-<img src="docs/dashboard.gif" alt="A tour through the dashboard tabs: overview, the desk, strategy lab, journal and how it works" width="760">
+<img src="docs/dashboard.gif" alt="A tour through the dashboard tabs: overview, the desk, strategy lab, ops, journal and how it works" width="760">
 <br><sub>A real run from 8 November 2026. No trades have closed yet, so the portfolio tabs are still empty.</sub>
 </div>
 
@@ -37,10 +37,10 @@ The question is whether this beats buying SPY after fees and slippage over 60 da
 |---|---|
 | Starting capital | $1,000, long only, whole shares |
 | Universe | US exchange-listed symbols from the Nasdaq directory, ETFs included |
-| Schedule | Weekdays at 22:37 UTC, after the US close, or on a webhook |
+| Schedule | Weekdays at 22:37 UTC, after the US close, with two backups and a watchdog |
 | Costs | 0.10% fee per side and 0.20% slippage against each fill |
 | Benchmark | SPY, price only |
-| Model | Qwen3-4B-Instruct-2507, 4-bit, on llama.cpp, CPU only |
+| Models | Nine open-weights models, one per decision role, 4-bit, on llama.cpp |
 | Hosting | GitHub Actions and GitHub Pages |
 
 ## The desk
@@ -52,20 +52,50 @@ One prompt that asks a small model to rank a dozen headlines wastes most of what
 </div>
 
 1. **Screen.** About 13,000 tickers go in, and the stocks in a liquid uptrend come out.
-2. **Triage.** The model scores the survivors from 0 to 10 for catalyst quality, eight at a time, and the best few become finalists.
+2. **Triage.** A model scores the survivors from 0 to 10 for catalyst quality, eight at a time, and the best few become finalists.
 3. **Research agents.** Each finalist gets its own research loop. The agent picks its next tool: read the start of an SEC filing, pull older headlines, or inspect the last 15 sessions. It stops when it knows enough or after four steps, and it cannot repeat a call.
 4. **Bull and bear.** Two arguments per finalist, one told to make the case for buying and one told to find the flaw.
-5. **The judge.** The portfolio manager writes its reasoning first, then picks, sizes each position from 25% to 100% of the cap, and calls the market regime from breadth and trend. In a risk-off call the account allows one new position. Choosing nothing is a valid answer.
+5. **The judge.** The portfolio manager writes its reasoning first, then picks, sizes each position from 25% to 100% of the cap, and calls the market regime from breadth and trend. A risk-off call allows one new position. Choosing nothing is a valid answer.
 6. **Position doctor.** Every day it re-reads each holding against the news since entry and answers hold, exit, or tighten the stop. It can raise a stop and never lower one.
 7. **Memory.** When a trade closes, a post-mortem writes a one-sentence lesson. The latest lessons go into the judge's prompt.
 8. **Scorecard.** Every pick, veto and near-miss is scored against SPY after 1, 3, 5 and 10 trading days. That gives hundreds of samples where three trades give none, plus a calibration curve of conviction against outcome. The judge reads its own track record.
 
-Replies are constrained to JSON schemas with length limits, so a 4B model cannot return malformed or runaway answers. Text from news and filings is treated as untrusted data. Position size, the three-position cap, costs, the 10% loss halt and the direction of stop changes are written in code, and nothing the model says can change them. Every stage has a wall-clock budget and falls back to the stage before it when it fails or runs out of time.
+Replies are constrained to JSON schemas with length limits, so a small model cannot return malformed or runaway answers. Text from news and filings is treated as untrusted data. Position size, the three-position cap, costs, the 10% loss halt and the direction of stop changes are written in code, and nothing a model says can change them. Every stage has a wall-clock budget and falls back to the stage before it when it fails or runs out of time.
 
 <div align="center">
 <img src="docs/desk.png" alt="The Desk tab: market regime, the funnel from 219 scanned stocks to the picks, and a research trace with a bull and bear case" width="760">
 <br><sub>The Desk tab from a real run: a risk-off call, the funnel, and one finalist's research trace.</sub>
 </div>
+
+## Independent models
+
+One model making every decision would bring its habits and blind spots to every stage. So each decision role runs on a model from a different company, and a unit test fails if two roles ever share a company.
+
+| Role | Model | Company | License | Size |
+|---|---|---|---|---|
+| Triage | Granite 4.0 H Micro | IBM | Apache-2.0 | 1.9 GB |
+| Research agents | Gemma 4 E4B | Google | Apache-2.0 | 5.0 GB |
+| Bull case | Llama 3.2 3B Instruct | Meta | Llama 3.2 Community | 2.0 GB |
+| Bear case | Phi-4 mini Instruct | Microsoft | MIT | 2.5 GB |
+| Judge | Qwen3 4B Instruct 2507 | Alibaba | Apache-2.0 | 2.5 GB |
+| Position doctor | Ministral 3 3B Instruct | Mistral AI | Apache-2.0 | 2.1 GB |
+| Post-mortems | SmolLM3 3B | Hugging Face | Apache-2.0 | 1.9 GB |
+| Strategy proposals | Nemotron 3 Nano 4B | NVIDIA | NVIDIA Open Model | 2.8 GB |
+| Single-shot ablation | LFM2.5 2.6B | Liquid AI | LFM Open | 1.7 GB |
+
+The runner has 16 GB of RAM and 14 GB of disk, which fits one model at a time. A pool in Rust starts one `llama-server`, and when a role needs a different model it downloads that file, stops the old server and starts the next. The desk runs its work in blocks, one model per block, so a full day needs about a dozen swaps.
+
+## Deterministic runs
+
+The same prompt on the same weights should give the same answer, and a reader should be able to check that it did.
+
+- **Greedy decoding.** Temperature 0, `top_k` 1, a fixed seed and no prompt cache on every request.
+- **Pinned weights.** Each model file is fetched from an exact Hugging Face commit and its SHA-256 is checked as it downloads. A mismatch deletes the file and fails the load.
+- **Pinned runtime.** llama.cpp build `b12211`, with four CPU threads fixed per machine.
+- **A canary on every load.** Each model answers the same small prompt twice. If the two answers differ, the run records `UNSTABLE`. The answer hash is stored, so a change in the same model's hash from one day to the next shows up on the Ops tab.
+- **Every call is hashed.** The prompt and the output each get a 64-bit hash in the call log, so a call can be replayed and compared.
+
+GitHub's runners are not all the same machine. The CPU model is recorded with every run, so a hash that moves when the CPU changes is explained rather than mysterious.
 
 ## Does the AI help?
 
@@ -92,34 +122,56 @@ The screen is the starting point and the strategy lab can change its values with
 
 Up to 25 survivors reach triage. Three positions at most, each capped at 20% of equity. A close at or below the stop (-4% by default) or at or above the target (+8%) queues a sell for the next session. A buy never fills at the price that triggered it: it queues and fills at a later open with fees and slippage. A 10% drawdown permanently stops new entries, and the experiment ends after 60 days.
 
-## Strategy lab
+### Strategy lab
 
 The loop follows the recursive self-improvement pattern of the [KISS `rsi7d` agent](https://github.com/ksenxx/kiss_ai/tree/main/src/kiss/agents/seas/rsi7d): mine recent runs for evidence, propose a bounded edit, test it, and keep it only if the evidence supports it. Here the edit target is the strategy and the test is a live shadow account.
 
 1. Once a week the system reviews how the live strategy traded and how its picks scored.
-2. The model proposes one small change. It can adjust at most two things: numeric parameters inside fixed bounds, or the text of the judge's playbook. Anything out of bounds is rejected and logged.
+2. The proposer model suggests one small change: numeric parameters inside fixed bounds, or the text of the judge's playbook. Anything out of bounds is rejected and logged.
 3. The change trades a separate $1,000 shadow account on the same daily data.
 4. After 14 days a challenger replaces the live strategy only if it beats it by at least one percentage point with at least two trades and a drawdown no more than three points worse.
 5. The replaced strategy keeps trading as a shadow. If the promotion was luck, it wins the seat back under the same rule.
 
-The registry, the lessons and every shadow ledger are committed to the `account` branch, so each change and its evidence stay public.
+The registry, the lessons, the telemetry and every shadow ledger are committed to the `account` branch, so each change and its evidence stay public.
 
-## Free and autonomous
+## Logs and metrics
 
-There is no API key and no account to set up. Each scheduled run does this on a free GitHub runner:
+Every run writes to one SQLite file, `telemetry.sqlite`, and the dashboard's **Ops** tab reads it. It answers three questions at three levels.
 
-1. Restores the cached model. The first run downloads about 2.5 GB from Hugging Face and later runs reuse it.
-2. Starts `llama-server` from [llama.cpp](https://github.com/ggml-org/llama.cpp) with [Qwen3-4B-Instruct-2507](https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507) quantized to 4 bits.
-3. Runs the day: scan, gather news, earnings dates and SEC filings, run the desk for the live account and each shadow, post-mortems, weekly proposal, export.
-4. Commits the ledgers and redeploys the dashboard.
+| Level | What it shows |
+|---|---|
+| Run | Status (ok, degraded, failed), minutes used against the budget, trigger, CPU, cores and RAM, and a history of the last 30 runs. |
+| Stage | A waterfall of where the time went (scan, intel, filings, each desk block, each strategy's cycle, post-mortems, the lab), and a bottleneck table of mean, p95 and worst time per stage over 30 runs. |
+| Call | Per model and per role: calls, success rate, latency, tokens per second for prompt and generation, errors, and the determinism check. Data sources get the same treatment: requests, failure rate and latency for Nasdaq, Yahoo, SEC EDGAR, the earnings calendar and Hugging Face. |
 
-On an Apple M2 the full desk takes about four minutes. A CPU-only runner is several times slower, so the run has a three-hour model budget and the job a four-and-a-half-hour limit. Triggers are the weekday schedule, a manual run, or an external webhook (`repository_dispatch` with event type `run-account`). GitHub pauses scheduled workflows in quiet repositories, so every run also re-enables its own schedule. If the model server fails to start, the account still trades by momentum ranking and the dashboard says so. The `Model smoke test` workflow exercises the whole desk on a scratch account without touching the live ledger.
+Raw tables download as `runs.csv`, `stages.csv`, `llm_calls.csv`, `events.csv` and `fetches.csv`. Each Actions run also writes the same report to its job summary, so a run can be judged from the Actions page without opening the site. Prompts and outputs are stored as hashes plus the first 300 characters of any error, which keeps the file small enough to commit daily.
 
-SEC EDGAR answers only some networks. When it is unreachable the desk works from headlines and says so in the transcript.
+## Free and reliable
+
+The question was whether a free GitHub account can run this every day. For a public repository it can.
+
+| Question | Answer |
+|---|---|
+| Cost | Standard GitHub-hosted runners are free and unlimited in public repositories. Private repositories on the free plan get 2,000 minutes a month on smaller machines. |
+| Machine | `ubuntu-latest` in a public repository is 4 vCPU, 16 GB RAM and 14 GB of disk. A private repository gets 2 vCPU and 8 GB. |
+| Job length | Up to 6 hours. A full desk run is well inside that. |
+| Schedule precision | Cron runs can start late when GitHub is busy, and a run can be dropped without an error. |
+| Inactivity | GitHub disables scheduled workflows in a public repository after 60 days without activity. |
+
+The two weak points are the last two, so the repository handles both. The account job is scheduled three times a day, and it skips itself when the account already ran in the last 16 hours, so the backups cost nothing when the first run worked. A separate watchdog checks every weekday morning that a run happened after the previous US session and starts one if it did not. Every run and the watchdog re-enable the schedules, which resets the inactivity clock. A webhook (`repository_dispatch` with event type `run-account`) can also start a run from outside.
+
+I also looked at other free routes: an always-free cloud VM, free Hugging Face Spaces, Kaggle scheduled notebooks, and free hosted inference. Each needs an account, a card or a token set up by hand, sleeps when idle, or is hosted rather than local. None beats a runner that already sits next to the repository, so everything stays on Actions. Sources: GitHub's pages on [runner hardware](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) and on [disabling and enabling workflows](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/disable-and-enable-workflows).
+
+If the model server fails to start, the account still trades by momentum ranking and the dashboard says so. The `Model smoke test` workflow runs the whole desk on a scratch account to check timing, disk, determinism and SEC reachability on a real runner without touching the live ledger.
 
 ## Dashboard
 
-Seven tabs. Overview opens with a one-line verdict against SPY and a 60-day progress bar. The Desk shows today's committee transcript: regime, funnel, each finalist's research trace and debate, the judge's reasoning, the doctor's notes and the lessons in memory. Holdings shows each stock's price between its stop and its target. Trades lists every fill. Journal explains each decision in plain English with a ticker search. Strategy lab shows the live strategy, the challengers, the depth ladder and the calibration chart. How it works covers the rules and the limits.
+<div align="center">
+<img src="docs/ops.png" alt="The Ops tab: run status, a waterfall of stage durations, the bottleneck table and per-model latency" width="760">
+<br><sub>The Ops tab from a real run on a Mac: stage waterfall, models and data sources.</sub>
+</div>
+
+Eight tabs. Overview opens with a one-line verdict against SPY and a 60-day progress bar. The Desk shows today's committee transcript and which model decided each part: regime, funnel, each finalist's research trace and debate, the judge's reasoning, the doctor's notes and the lessons in memory. Holdings shows each stock's price between its stop and its target. Trades lists every fill. Journal explains each decision in plain English with a ticker search. Strategy lab shows the live strategy, the challengers, the depth ladder and the calibration chart. Ops covers performance and bottlenecks. How it works covers the rules and the limits.
 
 Full histories download as `decisions.csv`, `fills.csv`, `equity.csv` and `events.csv`, and `api/state` returns the raw snapshot.
 
@@ -140,35 +192,43 @@ paper-trader crypto status --db crypto.sqlite
 
 ## Run it
 
-You need a stable Rust toolchain, 1.88 or newer.
+You need a stable Rust toolchain, 1.88 or newer, and about 25 GB of disk if you keep all nine models.
 
 ```bash
 git clone https://github.com/mansoor-mamnoon/paper-trader.git
 cd paper-trader
 
-scripts/llm.sh        # downloads llama.cpp and the model once, then starts the server on port 8080
-PAPER_TRADER_LLM_URL=http://127.0.0.1:8080 \
-  cargo run --release -- stocks --db account.sqlite --output site
+# The Rust binary downloads, verifies and swaps the pinned models itself.
+export PAPER_TRADER_LLAMA_SERVER=$(scripts/llm.sh install)
+export PAPER_TRADER_MODELS_DIR=$HOME/.cache/paper-trader-llm/models
+cargo run --release -- stocks --db account.sqlite --output site
+
 cp web/* site/        # the dashboard; serve site/ with any static file server
-scripts/llm.sh stop
 ```
 
-Without `PAPER_TRADER_LLM_URL` the account trades by momentum ranking. Any server that speaks the OpenAI chat protocol works (Ollama, LM Studio, vLLM). Set `PAPER_TRADER_LLM_URL`, and optionally `PAPER_TRADER_LLM_MODEL` and `PAPER_TRADER_LLM_KEY`. A paid model is also supported through `ANTHROPIC_API_KEY`, and the local server wins when both are set.
+To check every model on a new machine, run `cargo run --release --example pool_check`. It loads each role's model, asks it a small question under a JSON schema, and prints load time, speed and the determinism check.
+
+Without `PAPER_TRADER_LLAMA_SERVER` the account trades by momentum ranking. A single OpenAI-compatible server (Ollama, LM Studio, vLLM) works through `PAPER_TRADER_LLM_URL`, and a paid model through `ANTHROPIC_API_KEY`. Both use one model for every role.
 
 | Setting | Meaning |
 |---|---|
 | `--batch-size N` | Symbols per run. 20000 covers the full directory with many requests. |
 | `--replay FILE` | Apply a saved observation to a separate account. |
-| `--strategies DIR` | Where the strategy registry and shadow ledgers live. Defaults to next to `--db`. |
+| `--strategies DIR` | Where the registry, shadow ledgers and telemetry live. Defaults to next to `--db`. |
 | `PAPER_TRADER_DESK_MINUTES` | Wall-clock budget for all model calls in a run. Default 120. |
+| `PAPER_TRADER_PRUNE_MODELS` | Delete each model file after the pool moves on, to bound disk use. |
+| `PAPER_TRADER_SKIP_WITHIN_HOURS` | Do nothing if the account already ran this recently. |
 
-To host your own copy, fork the repo and create an `account` branch containing an initialised `account.sqlite` and an `INITIALIZED` file. Enable GitHub Pages with the Actions source and the workflow takes over.
+To host your own copy, fork the repo and create an `account` branch containing an initialised `account.sqlite` and an `INITIALIZED` file. Enable GitHub Pages with the Actions source and the workflows take over.
 
 ```
 src/
-  main.rs       command line
-  daily.rs      one daily run: live account, shadows, memory, the improvement step
+  main.rs       command line, run metadata, skip guard
+  daily.rs      one daily run: blocks of model calls, shadows, memory, the lab
   desk.rs       triage, research agents, debate, judge, doctor, post-mortems
+  models.rs     the nine pinned models and which role each plays
+  pool.rs       downloads, verifies, swaps and canary-checks model servers
+  telemetry.rs  runs, stages, model calls, data fetches and events
   scorecard.rs  forward returns of every pick, veto and near-miss
   account.rs    screen, queued orders, sizing, fills, risk limits
   analyst.rs    model clients and the single-shot analyst
@@ -181,21 +241,24 @@ src/
   ledger.rs     SQLite schema, state and reports
   export.rs     JSON and CSV snapshot
 web/            the dashboard (plain HTML, CSS and JavaScript)
-scripts/        llm.sh installs and starts the local model
+scripts/        llm.sh installs llama.cpp
+examples/       pool_check and edgar_live diagnostics
 docs/           README images
-.github/        scheduled run, model smoke test and CI
+.github/        scheduled run, watchdog, model smoke test and CI
 ```
 
-The crate is a library plus a thin binary on edition 2024, with 62 unit tests, and it passes `cargo clippy -- -D warnings` with the pedantic group enabled. Backend code is Rust only.
+The crate is a library plus a thin binary on edition 2024 with 80 unit tests, and it passes `cargo clippy -- -D warnings` with the pedantic group enabled. Backend code is Rust only.
 
 ## Limits
 
 - Sixty days is too short to separate skill from luck, so a good or bad result says little about the rules. The scorecard exists to get more samples, not to remove this limit.
-- A 4B model is a weak reader of financial news. The depth ladder measures whether it adds anything.
+- Models of 2 to 5 billion parameters are weak readers of financial news. The depth ladder measures whether they add anything.
+- Determinism holds on one machine. Across runners with different CPUs, floating-point differences can change a token, which the CPU field and the canary hash are there to expose.
+- SEC EDGAR answers only some networks. When it is unreachable the desk works from headlines and says so in the transcript.
 - Prices come from a free Yahoo endpoint with no guarantees. Missing quotes are logged and the symbol is skipped.
 - Stops and targets are checked on daily closes, so a gap can lose more than the stop level.
 - Execution is simplified. Liquidity, queue priority, outages and market impact are not modeled.
-- GitHub schedules can run late or fail. The last good snapshot stays online until the next run succeeds.
+- GitHub schedules can run late or fail. The backups and the watchdog make a missed day unlikely, and the last good snapshot stays online until the next run succeeds.
 
 This is a simulation and not financial advice.
 
