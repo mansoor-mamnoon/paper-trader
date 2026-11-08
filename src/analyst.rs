@@ -211,9 +211,31 @@ pub fn parse_review(text: &str, allowed: &BTreeSet<String>, slots: usize) -> Res
 
 /// A chat model behind a simple interface. `schema`, when given, asks the server to
 /// constrain the output to that JSON schema.
+/// A model reply with the speed numbers the server reported, when it reports them.
+#[derive(Clone, Debug, Default)]
+pub struct Completion {
+    pub text: String,
+    pub prompt_tokens: Option<u64>,
+    pub completion_tokens: Option<u64>,
+    pub prompt_tps: Option<f64>,
+    pub gen_tps: Option<f64>,
+}
+
 pub trait Llm: std::fmt::Debug {
     fn name(&self) -> String;
     fn complete(&self, system: &str, user: &str, schema: Option<&Value>) -> Result<String>;
+    /// Like [`Llm::complete`], with token counts and speeds when available.
+    fn complete_full(
+        &self,
+        system: &str,
+        user: &str,
+        schema: Option<&Value>,
+    ) -> Result<Completion> {
+        Ok(Completion {
+            text: self.complete(system, user, schema)?,
+            ..Completion::default()
+        })
+    }
     /// How many candidate stocks the model can read well in one prompt.
     fn max_candidates(&self) -> usize {
         25
@@ -277,6 +299,17 @@ pub struct OpenAiLlm {
     model: String,
 }
 
+impl OpenAiLlm {
+    /// A client for a server at `base_url` that needs no key.
+    pub fn local(base_url: &str, model: &str) -> Self {
+        OpenAiLlm {
+            base_url: base_url.into(),
+            api_key: None,
+            model: model.into(),
+        }
+    }
+}
+
 impl Llm for OpenAiLlm {
     fn name(&self) -> String {
         self.model.clone()
@@ -287,10 +320,24 @@ impl Llm for OpenAiLlm {
     }
 
     fn complete(&self, system: &str, user: &str, schema: Option<&Value>) -> Result<String> {
+        Ok(self.complete_full(system, user, schema)?.text)
+    }
+
+    fn complete_full(
+        &self,
+        system: &str,
+        user: &str,
+        schema: Option<&Value>,
+    ) -> Result<Completion> {
+        // Greedy decoding with a fixed seed and no prompt cache, so the same prompt on the
+        // same weights gives the same answer.
         let mut body = json!({
             "model": self.model,
             "max_tokens": 2500,
-            "temperature": 0.2,
+            "temperature": 0,
+            "top_k": 1,
+            "seed": 42,
+            "cache_prompt": false,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
@@ -313,11 +360,18 @@ impl Llm for OpenAiLlm {
         }
         let raw = http::post_json(&url, &headers, &body.to_string(), Duration::from_secs(1500))?;
         let reply: Value = serde_json::from_str(&raw)?;
-        reply["choices"][0]["message"]["content"]
+        let text = reply["choices"][0]["message"]["content"]
             .as_str()
             .filter(|t| !t.trim().is_empty())
             .map(str::to_string)
-            .ok_or_else(|| anyhow!("empty reply from the model server"))
+            .ok_or_else(|| anyhow!("empty reply from the model server"))?;
+        Ok(Completion {
+            text,
+            prompt_tokens: reply["usage"]["prompt_tokens"].as_u64(),
+            completion_tokens: reply["usage"]["completion_tokens"].as_u64(),
+            prompt_tps: reply["timings"]["prompt_per_second"].as_f64(),
+            gen_tps: reply["timings"]["predicted_per_second"].as_f64(),
+        })
     }
 }
 
