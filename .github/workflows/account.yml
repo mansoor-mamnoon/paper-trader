@@ -37,6 +37,9 @@ jobs:
       - name: Evaluate latest completed stock session and export dashboard
         id: scan
         continue-on-error: true
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PAPER_TRADER_MODEL: ${{ vars.PAPER_TRADER_MODEL }}
         run: ./target/release/paper-trader stocks --db account/account.sqlite --output account/site
       - name: Apply static dashboard
         run: cp web/* account/site/
@@ -45,7 +48,7 @@ jobs:
         run: |
           git config user.name 'paper-trader[bot]'
           git config user.email 'paper-trader@users.noreply.github.com'
-          git add account.sqlite site INITIALIZED
+          git add account.sqlite site INITIALIZED strategies
           git diff --cached --quiet || git commit -m 'Record stock paper account observation'
           git push origin HEAD:account
       - uses: actions/configure-pages@v6

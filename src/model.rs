@@ -34,6 +34,24 @@ pub struct Quote {
     pub actions: Vec<Action>,
 }
 
+/// A news headline attached to a stock.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Headline {
+    pub title: String,
+    #[serde(default)]
+    pub published: String,
+}
+
+/// Earnings dates and headlines gathered for one scan.
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct Intel {
+    /// Symbol to the next report date, `YYYY-MM-DD`.
+    #[serde(default)]
+    pub earnings: BTreeMap<String, String>,
+    #[serde(default)]
+    pub news: BTreeMap<String, Vec<Headline>>,
+}
+
 /// One daily scan of the stock universe.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Observation {
@@ -47,6 +65,8 @@ pub struct Observation {
     pub next_cursor: u64,
     #[serde(default)]
     pub coverage: Map<String, Value>,
+    #[serde(default)]
+    pub intel: Intel,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]

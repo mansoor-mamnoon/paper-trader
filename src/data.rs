@@ -153,7 +153,7 @@ pub fn history(symbol: &str) -> Result<Quote> {
 }
 
 /// Scan a rotating slice of the directory, always including account symbols and SPY.
-pub fn observe(state: &State, batch_size: usize) -> Result<Observation> {
+pub fn observe(state: &State, batch_size: usize, extra: &BTreeSet<String>) -> Result<Observation> {
     let listing = universe()?;
     let symbols: Vec<&String> = listing.keys().collect();
     let cursor = state.scan_cursor as usize % symbols.len();
@@ -163,6 +163,7 @@ pub fn observe(state: &State, batch_size: usize) -> Result<Observation> {
         .collect();
     selected.extend(state.positions.keys().cloned());
     selected.extend(state.pending.keys().cloned());
+    selected.extend(extra.iter().cloned());
     selected.insert("SPY".into());
     let queue = Mutex::new(selected.iter().cloned().collect::<VecDeque<_>>());
     let found = Mutex::new((BTreeMap::new(), BTreeMap::new()));
@@ -218,6 +219,7 @@ pub fn observe(state: &State, batch_size: usize) -> Result<Observation> {
         errors,
         next_cursor: ((cursor + count) % symbols.len()) as u64,
         coverage,
+        intel: crate::model::Intel::default(),
     })
 }
 

@@ -1,7 +1,9 @@
 //! Isolated stock paper ledger: whole shares, delayed daily fills and explicit evidence.
 
+use crate::analyst::{Brief, Candidate, Review};
 use crate::ledger::{self, decision, insert_fill};
 use crate::model::{Observation, Order, Position, Quote, State};
+use crate::strategy::{MAX_POSITIONS, POSITION_CAP, Strategy};
 use anyhow::{Result, anyhow, bail};
 use rusqlite::Connection;
 use serde_json::{Value, json};
@@ -110,6 +112,7 @@ fn fill(
     bar_at: f64,
     bar_open: f64,
     at: f64,
+    strategy: &Strategy,
 ) -> Result<()> {
     let side = order.side.as_str();
     let price = bar_open
@@ -122,8 +125,8 @@ fn fill(
     let pnl;
     if side == "BUY" {
         let capital = equity(state);
-        let shares = (state.cash.min(capital * 0.20) / (price * (1.0 + FEE))).floor();
-        if state.halted || state.positions.len() >= 3 || shares < 1.0 {
+        let shares = (state.cash.min(capital * POSITION_CAP) / (price * (1.0 + FEE))).floor();
+        if state.halted || state.positions.len() >= MAX_POSITIONS || shares < 1.0 {
             decision(
                 db,
                 at,
@@ -144,10 +147,11 @@ fn fill(
                 quantity,
                 entry: price,
                 cost,
-                stop: price * 0.96,
-                target: price * 1.08,
+                stop: price * (1.0 - strategy.stop_pct),
+                target: price * (1.0 + strategy.target_pct),
                 opened_at: bar_at,
-                planned_risk: cost - quantity * price * 0.96 * (1.0 - SLIP) * (1.0 - FEE),
+                planned_risk: cost
+                    - quantity * price * (1.0 - strategy.stop_pct) * (1.0 - SLIP) * (1.0 - FEE),
                 market_value: quantity * price * (1.0 - SLIP) * (1.0 - FEE),
                 unrealized_pnl: 0.0,
                 price_at: None,
@@ -212,6 +216,19 @@ fn validate_bars(quote: &Quote, at: f64) -> Result<()> {
 
 /// Apply one recorded observation atomically; retries cannot duplicate orders or fills.
 pub fn cycle(path: &str, observation: &Observation, mode: &str) -> Result<()> {
+    cycle_with(path, observation, mode, &Strategy::default(), None)
+}
+
+/// Apply one observation under `strategy`. With a `review`, buys follow the analyst's
+/// ranking (restricted to stocks that passed the screen); without one they follow
+/// 20-day momentum.
+pub fn cycle_with(
+    path: &str,
+    observation: &Observation,
+    mode: &str,
+    strategy: &Strategy,
+    review: Option<&Review>,
+) -> Result<()> {
     reserve(path, mode)?;
     let at = observation.at;
     if !at.is_finite() || at <= 0.0 {
@@ -300,7 +317,9 @@ pub fn cycle(path: &str, observation: &Observation, mode: &str) -> Result<()> {
             )?;
             continue;
         }
-        fill(&db, &mut state, &symbol, &order, bar.at, bar.open, at)?;
+        fill(
+            &db, &mut state, &symbol, &order, bar.at, bar.open, at, strategy,
+        )?;
     }
     for symbol in state.positions.keys().cloned().collect::<Vec<_>>() {
         let Some(quote) = usable.get(symbol.as_str()) else {
@@ -335,64 +354,89 @@ pub fn cycle(path: &str, observation: &Observation, mode: &str) -> Result<()> {
             decision(&db, at, &symbol, "SELL_SIGNAL", reason, json!({}))?;
         }
     }
-    let mut candidates: Vec<(f64, &str)> = Vec::new();
-    for (symbol, quote) in &usable {
-        let bars = &quote.bars;
-        let n = bars.len();
-        let close = bars[n - 1].close;
-        let mean = |k: usize| bars[n - k..].iter().map(|b| b.close).sum::<f64>() / k as f64;
-        let (sma20, sma50) = (mean(20), mean(50));
-        let momentum = close / bars[n - 21].close - 1.0;
-        let dollar_volume = bars[n - 20..]
-            .iter()
-            .map(|b| b.close * b.volume)
-            .sum::<f64>()
-            / 20.0;
-        let evidence = json!({
-            "sma20": sma20, "sma50": sma50, "momentum20d": momentum,
-            "average_dollar_volume": dollar_volume, "price_at": bars[n - 1].at,
-        });
-        let eligible = close >= 5.0
-            && dollar_volume >= 1_000_000.0
-            && close > sma20
-            && sma20 > sma50
-            && momentum > 0.02;
+    let screened = screen(strategy, observation, at);
+    for row in &screened {
         decision(
             &db,
             at,
-            symbol,
-            if eligible { "CANDIDATE" } else { "PASS" },
-            "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
-            evidence,
+            &row.candidate.symbol,
+            if row.eligible { "CANDIDATE" } else { "PASS" },
+            &row.reason,
+            row.evidence.clone(),
         )?;
-        if eligible {
-            candidates.push((momentum, symbol));
-        }
     }
+    let eligible: BTreeMap<&str, &Screened> = screened
+        .iter()
+        .filter(|r| r.eligible)
+        .map(|r| (r.candidate.symbol.as_str(), r))
+        .collect();
     let queued_buys = state.pending.values().filter(|o| o.side == "BUY").count();
-    let mut slots = 3_usize.saturating_sub(state.positions.len() + queued_buys);
+    let mut slots = MAX_POSITIONS.saturating_sub(state.positions.len() + queued_buys);
     if !state.halted && missing.is_empty() {
-        candidates.sort_by(|a, b| b.partial_cmp(a).unwrap());
-        for (_, symbol) in candidates {
+        // (symbol, conviction, thesis) in the order buys are attempted.
+        let ranked: Vec<(String, f64, String)> = if let Some(review) = review {
+            for avoided in &review.avoid {
+                decision(
+                    &db,
+                    at,
+                    &avoided.symbol,
+                    "AVOID",
+                    &avoided.reason,
+                    json!({"source": review.source}),
+                )?;
+            }
+            review
+                .picks
+                .iter()
+                .filter(|p| {
+                    eligible.contains_key(p.symbol.as_str())
+                        && !review.avoid.iter().any(|a| a.symbol == p.symbol)
+                })
+                .map(|p| (p.symbol.clone(), p.conviction, p.thesis.clone()))
+                .collect()
+        } else {
+            let mut by_momentum: Vec<(f64, &str)> = eligible
+                .values()
+                .map(|r| (r.candidate.momentum_20d, r.candidate.symbol.as_str()))
+                .collect();
+            by_momentum.sort_by(|a, b| b.partial_cmp(a).unwrap());
+            by_momentum
+                .into_iter()
+                .map(|(_, s)| (s.to_string(), 0.0, String::new()))
+                .collect()
+        };
+        for (symbol, conviction, thesis) in ranked {
             if slots == 0 {
                 break;
             }
-            if state.positions.contains_key(symbol)
-                || state.pending.contains_key(symbol)
-                || state.cooldown.get(symbol).copied().unwrap_or(0.0) > at
+            if state.positions.contains_key(&symbol)
+                || state.pending.contains_key(&symbol)
+                || state.cooldown.get(&symbol).copied().unwrap_or(0.0) > at
             {
                 continue;
             }
-            let reason = "Positive liquid daily trend; whole shares capped at 20% of equity";
+            let reason = if thesis.is_empty() {
+                "Positive liquid daily trend; whole shares capped at 20% of equity".to_string()
+            } else {
+                format!("Analyst conviction {conviction:.2}: {thesis}")
+            };
+            let candidate = &eligible[symbol.as_str()].candidate;
+            let evidence = json!({
+                "source": review.map_or("quant", |r| r.source.as_str()),
+                "conviction": conviction,
+                "thesis": thesis,
+                "earnings_date": candidate.earnings_date,
+                "headlines": candidate.headlines.iter().map(|h| h.title.clone()).collect::<Vec<_>>(),
+            });
             state.pending.insert(
-                symbol.to_string(),
+                symbol.clone(),
                 Order {
                     side: "BUY".into(),
                     at,
-                    reason: reason.into(),
+                    reason: reason.clone(),
                 },
             );
-            decision(&db, at, symbol, "BUY_SIGNAL", reason, json!({}))?;
+            decision(&db, at, &symbol, "BUY_SIGNAL", &reason, evidence)?;
             slots -= 1;
         }
     }
@@ -463,8 +507,129 @@ pub fn cycle(path: &str, observation: &Observation, mode: &str) -> Result<()> {
     ledger::commit(&db)
 }
 
-#[allow(dead_code)]
-fn _assert_value(_: Value) {}
+/// One stock's result against a strategy's screen.
+#[derive(Clone, Debug)]
+pub struct Screened {
+    pub candidate: Candidate,
+    pub eligible: bool,
+    pub reason: String,
+    pub evidence: Value,
+}
+
+fn utc_date(at: f64) -> chrono::NaiveDate {
+    chrono::DateTime::from_timestamp(at as i64, 0)
+        .unwrap_or_default()
+        .date_naive()
+}
+
+/// Apply `strategy`'s screen to every stock with a recent, complete history.
+pub fn screen(strategy: &Strategy, observation: &Observation, at: f64) -> Vec<Screened> {
+    let today = utc_date(at);
+    let mut rows = Vec::new();
+    for (symbol, quote) in &observation.quotes {
+        let bars = &quote.bars;
+        let n = bars.len();
+        if n < 50 || at - bars[n - 1].at > 5.0 * DAY {
+            continue;
+        }
+        let close = bars[n - 1].close;
+        let mean = |k: usize| bars[n - k..].iter().map(|b| b.close).sum::<f64>() / k as f64;
+        let (sma20, sma50) = (mean(20), mean(50));
+        let momentum = close / bars[n - 21].close - 1.0;
+        let dollar_volume = bars[n - 20..]
+            .iter()
+            .map(|b| b.close * b.volume)
+            .sum::<f64>()
+            / 20.0;
+        let earnings_date = observation.intel.earnings.get(symbol).cloned();
+        let blackout = earnings_date.as_deref().filter(|date| {
+            let days = date
+                .parse::<chrono::NaiveDate>()
+                .map(|d| (d - today).num_days());
+            strategy.earnings_blackout_days > 0
+                && days.is_ok_and(|d| (0..=i64::from(strategy.earnings_blackout_days)).contains(&d))
+        });
+        let trend = !strategy.require_trend || (close > sma20 && sma20 > sma50);
+        let eligible = close >= strategy.min_price
+            && dollar_volume >= strategy.min_dollar_volume
+            && momentum > strategy.min_momentum
+            && trend
+            && blackout.is_none();
+        let reason = match blackout {
+            Some(date) => format!(
+                "Earnings report on {date} falls inside the {}-day blackout",
+                strategy.earnings_blackout_days
+            ),
+            None => format!(
+                "{}20-day momentum above {:.0}%, price >= ${}, liquidity >= ${}M/day",
+                if strategy.require_trend {
+                    "20/50-day trend, "
+                } else {
+                    ""
+                },
+                strategy.min_momentum * 100.0,
+                strategy.min_price,
+                strategy.min_dollar_volume / 1e6
+            ),
+        };
+        rows.push(Screened {
+            candidate: Candidate {
+                symbol: symbol.clone(),
+                close,
+                sma20,
+                sma50,
+                momentum_20d: momentum,
+                avg_dollar_volume: dollar_volume,
+                earnings_date: earnings_date.clone(),
+                headlines: observation
+                    .intel
+                    .news
+                    .get(symbol)
+                    .cloned()
+                    .unwrap_or_default(),
+            },
+            eligible,
+            reason,
+            evidence: json!({
+                "sma20": sma20, "sma50": sma50, "momentum20d": momentum,
+                "average_dollar_volume": dollar_volume, "price_at": bars[n - 1].at,
+                "earnings_date": earnings_date,
+            }),
+        });
+    }
+    rows
+}
+
+/// What the analyst is shown: the best screened stocks this account could still buy.
+pub fn brief(strategy: &Strategy, observation: &Observation, state: &State) -> Brief {
+    let at = observation.at;
+    let mut candidates: Vec<Candidate> = screen(strategy, observation, at)
+        .into_iter()
+        .filter(|r| {
+            let symbol = r.candidate.symbol.as_str();
+            r.eligible
+                && !state.positions.contains_key(symbol)
+                && !state.pending.contains_key(symbol)
+                && state.cooldown.get(symbol).copied().unwrap_or(0.0) <= at
+        })
+        .map(|r| r.candidate)
+        .collect();
+    candidates.sort_by(|a, b| b.momentum_20d.partial_cmp(&a.momentum_20d).unwrap());
+    candidates.truncate(strategy.shortlist_size);
+    let queued_buys = state.pending.values().filter(|o| o.side == "BUY").count();
+    Brief {
+        date: utc_date(at).to_string(),
+        equity: equity(state),
+        cash: state.cash,
+        open_slots: if state.halted {
+            0
+        } else {
+            MAX_POSITIONS.saturating_sub(state.positions.len() + queued_buys)
+        },
+        held: state.positions.keys().cloned().collect(),
+        candidates,
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -511,6 +676,7 @@ mod tests {
             errors: BTreeMap::new(),
             next_cursor: 0,
             coverage: serde_json::Map::new(),
+            intel: crate::model::Intel::default(),
         }
     }
 

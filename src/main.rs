@@ -2,7 +2,9 @@
 
 use anyhow::Result;
 use clap::Parser;
-use paper_trader::{account, crypto, data, export, ledger};
+use paper_trader::analyst::{Analyst, ClaudeAnalyst};
+use paper_trader::lab::{ClaudeProposer, Proposer};
+use paper_trader::{crypto, daily, export, ledger};
 use serde_json::json;
 use std::path::PathBuf;
 
@@ -52,17 +54,9 @@ struct Args {
     /// Explicit observation JSON; separate replay account
     #[arg(long)]
     replay: Option<PathBuf>,
-}
-
-fn run(args: &Args, mode: &str) -> Result<()> {
-    account::reserve(&args.db, mode)?;
-    let observation = if let Some(file) = &args.replay {
-        serde_json::from_str(&std::fs::read_to_string(file)?)?
-    } else {
-        let state = ledger::load(&ledger::connect(&args.db)?)?;
-        data::observe(&state, args.batch_size)?
-    };
-    account::cycle(&args.db, &observation, mode)
+    /// Folder holding the strategy registry and shadow accounts (default: next to --db)
+    #[arg(long)]
+    strategies: Option<PathBuf>,
 }
 
 fn crypto_main(command: Crypto) -> Result<()> {
@@ -116,18 +110,44 @@ fn main() -> Result<()> {
     } else {
         "stocks-daily"
     };
-    if let Err(error) = run(&args, mode) {
-        let _ = ledger::failure(&args.db, &error.to_string());
-        let _ = export::export(&args.db, &args.output);
-        return Err(error);
+    let options = daily::Options {
+        strategies: args.strategies.clone().unwrap_or_else(|| {
+            std::path::Path::new(&args.db)
+                .parent()
+                .unwrap_or(std::path::Path::new("."))
+                .join("strategies")
+        }),
+        db: args.db.clone(),
+        batch_size: args.batch_size,
+        replay: args.replay.clone(),
+    };
+    let analyst = ClaudeAnalyst::from_env();
+    let proposer = ClaudeProposer::from_env();
+    if analyst.is_none() {
+        eprintln!("ANTHROPIC_API_KEY is not set: trading by the quantitative ranking only");
     }
-    let report = export::export(&args.db, &args.output)?;
+    let summary = daily::run(
+        &options,
+        mode,
+        analyst.as_ref().map(|a| a as &dyn Analyst),
+        proposer.as_ref().map(|p| p as &dyn Proposer),
+    );
+    let summary = match summary {
+        Ok(summary) => summary,
+        Err(error) => {
+            let _ = ledger::failure(&args.db, &error.to_string());
+            let _ = export::export(&args.db, &args.output, None);
+            return Err(error);
+        }
+    };
+    let report = export::export(&args.db, &args.output, Some(&summary))?;
     println!(
         "{}",
         json!({
             "equity": report["account"]["equity"],
             "coverage": report["coverage"],
             "health": report["health"],
+            "analyst": summary["analyst"],
             "output": format!("{}/api/state", args.output),
         })
     );

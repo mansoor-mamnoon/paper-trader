@@ -38,7 +38,7 @@ fn write_atomic(target: &Path, body: &str) -> Result<()> {
 }
 
 /// Export compatible state JSON, full CSV logs and universe and coverage metadata.
-pub fn export(path: &str, output: &str) -> Result<Value> {
+pub fn export(path: &str, output: &str, strategy: Option<&Value>) -> Result<Value> {
     let root = Path::new(output);
     fs::create_dir_all(root.join("api"))?;
     fs::create_dir_all(root.join("export"))?;
@@ -48,6 +48,9 @@ pub fn export(path: &str, output: &str) -> Result<Value> {
     report["coverage"] = json!(state.coverage);
     report["data_errors"] = json!(state.data_errors);
     report["source"] = json!(SOURCE);
+    if let Some(strategy) = strategy {
+        report["strategy"] = strategy.clone();
+    }
     report["benchmark_label"] = json!("SPY price-only (dividends excluded)");
     report["simulation"] = json!(
         "Prior completed daily bars; latest completed session open after signal; \
@@ -108,7 +111,7 @@ mod tests {
         let _ = fs::remove_dir_all(&dir);
         let db = dir.join("account.sqlite");
         let out = dir.join("site");
-        let report = export(db.to_str().unwrap(), out.to_str().unwrap()).unwrap();
+        let report = export(db.to_str().unwrap(), out.to_str().unwrap(), None).unwrap();
         assert_eq!(report["account"]["equity"], 1000);
         assert!(out.join("api/state").exists());
         assert!(out.join("export/fills.csv").exists());

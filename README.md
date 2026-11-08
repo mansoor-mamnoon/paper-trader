@@ -2,7 +2,7 @@
 
 <img src="docs/banner.svg" alt="Paper Trader, the $1,000 experiment" width="100%">
 
-**A $1,000 simulated US-stock account that trades by fixed rules and publishes every decision.**
+**A $1,000 simulated US-stock account run by an AI analyst that reads the news and earnings calendar, tests its own improvements, and publishes every decision.**
 
 [![Live dashboard](https://img.shields.io/badge/live-dashboard-4f8cff?style=for-the-badge)](https://mansoor-mamnoon.github.io/paper-trader/)
 ![Rust](https://img.shields.io/badge/rust-2024-dea584?style=for-the-badge&logo=rust&logoColor=white)
@@ -21,7 +21,7 @@
 
 ## What it is
 
-Paper Trader starts with $1,000 of simulated money and looks at US stocks once a day. A short rulebook decides what to buy and sell. Every signal, every skipped stock and every fill goes into a SQLite ledger, and a read-only dashboard on GitHub Pages shows the whole ledger.
+Paper Trader starts with $1,000 of simulated money and looks at US stocks once a day. A quantitative screen finds stocks in an uptrend, then an AI analyst reads their recent headlines and upcoming earnings dates and decides which to buy. A short rulebook handles sizing and exits. Every signal, every skipped stock and every fill goes into a SQLite ledger, and a read-only dashboard on GitHub Pages shows the whole ledger.
 
 The experiment asks whether a plain trend rule can beat buying SPY after fees and slippage over 60 days. It has no broker connection and places no orders.
 
@@ -55,16 +55,42 @@ The durable account lives on a dedicated `account` branch. The workflow restores
 
 ## Strategy
 
-The rules are deterministic and no language model picks trades.
-
-Entry requires all of the following:
+The screen is the starting point. Each day a stock has to pass it before the analyst sees it. These are the defaults, and the strategy lab can change them within fixed bounds.
 
 - price of at least $5
 - 20-day average dollar volume of at least $1M
 - close above the 20-day average, and the 20-day average above the 50-day average
 - 20-day return above 2%
+- no earnings report inside the blackout window (off by default)
 
-Candidates are ranked by 20-day return and the best ones fill up to three slots, each capped at 20% of equity. A close at or below -4% from entry, or at or above +8%, queues a sell for the next session. A drawdown of 10% permanently stops new entries, and the experiment ends after 60 days.
+The best 25 survivors go to the analyst with their headlines and earnings dates. It ranks the ones it believes in and can veto the rest, but it can only pick from the list it was given and cannot exceed the open slots. Three positions at most, each capped at 20% of equity. A close at or below the stop (-4% by default) or at or above the target (+8%) queues a sell for the next session. A drawdown of 10% permanently stops new entries, and the experiment ends after 60 days.
+
+If the analyst is unavailable, the account falls back to ranking by 20-day return, which is how the original version traded.
+
+## Strategy lab
+
+Nothing here is meant to stay fixed. The loop follows the pattern of recursive self-improvement in the [KISS `rsi7d` agent](https://github.com/ksenxx/kiss_ai/tree/main/src/kiss/agents/seas/rsi7d): mine recent runs for evidence, propose a bounded edit, test it, and keep it only if the evidence supports it. Here the edit target is the strategy and the test is a live shadow account.
+
+1. Once a week the system reviews how the live strategy traded: closed trades, win rate, what the analyst said, how buys near earnings dates behaved.
+2. Claude proposes one small change. It can adjust at most two things: numeric parameters inside fixed bounds, or the text of the analyst's playbook. Anything out of bounds is rejected and logged.
+3. The change trades a separate $1,000 shadow account on the same daily data.
+4. After 14 days, a challenger replaces the live strategy only if it beats it by at least one percentage point with at least two trades and a drawdown no more than three points worse.
+5. The replaced strategy keeps trading as a shadow. If the promotion was luck, it wins the seat back under the same rule.
+
+Position size, the three-position cap, costs and the loss halt live in code and are not editable. The registry and every shadow ledger are committed to the `account` branch, so each change and its evidence stay public.
+
+Two caveats apply. Two weeks of paper trades is a small sample, so the loop will sometimes promote noise, and the margin rules reduce that without removing it. And a language model reading headlines has no proven edge over the screen alone. The shadow accounts exist to measure that.
+
+## Autonomous setup
+
+The scheduled workflow needs no attention once one secret is set:
+
+```bash
+gh secret set ANTHROPIC_API_KEY --repo mansoor-mamnoon/paper-trader
+gh variable set PAPER_TRADER_MODEL --body claude-opus-5-5 --repo mansoor-mamnoon/paper-trader   # optional
+```
+
+Without the key the account still runs, ranked by 20-day return, and the dashboard says so. Each run makes one analyst call for the live strategy and one for each shadow, plus one proposal call a week.
 
 ## Dashboard
 
@@ -72,7 +98,7 @@ Candidates are ranked by 20-day return and the best ones fill up to three slots,
 <img src="docs/dashboard.png" alt="Overview tab with the headline result, equity chart against SPY and what happens next" width="760">
 </div>
 
-The site has five tabs. Overview opens with a one-line verdict (ahead of or behind SPY, and by how much), a 60-day progress bar, the equity chart with hover values, and a list of what happens at the next session. Holdings shows each stock's price between its stop and its target. Trades lists every fill. Journal explains each decision in plain English, with a ticker search and a filter that hides the thousands of routine "did not qualify" rows. How it works covers the rules, the guardrails and the limits. Hover the `?` icons for definitions of cash, drawdown, fees and profit and loss.
+The site has six tabs. Overview opens with a one-line verdict (ahead of or behind SPY, and by how much), a 60-day progress bar, the equity chart with hover values, and a list of what happens at the next session. Holdings shows each stock's price between its stop and its target. Trades lists every fill. Journal explains each decision in plain English, with the headlines the analyst saw, a ticker search, and a filter that hides the thousands of routine "did not qualify" rows. Strategy lab shows today's analyst view, the live strategy, the challengers being tested and the change log. How it works covers the rules, the guardrails and the limits. Hover the `?` icons for definitions of cash, drawdown, fees and profit and loss.
 
 Full histories download as `decisions.csv`, `fills.csv`, `equity.csv` and `events.csv`, and `api/state` returns the raw snapshot. The layout works on phones and follows your light or dark setting.
 
@@ -115,7 +141,12 @@ To host your own copy, fork the repo and create an `account` branch containing a
 ```
 src/
   main.rs      command line
-  account.rs   stock signals, queued orders, fills, risk limits
+  account.rs   screen, queued orders, fills, risk limits
+  analyst.rs   the Claude analyst and its output checks
+  intel.rs     earnings calendar and headlines
+  strategy.rs  the bounded, editable strategy
+  lab.rs       shadow accounts, promotion rule, proposals
+  daily.rs     one daily run across all strategies
   data.rs      Nasdaq directory and Yahoo daily bars
   crypto.rs    crypto account and Kraken data
   ledger.rs    SQLite schema, state and reports

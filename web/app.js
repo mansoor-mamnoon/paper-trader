@@ -39,7 +39,7 @@ const ACTIONS = {
   BUY_FILLED: ["Bought", "buy"], SELL_FILLED: ["Sold", "sell"],
   CANDIDATE: ["Passed screen", "info"], PASS: ["Did not qualify", ""],
   REJECT: ["Rejected", ""], EXPIRED: ["Expired", ""], FREEZE: ["Paused", ""],
-  SKIP: ["Skipped", ""], CORPORATE_ACTION: ["Split or dividend", "info"],
+  SKIP: ["Skipped", ""], CORPORATE_ACTION: ["Split or dividend", "info"], AVOID: ["Analyst veto", ""],
 };
 const label = (action) => ACTIONS[action] ?? [action, ""];
 
@@ -52,7 +52,8 @@ function parseEvidence(d) {
 function describe(d) {
   const e = parseEvidence(d);
   switch (d.action) {
-    case "BUY_SIGNAL": return `${d.symbol} qualified. A buy is queued for the next session's open.`;
+    case "BUY_SIGNAL": return e.thesis ? `${d.symbol}: ${e.thesis}` : `${d.symbol} qualified. A buy is queued for the next session's open.`;
+    case "AVOID": return `${d.symbol} passed the screen but the analyst passed on it: ${d.reason}`;
     case "SELL_SIGNAL": return `${d.symbol} hit its stop, its target, or the account halted. A sell is queued.`;
     case "BUY_FILLED": return `Bought ${d.symbol} at ${e.price ? money(e.price) : "the next open"}, after fees and slippage.`;
     case "SELL_FILLED": return `Sold ${d.symbol} at ${e.price ? money(e.price) : "the next open"}, after fees and slippage.`;
@@ -69,7 +70,7 @@ let journalFilter = "activity";
 let journalLimit = 25;
 
 /* ---------- tabs ---------- */
-const TABS = ["overview", "holdings", "trades", "journal", "about"];
+const TABS = ["overview", "holdings", "trades", "journal", "lab", "about"];
 function showTab(name, push = true) {
   if (!TABS.includes(name)) name = "overview";
   for (const id of TABS) $(id).hidden = id !== name;
@@ -230,7 +231,16 @@ function entry(d, big = false) {
   const [name, kind] = label(d.action);
   return h("li", {}, h("span", {class: `badge ${kind}`}, name),
     h("time", {datetime: new Date(d.at * 1000).toISOString()}, `${d.symbol === "ACCOUNT" ? "Account" : d.symbol} · ${big ? when(d.at) : ago(d.at)}`),
-    h("p", {}, describe(d)));
+    h("p", {}, describe(d)), headlines(d));
+}
+
+function headlines(d) {
+  const e = parseEvidence(d);
+  const list = Array.isArray(e.headlines) ? e.headlines.slice(0, 2) : [];
+  const extra = [];
+  if (e.earnings_date) extra.push(h("small", {class: "muted"}, `Earnings ${e.earnings_date}`));
+  if (!list.length && !extra.length) return null;
+  return h("div", {class: "heads"}, list.map((t) => h("small", {class: "muted"}, `“${t}”`)), extra);
 }
 
 function renderStatus(s) {
@@ -320,8 +330,70 @@ function renderAbout(s) {
   text("coverage", `${(c.universe_count ?? 0).toLocaleString()} US-listed stocks and ETFs are in the directory. The last scan requested ${c.attempted ?? 0}, got ${c.usable ?? 0} usable prices, and hit ${c.failed ?? 0} provider errors. Covering everything takes about ${c.rotation_cycles ?? "?"} daily scans, and holdings are checked every time.`);
 }
 
+const PARAM_LABELS = {
+  min_price: ["Minimum price", (v) => money(v)],
+  min_dollar_volume: ["Minimum daily trading", (v) => `$${(v / 1e6).toFixed(1)}M`],
+  min_momentum: ["Minimum 20-day gain", (v) => `${(v * 100).toFixed(1)}%`],
+  require_trend: ["Requires 20/50-day uptrend", (v) => (v ? "Yes" : "No")],
+  stop_pct: ["Stop", (v) => `−${(v * 100).toFixed(1)}%`],
+  target_pct: ["Target", (v) => `+${(v * 100).toFixed(1)}%`],
+  earnings_blackout_days: ["Earnings blackout", (v) => (v ? `${v} days before a report` : "Off")],
+  shortlist_size: ["Stocks shown to the analyst", (v) => String(v)],
+  analyst_enabled: ["AI analyst", (v) => (v ? "On" : "Off")],
+};
+const EVENT_LABELS = {proposed: ["New challenger", "info"], promoted: ["Promoted", "buy"], reverted: ["Reverted", "sell"], retired: ["Retired", ""], rejected: ["Proposal rejected", ""], error: ["Error", "sell"]};
+
+function renderLab(s) {
+  const lab = s.strategy;
+  if (!lab) {
+    for (const id of ["analyst-view", "champion-why"]) text(id, "Strategy details appear after the next daily run.");
+    return;
+  }
+  const a = lab.analyst;
+  const claude = a.source === "claude";
+  text("analyst-badge", claude ? "Claude" : "Momentum ranking");
+  $("analyst-badge").className = `badge ${claude ? "buy" : ""}`;
+  text("analyst-view", claude ? (a.market_view || "No market view recorded.") : "No AI analysis today.");
+  text("analyst-note", claude ? `Model ${a.model.replace(/^claude \(|\)$/g, "")}. It read headlines and earnings dates for the stocks that passed the screen.`
+    : a.error ? `The analyst failed, so stocks were ranked by 20-day gain. Reason: ${a.error}`
+      : "The analyst is off or has no API key, so stocks were ranked by 20-day gain.");
+
+  const c = lab.champion;
+  text("champion-id", c.id);
+  text("champion-why", c.rationale || "Original rules.");
+  const params = $("champion-params"); params.replaceChildren();
+  for (const [key, [name, fmt]] of Object.entries(PARAM_LABELS)) {
+    if (c[key] !== undefined) params.append(h("div", {}, h("dt", {}, name), h("dd", {}, fmt(c[key]))));
+  }
+  text("champion-playbook", c.playbook);
+
+  const box = $("shadows"); box.replaceChildren();
+  text("lab-rule", `A challenger needs ${lab.rules.min_age_days} days and a ${lab.rules.margin_points}-point edge to be adopted.`);
+  if (!lab.shadows.length) box.append(h("p", {class: "empty"}, "No challengers yet. The first proposal comes after the account has some history, then one new idea is tested each week."));
+  for (const sh of lab.shadows) {
+    const diff = sh.return_pct !== null && sh.champion_return_pct !== null ? sh.return_pct - sh.champion_return_pct : null;
+    box.append(h("article", {class: "shadow"},
+      h("div", {class: "head"}, h("strong", {}, sh.id), h("span", {class: `badge ${sh.kind === "previous" ? "" : "info"}`}, sh.kind === "previous" ? "Previous strategy" : "Challenger")),
+      h("p", {class: "muted"}, sh.kind === "previous" ? "The strategy that was replaced. It keeps trading so a bad promotion can be undone." : sh.rationale),
+      h("p", {class: "small"}, sh.changes.length ? `Changes: ${sh.changes.map((k) => PARAM_LABELS[k]?.[0] ?? k).join(", ")}` : ""),
+      h("div", {class: "versus mini-versus"},
+        h("div", {}, h("span", {class: "label"}, "Challenger"), h("strong", {}, sh.return_pct === null ? "waiting" : pct(sh.return_pct))),
+        h("div", {class: "vs"}, "vs"),
+        h("div", {}, h("span", {class: "label"}, "Live strategy"), h("strong", {}, sh.champion_return_pct === null ? "waiting" : pct(sh.champion_return_pct)))),
+      h("p", {class: "small muted"}, `${Math.max(0, sh.age_days).toFixed(0)} days in${sh.days_to_decision > 0 ? `, ${Math.ceil(sh.days_to_decision)} more before a decision` : ", eligible for a decision"}${diff === null ? "" : `. Edge so far: ${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(2)} points.`}`)));
+  }
+  const log = $("lab-log"); log.replaceChildren();
+  for (const e of lab.log) {
+    const [name, kind] = EVENT_LABELS[e.event] ?? [e.event, ""];
+    log.append(h("li", {}, h("span", {class: `badge ${kind}`}, name),
+      h("time", {}, `${e.id} · ${ago(e.at)}`), h("p", {}, e.detail)));
+  }
+  if (!lab.log.length) log.append(h("li", {}, h("span", {}), h("p", {class: "muted"}, "Nothing has changed yet.")));
+}
+
 function render(s) {
   state = s;
+  renderLab(s);
   renderStatus(s); renderOverview(s); renderHoldings(s); renderTrades(s); renderJournal(); renderAbout(s);
 }
 
