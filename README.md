@@ -2,7 +2,7 @@
 
 <img src="docs/logo.svg" alt="Paper Trader logo" width="84">
 
-<img src="docs/banner.svg" alt="Paper Trader, the $1,000 experiment" width="100%">
+<img src="docs/banner-v2.svg" alt="Paper Trader, the $1,000 experiment" width="100%">
 
 **A $1,000 paper-trading account run by an investment committee of nine open-weights models from nine different companies. They research with tools, argue with each other, remember their mistakes and grade every call, on free GitHub runners with no API key.**
 

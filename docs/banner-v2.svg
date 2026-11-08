@@ -15,7 +15,7 @@
 <text x="78" y="75" class="mono" font-size="16" letter-spacing="1.5" fill="#fbfbf8">PAPER TRADING · OPEN WEIGHTS · RUST</text>
 <text x="1144" y="75" class="mono" font-size="16" text-anchor="end" fill="#44505f">no real money · every decision public</text>
 
-<rect x="225" y="104" width="293" height="92" fill="#ffe14d"/>
+<rect x="222" y="104" width="299" height="92" fill="#ffe14d"/>
 <!-- Each word is pinned to a measured width, so the highlight fits whatever font the viewer's browser picks. -->
 <text x="56" y="178" class="sans" font-size="92" textLength="157.6" lengthAdjust="spacingAndGlyphs">The</text>
 <text x="237.2" y="178" class="sans" font-size="92" textLength="269.3" lengthAdjust="spacingAndGlyphs">$1,000</text>
