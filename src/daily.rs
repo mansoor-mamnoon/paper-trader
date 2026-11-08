@@ -584,6 +584,18 @@ pub fn run(
     summary["lessons"] = json!(registry.lessons.iter().rev().take(12).collect::<Vec<_>>());
     summary["desk"] = serde_json::to_value(&champion_transcript)?;
     summary["minutes_left"] = json!(budget.minutes_left());
+    summary["roster"] = json!(
+        Role::ALL
+            .iter()
+            .map(|role| {
+                let m = crate::models::model_for(*role);
+                json!({
+                    "role": role.name(), "model_id": m.id, "company": m.company, "name": m.name,
+                    "license": m.license, "size_mb": m.bytes / 1_000_000,
+                })
+            })
+            .collect::<Vec<_>>()
+    );
     Ok(summary)
 }
 
