@@ -12,7 +12,7 @@
 ![Models](https://img.shields.io/badge/models-9%20companies-ffe14d?style=for-the-badge&labelColor=0f1115)
 ![Cost](https://img.shields.io/badge/cost-%240-ffe14d?style=for-the-badge&labelColor=0f1115)
 
-[Live dashboard](https://mansoor-mamnoon.github.io/paper-trader/) · [The desk](#the-desk) · [Independent models](#independent-models) · [Deterministic runs](#deterministic-runs) · [Logs and metrics](#logs-and-metrics) · [Free and reliable](#free-and-reliable) · [Run it](#run-it) · [Limits](#limits)
+[Live dashboard](https://mansoor-mamnoon.github.io/paper-trader/) · [The desk](#the-desk) · [Independent models](#independent-models) · [Deterministic runs](#deterministic-runs) · [Logs and metrics](#logs-and-metrics) · [Visitors](#visitor-analytics) · [Free and reliable](#free-and-reliable) · [Run it](#run-it) · [Limits](#limits)
 
 </div>
 
@@ -146,6 +146,33 @@ Every run writes to one SQLite file, `telemetry.sqlite`, and the dashboard's **O
 
 Raw tables download as `runs.csv`, `stages.csv`, `llm_calls.csv`, `events.csv` and `fetches.csv`. Each Actions run also writes the same report to its job summary, so a run can be judged from the Actions page without opening the site. Prompts and outputs are stored as hashes plus the first 300 characters of any error, which keeps the file small enough to commit daily.
 
+## Visitor analytics
+
+The site can count who looks at the dashboard. GitHub Pages keeps no server logs, so counting visits needs an outside service, and it is off until you give the repository an ID.
+
+| | GoatCounter | Google Analytics 4 |
+|---|---|---|
+| Cost | Free for personal projects | Free |
+| Cookies and consent banner | None, none | Yes, and the site asks each visitor first |
+| Location | Country | Country, region and city |
+| Also shows | Pages, referrers, browsers, systems, screen sizes | Devices, new against returning visitors, a live view, session length |
+| Blocked by ad blockers | Often | Often |
+
+Set one or both:
+
+```bash
+# GoatCounter: sign up at goatcounter.com, pick a site code, then
+gh variable set GOATCOUNTER_CODE --body yourcode --repo mansoor-mamnoon/paper-trader
+# Google Analytics: create a web data stream, copy its measurement ID (G-XXXXXXXXXX), then
+gh variable set GA4_ID --body G-XXXXXXXXXX --repo mansoor-mamnoon/paper-trader
+```
+
+The next daily run writes the ID into the deployed site. Besides page loads, it records which tab each visitor opens and three events: clicks on the star link, clicks to the GitHub repository, and downloads of the data files.
+
+**Leaving out your own devices.** Open the site once on each of your devices with `?me=1` on the end of the address. That browser stops being counted, and the footer says so. Use `?me=0` to count it again. Local previews and visitors who send Do Not Track are never counted. The exclusion is per browser, so a private window counts as a new visitor unless you add `?me=1` there too.
+
+**What this cannot show.** Both tools report places, devices and behavior. Neither names a visitor or exposes an IP address, and the site does not try to collect either. For repository visits and referrers, GitHub's own Insights, Traffic page shows the last 14 days.
+
 ## Free and reliable
 
 The question was whether a free GitHub account can run this every day. For a public repository it can.
@@ -218,6 +245,7 @@ Without `PAPER_TRADER_LLAMA_SERVER` the account trades by momentum ranking. A si
 | `PAPER_TRADER_DESK_MINUTES` | Wall-clock budget for all model calls in a run. Default 120. |
 | `PAPER_TRADER_PRUNE_MODELS` | Delete each model file after the pool moves on, to bound disk use. |
 | `PAPER_TRADER_SKIP_WITHIN_HOURS` | Do nothing if the account already ran this recently. |
+| `PAPER_TRADER_SEC_CONTACT` | An email address for SEC requests. SEC filings stay off without one. |
 
 To host your own copy, fork the repo and create an `account` branch containing an initialised `account.sqlite` and an `INITIALIZED` file. Enable GitHub Pages with the Actions source and the workflows take over.
 
@@ -240,7 +268,7 @@ src/
   crypto.rs     crypto account and Kraken data
   ledger.rs     SQLite schema, state and reports
   export.rs     JSON and CSV snapshot
-web/            the dashboard (plain HTML, CSS and JavaScript)
+web/            the dashboard (plain HTML, CSS and JavaScript), including analytics.js
 scripts/        llm.sh installs llama.cpp
 examples/       pool_check and edgar_live diagnostics
 docs/           README images

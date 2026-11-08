@@ -80,6 +80,7 @@ function showTab(name, push = true) {
   for (const id of TABS) $(id).hidden = id !== name;
   for (const b of document.querySelectorAll(".tabs button")) b.setAttribute("aria-selected", String(b.dataset.tab === name));
   if (push) history.replaceState(null, "", "#" + name);
+  if (window.ptTrack) window.ptTrack(name);
   window.scrollTo({top: 0});
 }
 document.querySelector(".tabs").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) showTab(b.dataset.tab); });
@@ -727,6 +728,20 @@ async function refresh() {
   }
 }
 
+document.addEventListener("click", (e) => {
+  const link = e.target.closest("a[href]");
+  if (!link || !window.ptEvent) return;
+  if (link.classList.contains("star")) window.ptEvent("click-star-on-github");
+  else if (link.href.includes("github.com")) window.ptEvent("click-github");
+  else if (link.href.includes("/export/") || link.href.includes("/api/")) window.ptEvent("download-data");
+});
+{
+  const pa = window.ptAnalytics;
+  const names = { goatcounter: "GoatCounter", ga4: "Google Analytics, if you agree" };
+  $("privacy").textContent = pa && pa.ignored ? "This browser is excluded from visit counts."
+    : !pa || !pa.providers.length ? "No visit tracking on this site."
+      : `Visits are counted anonymously with ${pa.providers.map((p) => names[p]).join(" and ")}.`;
+}
 showTab(location.hash.slice(1), false);
 refresh();
 setInterval(refresh, 60000);

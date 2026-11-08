@@ -68,6 +68,15 @@ jobs:
         run: ./target/release/paper-trader stocks --db account/account.sqlite --output account/site
       - name: Apply static dashboard
         run: cp web/* account/site/
+      - name: Configure visitor analytics
+        # Off unless the repository variables GOATCOUNTER_CODE and/or GA4_ID are set.
+        env:
+          GOATCOUNTER_CODE: ${{ vars.GOATCOUNTER_CODE }}
+          GA4_ID: ${{ vars.GA4_ID }}
+        run: |
+          gc=$(printf '%s' "$GOATCOUNTER_CODE" | tr -cd 'A-Za-z0-9-')
+          ga=$(printf '%s' "$GA4_ID" | tr -cd 'A-Za-z0-9-')
+          printf 'window.PT_ANALYTICS = { goatcounter: "%s", ga4: "%s" };\n' "$gc" "$ga" > account/site/analytics-config.js
       - name: Save account before deployment
         working-directory: account
         run: |
