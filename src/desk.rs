@@ -123,6 +123,32 @@ impl std::fmt::Debug for Desk<'_> {
     }
 }
 
+/// Tidy text from a small model: drop stray CJK characters it sometimes emits mid-sentence,
+/// and when a length cap cut a sentence short, end at the last complete sentence.
+pub fn tidy(text: &str) -> String {
+    let kept: String = text
+        .chars()
+        .filter(|c| !matches!(*c as u32, 0x2E80..=0x9FFF | 0xAC00..=0xD7AF | 0xF900..=0xFAFF | 0xFF00..=0xFFEF))
+        .collect();
+    let kept = kept.trim().to_string();
+    if kept.is_empty() || kept.ends_with(['.', '!', '?', ')', '"', '%']) {
+        return kept;
+    }
+    match kept.rfind(['.', '!', '?']) {
+        Some(i) if i * 3 >= kept.len() => kept[..=i].to_string(),
+        _ => kept,
+    }
+}
+
+fn tidy_value(value: &mut Value) {
+    match value {
+        Value::String(s) => *s = tidy(s),
+        Value::Array(items) => items.iter_mut().for_each(tidy_value),
+        Value::Object(map) => map.values_mut().for_each(tidy_value),
+        _ => {}
+    }
+}
+
 fn clip(text: &str, n: usize) -> String {
     text.chars().take(n).collect()
 }
@@ -285,7 +311,9 @@ impl<'a> Desk<'a> {
     }
 
     fn ask(&self, system: &str, user: &str, schema: &Value) -> Result<Value> {
-        extract_json(&self.llm.complete(system, user, Some(schema))?)
+        let mut value = extract_json(&self.llm.complete(system, user, Some(schema))?)?;
+        tidy_value(&mut value);
+        Ok(value)
     }
 
     fn filings(&self, symbol: &str) -> &[Filing] {
@@ -1097,5 +1125,22 @@ mod tests {
         let text = dossier(&candidate("AAA", 0.1), &[filing], &obs);
         assert!(text.contains("filing #0"));
         assert!(text.contains("AAA raises guidance"));
+    }
+
+    #[test]
+    fn tidy_drops_cjk_and_ends_at_a_whole_sentence() {
+        assert_eq!(
+            tidy("Strong guidance, priced in 动能 already."),
+            "Strong guidance, priced in  already."
+        );
+        assert_eq!(
+            tidy("It beat estimates. Volume rose. The strongest point is that the"),
+            "It beat estimates. Volume rose."
+        );
+        assert_eq!(
+            tidy("short fragment with no stop"),
+            "short fragment with no stop"
+        );
+        assert_eq!(tidy("Gain of 4%"), "Gain of 4%");
     }
 }
