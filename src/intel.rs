@@ -128,6 +128,6 @@ mod tests {
         let rows = parse_earnings(body, day);
         assert_eq!(rows[0], ("AAPL".to_string(), "2026-11-10".to_string()));
         assert_eq!(rows.len(), 2);
-        assert!(parse_earnings("not json", day).is_empty());
+        assert_eq!(parse_earnings("not json", day).len(), 0);
     }
 }

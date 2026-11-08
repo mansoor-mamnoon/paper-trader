@@ -537,29 +537,32 @@ mod tests {
     #[test]
     fn promotes_only_after_min_age_margin_and_fills() {
         let champ = stats(1.0, 1.0, 5);
-        assert!(
+        assert_eq!(
             decide(
                 NOW,
                 &[standing("a", 5.0, stats(9.0, 1.0, 5), champ.clone())],
                 0.0
             )
-            .is_empty()
+            .len(),
+            0
         );
-        assert!(
+        assert_eq!(
             decide(
                 NOW,
                 &[standing("a", 20.0, stats(1.5, 1.0, 5), champ.clone())],
                 0.0
             )
-            .is_empty()
+            .len(),
+            0
         );
-        assert!(
+        assert_eq!(
             decide(
                 NOW,
                 &[standing("a", 20.0, stats(9.0, 1.0, 1), champ.clone())],
                 0.0
             )
-            .is_empty()
+            .len(),
+            0
         );
         let v = decide(NOW, &[standing("a", 20.0, stats(3.0, 1.0, 4), champ)], 0.0);
         assert_eq!(v, vec![Verdict::Promote("a".into())]);
@@ -568,21 +571,23 @@ mod tests {
     #[test]
     fn riskier_challenger_and_cooldown_block_promotion() {
         let champ = stats(1.0, 1.0, 5);
-        assert!(
+        assert_eq!(
             decide(
                 NOW,
                 &[standing("a", 20.0, stats(9.0, 8.0, 5), champ.clone())],
                 0.0
             )
-            .is_empty()
+            .len(),
+            0
         );
-        assert!(
+        assert_eq!(
             decide(
                 NOW,
                 &[standing("a", 20.0, stats(9.0, 1.0, 5), champ)],
                 NOW - 3.0 * DAY
             )
-            .is_empty()
+            .len(),
+            0
         );
     }
 
@@ -674,10 +679,11 @@ mod tests {
         let lines = improve(&dir, &mut registry, &champion_db, NOW, Some(&good)).unwrap();
         assert!(lines[0].starts_with("proposed v1"), "{lines:?}");
         assert_eq!(registry.shadows.len(), 1);
-        assert!(
+        assert_eq!(
             improve(&dir, &mut registry, &champion_db, NOW + DAY, Some(&good))
                 .unwrap()
-                .is_empty()
+                .len(),
+            0
         );
         let bad = Fixed(Proposal {
             rationale: "x".into(),

@@ -610,7 +610,7 @@ mod tests {
         cycle(&path, &snapshot(1_000_000.0, 1.0), "replay").unwrap();
         let db = ledger::connect(&path).unwrap();
         let state = ledger::load(&db).unwrap();
-        assert!(state.positions.is_empty());
+        assert_eq!(state.positions.len(), 0);
         assert_eq!(state.pending["BTC"].side, "BUY");
         assert_eq!(count(&path, "fills"), 0);
         drop(db);

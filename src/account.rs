@@ -706,7 +706,7 @@ mod tests {
         .unwrap();
         let state = snapshot(&path);
         assert_eq!(state.pending["UP"].side, "BUY");
-        assert!(state.positions.is_empty());
+        assert_eq!(state.positions.len(), 0);
         // The next session opens at 120.
         let mut longer = series;
         longer.push(Bar {
@@ -742,7 +742,7 @@ mod tests {
         )
         .unwrap();
         let state = snapshot(&path);
-        assert!(state.pending.is_empty());
+        assert_eq!(state.pending.len(), 0);
         let db = ledger::connect(&path).unwrap();
         let action: String = db
             .query_row("SELECT action FROM decisions LIMIT 1", [], |r| r.get(0))
