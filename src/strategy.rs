@@ -21,6 +21,7 @@ is unusually strong, stocks whose news is mostly negative, legal trouble, diluti
 spike on thin news. Be selective: choosing no stock is a valid answer when nothing is convincing.";
 
 /// A named, bounded set of rules the account trades by.
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Strategy {
     pub id: String,
@@ -40,6 +41,40 @@ pub struct Strategy {
     pub analyst_enabled: bool,
     pub shortlist_size: usize,
     pub playbook: String,
+    /// How much of the investment desk runs: 1 single-shot analyst, 2 committee
+    /// (triage, bull and bear, judge), 3 full desk (adds research agents with tools).
+    #[serde(default = "default_depth")]
+    pub desk_depth: u8,
+    /// Stocks that reach the research and debate stages.
+    #[serde(default = "default_finalists")]
+    pub finalists: usize,
+    /// The position doctor re-checks every holding each day.
+    #[serde(default = "yes")]
+    pub use_doctor: bool,
+    /// Lessons from closed trades and the pick scorecard are shown to the judge.
+    #[serde(default = "yes")]
+    pub use_memory: bool,
+}
+
+fn default_depth() -> u8 {
+    3
+}
+fn default_finalists() -> usize {
+    4
+}
+fn yes() -> bool {
+    true
+}
+
+impl Strategy {
+    /// The depth that actually runs: 0 when the analyst is off.
+    pub fn effective_depth(&self) -> u8 {
+        if self.analyst_enabled {
+            self.desk_depth.min(3)
+        } else {
+            0
+        }
+    }
 }
 
 impl Default for Strategy {
@@ -60,6 +95,10 @@ impl Default for Strategy {
             analyst_enabled: true,
             shortlist_size: 25,
             playbook: DEFAULT_PLAYBOOK.into(),
+            desk_depth: default_depth(),
+            finalists: default_finalists(),
+            use_doctor: true,
+            use_memory: true,
         }
     }
 }
@@ -73,6 +112,8 @@ pub const BOUNDS: &[(&str, f64, f64)] = &[
     ("target_pct", 0.03, 0.30),
     ("earnings_blackout_days", 0.0, 10.0),
     ("shortlist_size", 5.0, 40.0),
+    ("desk_depth", 0.0, 3.0),
+    ("finalists", 1.0, 8.0),
 ];
 
 impl Strategy {
@@ -88,6 +129,8 @@ impl Strategy {
                 f64::from(self.earnings_blackout_days),
             ),
             ("shortlist_size", self.shortlist_size as f64),
+            ("desk_depth", f64::from(self.desk_depth)),
+            ("finalists", self.finalists as f64),
         ];
         for (name, value) in values {
             let (_, lo, hi) = BOUNDS.iter().find(|b| b.0 == name).copied().unwrap();
@@ -142,6 +185,13 @@ impl Strategy {
                 "target_pct" => next.target_pct = float(key, value)?,
                 "earnings_blackout_days" => next.earnings_blackout_days = whole(key, value)?,
                 "shortlist_size" => next.shortlist_size = whole(key, value)? as usize,
+                "finalists" => next.finalists = whole(key, value)? as usize,
+                "desk_depth" => {
+                    next.desk_depth = u8::try_from(whole(key, value)?)
+                        .map_err(|_| anyhow!("{key} is too large"))?;
+                }
+                "use_doctor" => next.use_doctor = flag(key, value)?,
+                "use_memory" => next.use_memory = flag(key, value)?,
                 "require_trend" => next.require_trend = flag(key, value)?,
                 "analyst_enabled" => next.analyst_enabled = flag(key, value)?,
                 other => bail!("unknown parameter {other}"),
