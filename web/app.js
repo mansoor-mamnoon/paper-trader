@@ -1,142 +1,343 @@
 "use strict";
-const money = new Intl.NumberFormat("en-US", {style: "currency", currency: "USD"});
-function dollars(value) { return money.format(value); }
-function percent(value) { return (value >= 0 ? "+" : "") + value.toFixed(2) + "%"; }
-function date(value) { return new Date(value * 1000).toLocaleString(); }
-function put(id, value) { document.getElementById(id).textContent = value; }
-function signed(id, value, formatted) {
-  const node = document.getElementById(id);
-  node.textContent = formatted;
-  node.classList.toggle("negative", value < 0);
-  node.classList.toggle("positive", value > 0);
+
+const USD = new Intl.NumberFormat("en-US", {style: "currency", currency: "USD"});
+const money = (v) => USD.format(v);
+const signedMoney = (v) => (v > 0 ? "+" : v < 0 ? "−" : "") + USD.format(Math.abs(v));
+const pct = (v) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(2) + "%";
+const $ = (id) => document.getElementById(id);
+const sign = (v) => (v > 0.005 ? "pos" : v < -0.005 ? "neg" : "");
+
+const rtf = new Intl.RelativeTimeFormat("en", {numeric: "auto"});
+function ago(seconds) {
+  const diff = seconds - Date.now() / 1000;
+  const steps = [[86400, "day"], [3600, "hour"], [60, "minute"]];
+  for (const [size, unit] of steps) if (Math.abs(diff) >= size) return rtf.format(Math.round(diff / size), unit);
+  return "just now";
 }
-function cell(row, value) {
-  const td = document.createElement("td"); td.textContent = value; row.append(td);
-}
-function svgElement(name, attributes, text) {
-  const node = document.createElementNS("http://www.w3.org/2000/svg", name);
-  for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, value);
-  if (text !== undefined) node.textContent = text;
+const when = (s) => new Date(s * 1000).toLocaleString(undefined, {dateStyle: "medium", timeStyle: "short"});
+
+/** Build a DOM node. Text is always set as textContent, never as HTML. */
+function h(tag, props = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(props)) {
+    if (key === "class") node.className = value;
+    else if (value !== undefined && value !== null) node.setAttribute(key, value);
+  }
+  for (const child of children.flat()) if (child !== null && child !== undefined) node.append(child);
   return node;
 }
-function chart(history) {
-  const node = document.getElementById("chart"); node.replaceChildren();
-  node.append(svgElement("title", {}, "Paper account and SPY benchmark, in dollars"));
-  if (!history.length) {
-    node.append(svgElement("text", {x: 30, y: 110}, "The chart starts at the first fresh observation."));
+const text = (id, value) => { $(id).textContent = value; };
+function tone(id, value) {
+  const node = $(id);
+  node.classList.remove("pos", "neg");
+  const cls = sign(value);
+  if (cls) node.classList.add(cls);
+}
+
+const ACTIONS = {
+  BUY_SIGNAL: ["Will buy", "buy"], SELL_SIGNAL: ["Will sell", "sell"],
+  BUY_FILLED: ["Bought", "buy"], SELL_FILLED: ["Sold", "sell"],
+  CANDIDATE: ["Passed screen", "info"], PASS: ["Did not qualify", ""],
+  REJECT: ["Rejected", ""], EXPIRED: ["Expired", ""], FREEZE: ["Paused", ""],
+  SKIP: ["Skipped", ""], CORPORATE_ACTION: ["Split or dividend", "info"],
+};
+const label = (action) => ACTIONS[action] ?? [action, ""];
+
+function parseEvidence(d) {
+  try { return typeof d.evidence === "string" ? JSON.parse(d.evidence || "{}") : d.evidence ?? {}; }
+  catch { return {}; }
+}
+
+/** One plain-English line for a decision row. */
+function describe(d) {
+  const e = parseEvidence(d);
+  switch (d.action) {
+    case "BUY_SIGNAL": return `${d.symbol} qualified. A buy is queued for the next session's open.`;
+    case "SELL_SIGNAL": return `${d.symbol} hit its stop, its target, or the account halted. A sell is queued.`;
+    case "BUY_FILLED": return `Bought ${d.symbol} at ${e.price ? money(e.price) : "the next open"}, after fees and slippage.`;
+    case "SELL_FILLED": return `Sold ${d.symbol} at ${e.price ? money(e.price) : "the next open"}, after fees and slippage.`;
+    case "CANDIDATE": return e.momentum20d === undefined ? d.reason
+      : `${d.symbol} is up ${pct(e.momentum20d * 100)} over 20 days and trades above its 20 and 50-day averages.`;
+    case "PASS": return e.momentum20d === undefined ? d.reason
+      : `${d.symbol} did not meet every rule (20-day move ${pct(e.momentum20d * 100)}).`;
+    default: return d.reason;
+  }
+}
+
+let state = null;
+let journalFilter = "activity";
+let journalLimit = 25;
+
+/* ---------- tabs ---------- */
+const TABS = ["overview", "holdings", "trades", "journal", "about"];
+function showTab(name, push = true) {
+  if (!TABS.includes(name)) name = "overview";
+  for (const id of TABS) $(id).hidden = id !== name;
+  for (const b of document.querySelectorAll(".tabs button")) b.setAttribute("aria-selected", String(b.dataset.tab === name));
+  if (push) history.replaceState(null, "", "#" + name);
+  window.scrollTo({top: 0});
+}
+document.querySelector(".tabs").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) showTab(b.dataset.tab); });
+document.addEventListener("click", (e) => { const b = e.target.closest("[data-goto]"); if (b) showTab(b.dataset.goto); });
+window.addEventListener("hashchange", () => showTab(location.hash.slice(1), false));
+
+/* ---------- tooltips ---------- */
+const tooltip = $("tooltip");
+function showTip(target) {
+  tooltip.textContent = target.dataset.tip;
+  tooltip.hidden = false;
+  const r = target.getBoundingClientRect();
+  const w = tooltip.offsetWidth;
+  tooltip.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + "px";
+  tooltip.style.top = r.bottom + 8 + "px";
+}
+for (const t of document.querySelectorAll(".tip")) {
+  t.addEventListener("mouseenter", () => showTip(t));
+  t.addEventListener("focus", () => showTip(t));
+  t.addEventListener("click", () => showTip(t));
+  t.addEventListener("mouseleave", () => { tooltip.hidden = true; });
+  t.addEventListener("blur", () => { tooltip.hidden = true; });
+}
+
+/* ---------- chart ---------- */
+const SVG = "http://www.w3.org/2000/svg";
+function svg(name, attrs, content) {
+  const n = document.createElementNS(SVG, name);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  if (content !== undefined) n.textContent = content;
+  return n;
+}
+
+function drawChart(points) {
+  const chart = $("chart");
+  const tip = $("chart-tip");
+  chart.replaceChildren(svg("title", {id: "chart-title"}, "Account value and SPY, in dollars"));
+  tip.hidden = true;
+  const W = 900, H = 280, L = 64, R = 16, T = 16, B = 28;
+  if (points.length < 2) {
+    chart.append(svg("text", {x: W / 2, y: H / 2, "text-anchor": "middle"},
+      "The chart fills in after the second daily scan."));
     return;
   }
-  const values = history.flatMap(p => [p.equity, p.benchmark, 1000]);
-  const low = Math.min(...values) - 5, high = Math.max(...values) + 5;
-  const first = history[0].at, last = history[history.length - 1].at;
-  for (let i = 0; i < 5; i++) {
-    const y = 16 + i * 48;
-    node.append(svgElement("line", {x1: 65, y1: y, x2: 890, y2: y, class: "grid"}));
-    node.append(svgElement("text", {x: 0, y: y + 4}, dollars(high - i * (high - low) / 4)));
+  const values = points.flatMap((p) => [p.equity, p.benchmark]).concat(1000);
+  const pad = Math.max(2, (Math.max(...values) - Math.min(...values)) * 0.15);
+  const lo = Math.min(...values) - pad, hi = Math.max(...values) + pad;
+  const t0 = points[0].at, t1 = points[points.length - 1].at;
+  const x = (t) => L + ((t - t0) / Math.max(1, t1 - t0)) * (W - L - R);
+  const y = (v) => T + ((hi - v) / (hi - lo)) * (H - T - B);
+  for (let i = 0; i <= 4; i++) {
+    const v = hi - (i * (hi - lo)) / 4;
+    chart.append(svg("line", {x1: L, x2: W - R, y1: y(v), y2: y(v), class: "grid"}));
+    chart.append(svg("text", {x: L - 8, y: y(v) + 4, "text-anchor": "end"}, money(v)));
   }
-  for (const key of ["benchmark", "equity"]) {
-    const points = history.map(p => [
-      65 + (p.at - first) / Math.max(1, last - first) * 825,
-      16 + (high - p[key]) / (high - low) * 192
-    ]);
-    const d = points.map((p, i) => (i ? "L" : "M") + p.join(",")).join(" ");
-    node.append(svgElement("path", {d, class: key}));
-    const end = points[points.length - 1];
-    node.append(svgElement("circle", {cx: end[0], cy: end[1], r: 3,
-      fill: key === "equity" ? "#70a7ff" : "#8291a6"}));
-  }
-  put("chart-start", date(first)); put("chart-end", date(last));
+  chart.append(svg("text", {x: L, y: H - 6}, new Date(t0 * 1000).toLocaleDateString()));
+  chart.append(svg("text", {x: W - R, y: H - 6, "text-anchor": "end"}, new Date(t1 * 1000).toLocaleDateString()));
+  const line = (key) => points.map((p, i) => `${i ? "L" : "M"}${x(p.at).toFixed(1)},${y(p[key]).toFixed(1)}`).join(" ");
+  chart.append(svg("path", {d: `${line("equity")} L${x(t1)},${H - B} L${x(t0)},${H - B} Z`, class: "area"}));
+  chart.append(svg("path", {d: line("benchmark"), class: "spy"}));
+  chart.append(svg("path", {d: line("equity"), class: "acct"}));
+  const cross = svg("line", {y1: T, y2: H - B, class: "cross", visibility: "hidden"});
+  chart.append(cross);
+  chart.onpointermove = (event) => {
+    const box = chart.getBoundingClientRect();
+    const px = ((event.clientX - box.left) / box.width) * W;
+    let best = points[0];
+    for (const p of points) if (Math.abs(x(p.at) - px) < Math.abs(x(best.at) - px)) best = p;
+    cross.setAttribute("x1", x(best.at)); cross.setAttribute("x2", x(best.at));
+    cross.setAttribute("visibility", "visible");
+    tip.hidden = false;
+    tip.replaceChildren(h("div", {}, new Date(best.at * 1000).toLocaleDateString()),
+      h("div", {}, `Account ${money(best.equity)}`), h("div", {}, `SPY ${money(best.benchmark)}`));
+    tip.style.left = `${Math.max(70, Math.min(box.width - 70, (x(best.at) / W) * box.width))}px`;
+  };
+  chart.onpointerleave = () => { cross.setAttribute("visibility", "hidden"); tip.hidden = true; };
 }
-function render(state) {
-  const a = state.account;
-  const coverage = state.coverage || {};
-  put("coverage", `${coverage.universe_count || 0} US-listed issues in the directory · ${coverage.attempted || 0} requested this run · ${coverage.usable || 0} usable prices · ${coverage.failed || 0} provider errors. A full rotation takes approximately ${coverage.rotation_cycles || "?"} runs. Holdings and pending orders are checked every run.`);
-  put("strategy", "Buy candidates: price ≥ $5; average daily dollar volume ≥ $1 million; close above the 20-day average above the 50-day average; 20-day momentum > 2%. Up to three positions, whole shares, 20% maximum allocation each. Signals execute at a later session open with modeled costs.");
-  put("costs", percent(state.rules.fee * 100) + " modeled fee per side and " + percent(state.rules.slippage * 100) + " adverse slippage.");
-  const snapshotAge = a.mode === "stocks-replay" ? 0 : Date.now() / 1000 - a.last_at;
-  if (snapshotAge > 4 * 86400) state.health = {...state.health, status: "stale", message: "Published snapshot is more than four days old. Check the run history."};
-  put("equity", dollars(a.equity)); signed("return", a.return_pct, percent(a.return_pct) + " since inception");
-  signed("total-pnl", a.equity - state.rules.starting_cash, dollars(a.equity - state.rules.starting_cash) + " total profit / loss");
-  put("cash", dollars(a.cash));
-  put("exposure", dollars(a.equity - a.cash) + " invested · " + dollars(a.fees) + " fees");
-  signed("realized", a.realized_pnl, dollars(a.realized_pnl));
-  put("unrealized", dollars(a.unrealized_pnl) + " unrealized");
-  put("drawdown", (a.max_drawdown * 100).toFixed(2) + "%");
-  put("benchmark", percent(a.benchmark_return_pct) + " since inception");
-  const observedNow = a.mode === "stocks-replay" ? a.last_at : Date.now() / 1000;
-  const elapsedDay = a.started_at ? Math.max(1, Math.floor((observedNow - a.started_at) / 86400) + 1) : 0;
-  put("day", "Day " + Math.min(60, elapsedDay) + " / 60");
-  put("risk", dollars(a.planned_risk) + " / " + dollars(a.equity * 0.03));
-  put("status", a.mode === "stocks-replay" ? "Replay · not live performance" : a.halted ? "Experiment halted" : state.health.status === "ok" ? "Latest completed session recorded" : "Daily account · " + state.health.status);
-  document.getElementById("status").classList.toggle("warning", a.halted || state.health.status !== "ok" || a.mode === "stocks-replay");
-  put("updated", a.last_at ? "Last market check " + date(a.last_at) : "First market check pending");
-  const notice = document.getElementById("notice");
-  notice.hidden = !a.halted && state.health.status === "ok" && a.mode !== "stocks-replay";
-  notice.textContent = a.mode === "stocks-replay" ? "REPLAY ACCOUNT · Scenario inputs, not live performance." :
-    a.halted ? a.halt_reason + ". No new entries. Dashboard remains available." :
-    "Values reflect delayed daily observations, not current quotes. " + (state.health.message || "Waiting for data.");
-  put("holdings-count", state.positions.length + " positions");
-  document.getElementById("empty").hidden = state.positions.length > 0;
-  put("empty", "No open positions. The account is in simulated cash.");
-  const positions = document.getElementById("positions"); positions.replaceChildren();
-  for (const p of state.positions) {
-    const row = document.createElement("tr");
-    [p.symbol, dollars(p.market_value), dollars(p.unrealized_pnl),
-      dollars(p.stop) + " / " + dollars(p.target)].forEach(v => cell(row, v));
-    positions.append(row);
-  }
-  const pending = Object.entries(state.pending).map(([symbol, p]) => p.side + " " + symbol);
-  put("pending", pending.length ? "Queued, not filled: " + pending.join(" · ") : "No pending orders.");
-  const fills = document.getElementById("fills"); fills.replaceChildren();
-  document.getElementById("no-fills").hidden = state.fills.length > 0;
-  put("no-fills", "No fills recorded. Signals wait for a later fresh market observation.");
-  for (const f of state.fills) {
-    const row = document.createElement("tr");
-    [date(f.at), f.side, f.symbol, f.quantity.toFixed(6), dollars(f.price),
-      dollars(f.fee), f.side === "SELL" ? dollars(f.realized_pnl) : "—"].forEach(v => cell(row, v));
-    fills.append(row);
-  }
-  const journal = document.getElementById("decisions"); journal.replaceChildren();
-  if (!state.decisions.length) journal.textContent = "No decisions recorded yet.";
-  for (const d of state.decisions) {
-    const row = document.createElement("div"); row.className = "entry";
-    const time = document.createElement("time"); time.textContent = date(d.at);
-    const tag = document.createElement("strong"); tag.textContent = d.symbol + " · " + d.action;
-    const reason = document.createElement("p"); reason.textContent = d.reason;
-    const evidence = typeof d.evidence === "string" ? JSON.parse(d.evidence) : d.evidence;
-    if (evidence.momentum20d !== undefined) {
-      const detail = document.createElement("small");
-      detail.textContent = "20-day " + percent(evidence.momentum20d * 100) +
-        " · SMA20 " + dollars(evidence.sma20) + " · SMA50 " + dollars(evidence.sma50) + " · bar " + date(evidence.price_at);
-      reason.append(detail);
-    }
-    row.append(time, tag, reason); journal.append(row);
-  }
-  chart(state.history);
-  const events = document.getElementById("events"); events.replaceChildren();
-  if (!state.events.length) events.textContent = "No operational events recorded.";
-  for (const event of state.events) {
-    const row = document.createElement("div"); row.className = "entry";
-    const time = document.createElement("time"); time.textContent = date(event.at);
-    const kind = document.createElement("strong"); kind.textContent = event.kind;
-    const message = document.createElement("p"); message.textContent = event.message;
-    row.append(time, kind, message); events.append(row);
-  }
-  put("received", "Dashboard snapshot received " + new Date().toLocaleString() + ". Times use your device’s timezone.");
-  put("health-detail",  "Delayed daily stock data · " + (a.mode || "not started") + " · " +
-    (a.last_at ? "observation age " + Math.floor(Math.max(0, snapshotAge) / 60) + " min" : "no market observation yet"));
+
+/* ---------- next scheduled scan (22:37 UTC on weekdays) ---------- */
+function nextScan() {
+  const d = new Date();
+  d.setUTCHours(22, 37, 0, 0);
+  if (d <= new Date()) d.setUTCDate(d.getUTCDate() + 1);
+  while ([0, 6].includes(d.getUTCDay())) d.setUTCDate(d.getUTCDate() + 1);
+  return d;
 }
+
+/* ---------- render ---------- */
+function renderOverview(s) {
+  const a = s.account;
+  const diff = a.equity - a.benchmark;
+  const held = s.positions.length;
+  const queued = Object.keys(s.pending).length;
+  const replay = a.mode === "stocks-replay";
+
+  let headline;
+  if (a.halted) headline = `Halted: ${a.halt_reason}`;
+  else if (!s.history.length) headline = "The account is waiting for its first scan";
+  else if (Math.abs(diff) < 0.5) headline = `Level with SPY at ${money(a.equity)}`;
+  else headline = `${diff > 0 ? "Ahead of" : "Behind"} SPY by ${money(Math.abs(diff))}`;
+  text("headline", headline);
+  text("subline", held
+    ? `Holding ${held} stock${held > 1 ? "s" : ""}${queued ? ` with ${queued} order${queued > 1 ? "s" : ""} waiting for the next session.` : "."}`
+    : queued ? `Holding cash. ${queued} order${queued > 1 ? "s are" : " is"} queued and will fill at the next session's open.`
+      : "Holding cash. No stock has qualified yet, so nothing is queued.");
+
+  text("v-account", money(a.equity));
+  text("v-account-pct", pct(a.return_pct));
+  text("v-spy", money(a.benchmark));
+  text("v-spy-pct", pct(a.benchmark_return_pct));
+  tone("v-account-pct", a.return_pct); tone("v-spy-pct", a.benchmark_return_pct);
+
+  const day = a.started_at ? Math.min(60, Math.max(1, Math.floor(((replay ? a.last_at : Date.now() / 1000) - a.started_at) / 86400) + 1)) : 0;
+  text("day", `Day ${day} of 60`);
+  text("ends", a.end_at ? `Ends ${new Date(a.end_at * 1000).toLocaleDateString(undefined, {dateStyle: "medium"})}` : "");
+  $("progress-fill").style.width = `${(day / 60) * 100}%`;
+  $("progress").setAttribute("aria-valuenow", String(day));
+
+  text("cash", money(a.cash));
+  text("invested", `${money(a.equity - a.cash)} invested`);
+  const total = a.equity - s.rules.starting_cash;
+  text("pnl", signedMoney(total)); tone("pnl", total);
+  text("pnl-detail", `${signedMoney(a.realized_pnl)} locked in · ${signedMoney(a.unrealized_pnl)} open`);
+  text("drawdown", `${(a.max_drawdown * 100).toFixed(2)}%`);
+  text("fees", money(a.fees));
+  text("costs", `${(s.rules.fee * 100).toFixed(2)}% fee + ${(s.rules.slippage * 100).toFixed(2)}% slippage`);
+
+  drawChart(s.history);
+
+  const next = $("next"); next.replaceChildren();
+  for (const [symbol, order] of Object.entries(s.pending)) {
+    next.append(h("li", {}, h("strong", {}, `${order.side === "BUY" ? "Buy" : "Sell"} ${symbol}`),
+      ` at the next session's open. Signal ${ago(order.at)}.`));
+  }
+  for (const p of s.positions) {
+    next.append(h("li", {}, h("strong", {}, `Watch ${p.symbol}`),
+      `: sell if it closes below ${money(p.stop)} or above ${money(p.target)}.`));
+  }
+  if (!next.children.length) next.append(h("li", {}, "Nothing is queued."));
+  next.append(h("li", {}, h("strong", {}, "Next scan"), ` ${nextScan().toLocaleString(undefined, {weekday: "long", hour: "numeric", minute: "2-digit"})} (after the US close).`));
+  const scan = s.last_scan ?? {};
+  text("scan", a.last_at
+    ? `Last scan ${ago(a.last_at)}: ${scan.candidates ?? 0} stocks passed the screen, ${scan.rejected ?? 0} did not.`
+    : "No scan has run yet.");
+
+  const recent = $("recent"); recent.replaceChildren();
+  const items = (s.activity ?? []).slice(0, 5);
+  for (const d of items) recent.append(entry(d));
+  if (!items.length) recent.append(h("li", {}, h("span", {}), h("p", {class: "muted"}, "No trades or signals yet. The account only acts when a stock passes every rule.")));
+}
+
+function entry(d, big = false) {
+  const [name, kind] = label(d.action);
+  return h("li", {}, h("span", {class: `badge ${kind}`}, name),
+    h("time", {datetime: new Date(d.at * 1000).toISOString()}, `${d.symbol === "ACCOUNT" ? "Account" : d.symbol} · ${big ? when(d.at) : ago(d.at)}`),
+    h("p", {}, describe(d)));
+}
+
+function renderStatus(s) {
+  const a = s.account;
+  const age = Date.now() / 1000 - a.last_at;
+  const stale = a.mode !== "stocks-replay" && a.last_at && age > 4 * 86400;
+  let kind = "ok", words = "Live daily account";
+  if (a.mode === "stocks-replay") { kind = "warn"; words = "Replay scenario, not live results"; }
+  else if (a.halted) { kind = "bad"; words = "Halted, no new buys"; }
+  else if (stale) { kind = "bad"; words = "Snapshot is out of date"; }
+  else if (s.health.status === "error") { kind = "bad"; words = "Last scan failed"; }
+  else if (s.health.status === "degraded") { kind = "warn"; words = "Live, some prices missing"; }
+  text("status", `${words}${a.last_at ? ` · updated ${ago(a.last_at)}` : ""}`);
+  $("status-dot").className = `dot ${kind}`;
+  const notice = $("notice");
+  const warn = kind === "bad" || kind === "warn";
+  notice.hidden = !warn;
+  notice.textContent = a.halted ? `${a.halt_reason}. The dashboard stays up, and the account makes no new buys.`
+    : stale ? "The published snapshot is more than four days old. Check the run history on GitHub."
+      : s.health.message ?? "";
+  text("health-detail", `Delayed daily stock data · ${s.coverage?.usable ?? 0} usable prices in the last scan`);
+}
+
+function renderHoldings(s) {
+  const root = $("holdings-list"); root.replaceChildren();
+  if (!s.positions.length) {
+    root.append(h("div", {class: "card empty"}, "No stocks held. The account is in cash until something passes the screen and its order fills."));
+    return;
+  }
+  for (const p of s.positions) {
+    const span = p.target - p.stop;
+    const at = Math.max(0, Math.min(100, ((p.entry - p.stop) / span) * 100));
+    const ret = (p.unrealized_pnl / p.cost) * 100;
+    root.append(h("article", {class: "card hold"},
+      h("h3", {}, p.symbol, h("span", {class: `pl ${sign(p.unrealized_pnl)}`}, `${signedMoney(p.unrealized_pnl)} (${pct(ret)})`)),
+      h("div", {class: "range", role: "img", "aria-label": `Entry sits ${at.toFixed(0)}% of the way from stop to target`}, h("i", {style: `left:${at}%`})),
+      h("div", {class: "range-labels"}, h("span", {}, `Stop ${money(p.stop)}`), h("span", {}, `Target ${money(p.target)}`)),
+      h("dl", {},
+        h("dt", {}, "Shares"), h("dd", {}, String(p.quantity)),
+        h("dt", {}, "Entry price"), h("dd", {}, money(p.entry)),
+        h("dt", {}, "Value now"), h("dd", {}, money(p.market_value)),
+        h("dt", {}, "Bought"), h("dd", {}, when(p.opened_at)))));
+  }
+}
+
+function renderTrades(s) {
+  const body = $("fills"); body.replaceChildren();
+  $("fills-empty").hidden = s.fills.length > 0;
+  text("fills-empty", "No trades yet. An order fills at a later session's open, so the first trade comes after the first signal.");
+  for (const f of s.fills) {
+    const result = f.side === "SELL" ? signedMoney(f.realized_pnl) : "";
+    body.append(h("tr", {},
+      h("td", {}, when(f.at)),
+      h("td", {}, h("span", {class: `badge ${f.side === "BUY" ? "buy" : "sell"}`}, f.side === "BUY" ? "Bought" : "Sold")),
+      h("td", {}, h("strong", {}, f.symbol)),
+      h("td", {class: "num"}, String(f.quantity)),
+      h("td", {class: "num"}, money(f.price)),
+      h("td", {class: "num"}, money(f.fee)),
+      h("td", {class: `num ${f.side === "SELL" ? sign(f.realized_pnl) : ""}`}, result)));
+  }
+}
+
+function renderJournal() {
+  if (!state) return;
+  const query = $("search").value.trim().toUpperCase();
+  const source = journalFilter === "activity" ? state.activity ?? [] : state.decisions;
+  const rows = source.filter((d) => !query || d.symbol.includes(query));
+  const list = $("journal-list"); list.replaceChildren();
+  for (const d of rows.slice(0, journalLimit)) list.append(entry(d, true));
+  $("journal-empty").hidden = rows.length > 0;
+  text("journal-empty", query ? `No decisions found for “${query}”.`
+    : journalFilter === "activity" ? "No trades or signals yet." : "No screening results yet.");
+  $("more").hidden = rows.length <= journalLimit;
+}
+for (const chip of document.querySelectorAll(".chip")) {
+  chip.addEventListener("click", () => {
+    journalFilter = chip.dataset.filter; journalLimit = 25;
+    for (const c of document.querySelectorAll(".chip")) c.setAttribute("aria-pressed", String(c === chip));
+    renderJournal();
+  });
+}
+$("search").addEventListener("input", () => { journalLimit = 25; renderJournal(); });
+$("more").addEventListener("click", () => { journalLimit += 25; renderJournal(); });
+
+function renderAbout(s) {
+  const c = s.coverage ?? {};
+  text("coverage", `${(c.universe_count ?? 0).toLocaleString()} US-listed stocks and ETFs are in the directory. The last scan requested ${c.attempted ?? 0}, got ${c.usable ?? 0} usable prices, and hit ${c.failed ?? 0} provider errors. Covering everything takes about ${c.rotation_cycles ?? "?"} daily scans, and holdings are checked every time.`);
+}
+
+function render(s) {
+  state = s;
+  renderStatus(s); renderOverview(s); renderHoldings(s); renderTrades(s); renderJournal(); renderAbout(s);
+}
+
 async function refresh() {
   try {
     const response = await fetch("api/state", {cache: "no-store", signal: AbortSignal.timeout(15000)});
-    if (!response.ok) throw new Error("HTTP " + response.status);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     render(await response.json());
-  } catch (error) {
-    const notice = document.getElementById("notice"); notice.hidden = false;
-    notice.textContent = "Dashboard disconnected. Displayed values may be stale. Retrying automatically.";
-    put("status", "Connection lost");
-    document.getElementById("status").classList.add("warning");
+  } catch {
+    const notice = $("notice");
+    notice.hidden = false;
+    notice.textContent = "Could not load the latest snapshot. Showing the last values, retrying soon.";
+    if (!state) text("headline", "Could not load the account");
   }
 }
+
+showTab(location.hash.slice(1), false);
 refresh();
-setInterval(refresh, 30000);
+setInterval(refresh, 60000);

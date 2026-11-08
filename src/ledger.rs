@@ -180,6 +180,18 @@ pub fn value_ref(v: ValueRef) -> Value {
     }
 }
 
+/// Counts of symbols that passed or failed the entry screen in the latest scan.
+fn last_scan(db: &Connection) -> Result<Value> {
+    let counts = db.query_row(
+        "SELECT COALESCE(SUM(action='CANDIDATE'),0), COALESCE(SUM(action='PASS'),0) \
+         FROM decisions WHERE at = (SELECT MAX(at) FROM decisions \
+         WHERE action IN ('PASS','CANDIDATE'))",
+        [],
+        |r| Ok((r.get::<_, i64>(0)?, r.get::<_, i64>(1)?)),
+    )?;
+    Ok(json!({"candidates": counts.0, "rejected": counts.1}))
+}
+
 /// Consistent read-only dashboard view and lifetime performance.
 pub fn report(path: &str) -> Result<Value> {
     let db = connect(path)?;
@@ -245,6 +257,12 @@ pub fn report(path: &str) -> Result<Value> {
         "fills": rows(&db, "SELECT * FROM fills ORDER BY id DESC LIMIT 200")?,
         "decisions": rows(&db, "SELECT * FROM decisions ORDER BY id DESC LIMIT 120")?,
         "events": rows(&db, "SELECT * FROM events ORDER BY id DESC LIMIT 30")?,
+        "activity": rows(
+            &db,
+            "SELECT * FROM decisions WHERE action NOT IN ('PASS','CANDIDATE','SKIP') \
+             ORDER BY id DESC LIMIT 100",
+        )?,
+        "last_scan": last_scan(&db)?,
         "rules": {
             "starting_cash": 1000, "position_cap": 0.25, "trade_risk": 0.01,
             "aggregate_risk": 0.03, "drawdown_halt": 0.10, "fee": 0.004, "slippage": 0.001,

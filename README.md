@@ -27,7 +27,7 @@ The experiment asks whether a plain trend rule can beat buying SPY after fees an
 
 <div align="center">
 <img src="docs/dashboard.gif" alt="Scrolling through the live Paper Trader dashboard" width="760">
-<br><sub>Captured from the live dashboard while the account still held only cash.</sub>
+<br><sub>A tour of the five tabs, using a replayed scenario with synthetic prices.</sub>
 </div>
 
 | Setting | Value |
@@ -69,10 +69,12 @@ Candidates are ranked by 20-day return and the best ones fill up to three slots,
 ## Dashboard
 
 <div align="center">
-<img src="docs/dashboard.png" alt="Dashboard with equity, cash, drawdown, the SPY comparison, holdings and guardrails" width="760">
+<img src="docs/dashboard.png" alt="Overview tab with the headline result, equity chart against SPY and what happens next" width="760">
 </div>
 
-The page shows equity against SPY, current holdings with stop and target levels, the latest 120 decisions with their evidence, the latest 200 fills, scan coverage and provider errors. Full histories download as `decisions.csv`, `fills.csv`, `equity.csv` and `events.csv`, and `api/state` returns the raw snapshot.
+The site has five tabs. Overview opens with a one-line verdict (ahead of or behind SPY, and by how much), a 60-day progress bar, the equity chart with hover values, and a list of what happens at the next session. Holdings shows each stock's price between its stop and its target. Trades lists every fill. Journal explains each decision in plain English, with a ticker search and a filter that hides the thousands of routine "did not qualify" rows. How it works covers the rules, the guardrails and the limits. Hover the `?` icons for definitions of cash, drawdown, fees and profit and loss.
+
+Full histories download as `decisions.csv`, `fills.csv`, `equity.csv` and `events.csv`, and `api/state` returns the raw snapshot. The layout works on phones and follows your light or dark setting.
 
 ## Crypto account
 
