@@ -69,7 +69,10 @@ pub fn export(path: &str, output: &str) -> Result<Value> {
     )?;
     for table in ["fills", "decisions", "equity", "events"] {
         let mut stmt = db.prepare(&format!("SELECT * FROM {table} ORDER BY id"))?;
-        let names: Vec<String> = stmt.column_names().map(|s| s.to_string()).collect();
+        let names: Vec<String> = stmt
+            .column_names()
+            .map(std::string::ToString::to_string)
+            .collect();
         let mut out = names.join(",") + "\n";
         let mut cursor = stmt.query([])?;
         while let Some(row) = cursor.next()? {

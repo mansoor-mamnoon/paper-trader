@@ -14,11 +14,11 @@ const DIRECTORY: &str = "https://www.nasdaqtrader.com/dynamic/SymDir/";
 pub const SOURCE: &str = "Nasdaq symbol directory; Yahoo Finance unofficial daily chart endpoint";
 
 pub fn fetch(url: &str) -> Result<String> {
-    let response = ureq::get(url)
-        .set("User-Agent", "Mozilla/5.0 (paper-trader research)")
-        .timeout(Duration::from_secs(20))
-        .call()?;
-    Ok(response.into_string()?)
+    crate::http::get(
+        url,
+        "Mozilla/5.0 (paper-trader research)",
+        Duration::from_secs(20),
+    )
 }
 
 /// Parse one pipe-delimited Nasdaq directory file into symbol records.
@@ -34,7 +34,7 @@ pub fn parse_directory(text: &str, key: &str, into: &mut BTreeMap<String, Value>
     for line in lines {
         let cells: Vec<&str> = line.split('|').collect();
         let get = |name: &str| column(name).and_then(|i| cells.get(i)).map(|s| s.trim());
-        let symbol = cells.get(key_index).map(|s| s.trim()).unwrap_or("");
+        let symbol = cells.get(key_index).map_or("", |s| s.trim());
         if symbol.is_empty()
             || symbol.starts_with("File Creation")
             || get("Test Issue") != Some("N")

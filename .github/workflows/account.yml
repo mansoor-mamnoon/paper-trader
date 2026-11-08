@@ -20,9 +20,10 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
+        run: cargo build --release --locked
       - name: Restore durable account (absence is an error, never a reset)
         uses: actions/checkout@v7
         with:
@@ -32,13 +33,13 @@ jobs:
         run: |
           test -s account/account.sqlite
           test -f account/INITIALIZED
-          python -c "import sqlite3; c=sqlite3.connect('file:account/account.sqlite?mode=rw', uri=True); assert c.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'; c.close()"
+          test "$(sqlite3 account/account.sqlite 'PRAGMA integrity_check')" = ok
       - name: Evaluate latest completed stock session and export dashboard
         id: scan
         continue-on-error: true
-        run: python -m projects.paper_trader.stocks --db account/account.sqlite --output account/site
+        run: ./target/release/paper-trader stocks --db account/account.sqlite --output account/site
       - name: Apply static dashboard
-        run: cp projects/paper_trader/stock_static/* account/site/
+        run: cp web/* account/site/
       - name: Save account before deployment
         working-directory: account
         run: |

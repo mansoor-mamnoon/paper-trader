@@ -1,7 +1,6 @@
-*.lock
-*.pyc
+target/
 *.sqlite
 *.sqlite-*
-__pycache__/
-logs/
+*.lock
 !Cargo.lock
+logs/

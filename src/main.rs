@@ -1,14 +1,8 @@
 //! Paper Trader: a $1,000 simulated US-stock account that trades by fixed rules.
 
-mod account;
-mod crypto;
-mod data;
-mod export;
-mod ledger;
-mod model;
-
 use anyhow::Result;
 use clap::Parser;
+use paper_trader::{account, crypto, data, export, ledger};
 use serde_json::json;
 use std::path::PathBuf;
 
@@ -62,12 +56,11 @@ struct Args {
 
 fn run(args: &Args, mode: &str) -> Result<()> {
     account::reserve(&args.db, mode)?;
-    let observation = match &args.replay {
-        Some(file) => serde_json::from_str(&std::fs::read_to_string(file)?)?,
-        None => {
-            let state = ledger::load(&ledger::connect(&args.db)?)?;
-            data::observe(&state, args.batch_size)?
-        }
+    let observation = if let Some(file) = &args.replay {
+        serde_json::from_str(&std::fs::read_to_string(file)?)?
+    } else {
+        let state = ledger::load(&ledger::connect(&args.db)?)?;
+        data::observe(&state, args.batch_size)?
     };
     account::cycle(&args.db, &observation, mode)
 }

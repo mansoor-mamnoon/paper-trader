@@ -44,20 +44,19 @@ type Quotes = BTreeMap<String, CryptoQuote>;
 
 fn public_get(endpoint: &str) -> Result<Value> {
     let url = format!("https://api.kraken.com/0/public/{endpoint}");
-    let payload: Value = ureq::get(&url)
-        .set("User-Agent", "PaperTradingExperiment/1.0")
-        .set("Cache-Control", "no-cache")
-        .timeout(Duration::from_secs(15))
-        .call()?
-        .into_json()?;
-    if let Some(errors) = payload["error"].as_array() {
-        if !errors.is_empty() {
-            let text: Vec<String> = errors
-                .iter()
-                .map(|e| e.as_str().unwrap_or("").to_string())
-                .collect();
-            bail!("Kraken: {}", text.join("; "));
-        }
+    let payload: Value = serde_json::from_str(&crate::http::get(
+        &url,
+        "PaperTradingExperiment/1.0",
+        Duration::from_secs(15),
+    )?)?;
+    if let Some(errors) = payload["error"].as_array()
+        && !errors.is_empty()
+    {
+        let text: Vec<String> = errors
+            .iter()
+            .map(|e| e.as_str().unwrap_or("").to_string())
+            .collect();
+        bail!("Kraken: {}", text.join("; "));
     }
     Ok(payload["result"].clone())
 }
@@ -133,10 +132,14 @@ pub fn validate(snapshot: &Snapshot) -> Result<()> {
     let at = snapshot.at;
     let expected: Vec<&str> = {
         let mut names: Vec<&str> = PAIRS.iter().map(|(s, _)| *s).collect();
-        names.sort();
+        names.sort_unstable();
         names
     };
-    let actual: Vec<&str> = snapshot.quotes.keys().map(|s| s.as_str()).collect();
+    let actual: Vec<&str> = snapshot
+        .quotes
+        .keys()
+        .map(std::string::String::as_str)
+        .collect();
     if !at.is_finite() || at <= 0.0 || actual != expected {
         bail!("Invalid observation time or incomplete universe");
     }
@@ -363,19 +366,18 @@ pub fn cycle(path: &str, snapshot: &Snapshot, mode: &str) -> Result<()> {
         return ledger::rollback(&db);
     }
     state.mode = Some(mode.to_string());
-    let started_at = match state.started_at {
-        Some(started) => started,
-        None => {
-            state.started_at = Some(at);
-            state.benchmark_quantity = 1000.0 / (quotes["BTC"].ask * (1.0 + SLIP) * (1.0 + FEE));
-            ledger::event(
-                &db,
-                at,
-                "start",
-                "60-day paper experiment started with $1,000",
-            )?;
-            at
-        }
+    let started_at = if let Some(started) = state.started_at {
+        started
+    } else {
+        state.started_at = Some(at);
+        state.benchmark_quantity = 1000.0 / (quotes["BTC"].ask * (1.0 + SLIP) * (1.0 + FEE));
+        ledger::event(
+            &db,
+            at,
+            "start",
+            "60-day paper experiment started with $1,000",
+        )?;
+        at
     };
     let mut equity = value(&state, quotes);
     state.peak = state.peak.max(equity);
@@ -513,7 +515,7 @@ pub fn cycle(path: &str, snapshot: &Snapshot, mode: &str) -> Result<()> {
             "Historical replay scenario; not live trading performance"
         },
     });
-    for (symbol, pos) in state.positions.iter_mut() {
+    for (symbol, pos) in &mut state.positions {
         let quote = &quotes[symbol];
         pos.mark = Some(quote.bid);
         pos.market_value = pos.quantity * sale_price(quote) * (1.0 - FEE);
@@ -544,7 +546,7 @@ mod tests {
             bid: 100.0,
             ask: 100.1,
             trade_at: at - 10.0,
-            closes: (0..60).map(|i| 100.0 + trend * i as f64).collect(),
+            closes: (0..60).map(|i| 100.0 + trend * f64::from(i)).collect(),
             candle_end: at - 100.0,
         }
     }

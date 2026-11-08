@@ -64,8 +64,8 @@ fn corporate_actions(
         {
             continue;
         }
-        let reason;
-        if action.kind == "splits" {
+
+        let reason = if action.kind == "splits" {
             let ratio =
                 action.numerator.unwrap_or(f64::NAN) / action.denominator.unwrap_or(f64::NAN);
             if !ratio.is_finite() || ratio <= 0.0 {
@@ -76,7 +76,7 @@ fn corporate_actions(
             position.entry /= ratio;
             position.stop /= ratio;
             position.target /= ratio;
-            reason = format!("Reported split applied, ratio {ratio}");
+            format!("Reported split applied, ratio {ratio}")
         } else if action.kind == "dividends" {
             let amount = state.positions[symbol].quantity * action.amount.unwrap_or(f64::NAN);
             if !amount.is_finite() || amount < 0.0 {
@@ -84,12 +84,10 @@ fn corporate_actions(
             }
             state.cash += amount;
             state.realized_pnl += amount;
-            reason = format!(
-                "Reported distribution credited on ex-date, not payment date: ${amount:.4}"
-            );
+            format!("Reported distribution credited on ex-date, not payment date: ${amount:.4}")
         } else {
             continue;
-        }
+        };
         state.corporate_actions.push(key);
         decision(
             db,
@@ -270,7 +268,7 @@ pub fn cycle(path: &str, observation: &Observation, mode: &str) -> Result<()> {
         let Some(quote) = usable.get(symbol.as_str()) else {
             continue;
         };
-        if let Some(bar) = quote.bars.iter().filter(|b| b.at > order.at).last() {
+        if let Some(bar) = quote.bars.iter().rfind(|b| b.at > order.at) {
             executions.push((bar.at, symbol, order, bar.clone()));
         }
     }
@@ -371,12 +369,12 @@ pub fn cycle(path: &str, observation: &Observation, mode: &str) -> Result<()> {
             candidates.push((momentum, symbol));
         }
     }
-    let queued_buys = state.pending.values().filter(|o| o.side == "BUY").count() as i64;
-    let mut slots = 3 - state.positions.len() as i64 - queued_buys;
+    let queued_buys = state.pending.values().filter(|o| o.side == "BUY").count();
+    let mut slots = 3_usize.saturating_sub(state.positions.len() + queued_buys);
     if !state.halted && missing.is_empty() {
         candidates.sort_by(|a, b| b.partial_cmp(a).unwrap());
         for (_, symbol) in candidates {
-            if slots <= 0 {
+            if slots == 0 {
                 break;
             }
             if state.positions.contains_key(symbol)
@@ -436,7 +434,7 @@ pub fn cycle(path: &str, observation: &Observation, mode: &str) -> Result<()> {
     );
     coverage.insert("usable".into(), json!(usable.len()));
     state.coverage = coverage;
-    state.universe = observation.universe.clone();
+    state.universe.clone_from(&observation.universe);
     state.data_errors = observation.errors.clone();
     let status = if usable.is_empty() {
         "error"
@@ -663,8 +661,10 @@ mod tests {
 
     #[test]
     fn drawdown_halt_triggers_at_ten_percent() {
-        let mut state = State::default();
-        state.cash = 890.0;
+        let mut state = State {
+            cash: 890.0,
+            ..State::default()
+        };
         let (_, drawdown) = update_risk(&mut state);
         assert!(drawdown >= 0.10 && state.halted);
     }

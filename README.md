@@ -5,8 +5,8 @@
 **A $1,000 simulated US-stock account that trades by fixed rules and publishes every decision.**
 
 [![Live dashboard](https://img.shields.io/badge/live-dashboard-4f8cff?style=for-the-badge)](https://mansoor-mamnoon.github.io/paper-trader/)
-![Python](https://img.shields.io/badge/python-3.12-3776ab?style=for-the-badge&logo=python&logoColor=white)
 ![Rust](https://img.shields.io/badge/rust-2024-dea584?style=for-the-badge&logo=rust&logoColor=white)
+[![CI](https://img.shields.io/github/actions/workflow/status/mansoor-mamnoon/paper-trader/rust.yml?branch=main&style=for-the-badge&label=tests)](https://github.com/mansoor-mamnoon/paper-trader/actions/workflows/rust.yml)
 ![Real money](https://img.shields.io/badge/real%20money-none-lightgrey?style=for-the-badge)
 
 [Live dashboard](https://mansoor-mamnoon.github.io/paper-trader/) · [How it works](#how-it-works) · [Strategy](#strategy) · [Crypto account](#crypto-account) · [Rust](#rust) · [Run it](#run-it) · [Limits](#limits)
@@ -83,7 +83,7 @@ A second $1,000 account trades BTC, ETH, SOL and ADA from public Kraken data. It
 - Sizing: at most 25% of equity per position, with about 1% of equity at risk per trade and 3% in total
 - Exits: -4% stop, +8% target, a seven-day holding limit, or a trend break
 
-The Rust binary runs it directly:
+The binary runs it directly:
 
 ```bash
 paper-trader crypto once   --db crypto.sqlite    # observe Kraken and apply one cycle
@@ -91,29 +91,16 @@ paper-trader crypto replay --db replay.sqlite --input snapshots.json
 paper-trader crypto status --db crypto.sqlite
 ```
 
-The original Python version, with its local dashboard server, is in `app/`.
-
-## Rust
-
-`rust/` is a Rust implementation of both accounts. It uses the same SQLite schema and the same JSON state as the Python code, so either can open the other's database.
-
-```bash
-cd rust
-cargo test                                   # 16 unit tests
-cargo run --release -- stocks --db account.sqlite --output site
-```
-
-I checked the stock account by replaying four identical observations through both implementations. The fills and the equity curve matched to six decimals. The decision rows matched except for insertion order within a day, because the Python code iterates symbols in dictionary order and the Rust code in alphabetical order. The Rust port has no local server yet, and the crypto account is covered by unit tests but has not been compared against Python.
-
 ## Run it
 
-Python 3.12 and the standard library are enough:
+You need a recent stable Rust toolchain (1.88 or newer).
 
 ```bash
 git clone https://github.com/mansoor-mamnoon/paper-trader.git
 cd paper-trader
-python -m projects.paper_trader.stocks --db account.sqlite --output site
-python -m http.server --directory site 8000
+cargo run --release -- stocks --db account.sqlite --output site
+# serve site/ with any static file server
+cp web/* site/                                  # the dashboard
 ```
 
 | Flag | Meaning |
@@ -124,12 +111,19 @@ python -m http.server --directory site 8000
 To host your own copy, fork the repo and create an `account` branch containing an initialised `account.sqlite` and an `INITIALIZED` file. Enable GitHub Pages with the Actions source and the workflow takes over.
 
 ```
-.github/workflows/    account.yml (scheduled run), rust.yml (tests)
-projects/paper_trader Python stock account and dashboard
-rust/                 Rust implementation of both accounts
-app/                  original Python crypto account and local server
-docs/                 README images
+src/
+  main.rs      command line
+  account.rs   stock signals, queued orders, fills, risk limits
+  data.rs      Nasdaq directory and Yahoo daily bars
+  crypto.rs    crypto account and Kraken data
+  ledger.rs    SQLite schema, state and reports
+  export.rs    JSON and CSV snapshot
+web/           the dashboard (plain HTML, CSS and JavaScript)
+docs/          README images
+.github/       scheduled run and CI
 ```
+
+The crate is a library plus a thin binary, builds on edition 2024, and passes `cargo clippy -- -D warnings` with the pedantic group enabled. It began as a Python program. Replaying the same four observations through both versions gave identical fills and equity curves to six decimals, and the Python code has since been removed.
 
 ## Limits
 

@@ -11,17 +11,15 @@ use std::time::{SystemTime, UNIX_EPOCH};
 pub fn now() -> f64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs_f64())
-        .unwrap_or(0.0)
+        .map_or(0.0, |d| d.as_secs_f64())
 }
 
 pub fn connect(path: &str) -> Result<Connection> {
-    if path != ":memory:" {
-        if let Some(parent) = Path::new(path).parent() {
-            if !parent.as_os_str().is_empty() {
-                std::fs::create_dir_all(parent)?;
-            }
-        }
+    if path != ":memory:"
+        && let Some(parent) = Path::new(path).parent()
+        && !parent.as_os_str().is_empty()
+    {
+        std::fs::create_dir_all(parent)?;
     }
     let db = Connection::open(path)?;
     db.busy_timeout(std::time::Duration::from_secs(30))?;
@@ -83,6 +81,7 @@ pub fn event(db: &Connection, at: f64, kind: &str, message: &str) -> Result<()> 
     Ok(())
 }
 
+#[allow(clippy::needless_pass_by_value)]
 pub fn decision(
     db: &Connection,
     at: f64,
@@ -156,7 +155,10 @@ pub fn failure(path: &str, message: &str) -> Result<()> {
 /// Run a query and return each row as a JSON object keyed by column name.
 pub fn rows(db: &Connection, sql: &str) -> Result<Vec<Value>> {
     let mut stmt = db.prepare(sql)?;
-    let names: Vec<String> = stmt.column_names().map(|s| s.to_string()).collect();
+    let names: Vec<String> = stmt
+        .column_names()
+        .map(std::string::ToString::to_string)
+        .collect();
     let mut out = Vec::new();
     let mut cursor = stmt.query([])?;
     while let Some(row) = cursor.next()? {
@@ -171,11 +173,10 @@ pub fn rows(db: &Connection, sql: &str) -> Result<Vec<Value>> {
 
 pub fn value_ref(v: ValueRef) -> Value {
     match v {
-        ValueRef::Null => Value::Null,
         ValueRef::Integer(i) => json!(i),
         ValueRef::Real(f) => json!(f),
         ValueRef::Text(t) => json!(String::from_utf8_lossy(t)),
-        ValueRef::Blob(_) => Value::Null,
+        ValueRef::Null | ValueRef::Blob(_) => Value::Null,
     }
 }
 
@@ -230,10 +231,10 @@ pub fn report(path: &str) -> Result<Value> {
     }
     let step = (history.len() / 600).max(1);
     let mut sampled: Vec<Value> = history.iter().step_by(step).cloned().collect();
-    if let (Some(last), Some(tail)) = (history.last(), sampled.last()) {
-        if last != tail {
-            sampled.push(last.clone());
-        }
+    if let (Some(last), Some(tail)) = (history.last(), sampled.last())
+        && last != tail
+    {
+        sampled.push(last.clone());
     }
     let report = json!({
         "account": account,
