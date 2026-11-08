@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" role="img" aria-label="Paper Trader: the $1,000 experiment">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0c1421"/><stop offset="1" stop-color="#14233d"/></linearGradient>
+<linearGradient id="ln" x1="0" x2="1"><stop offset="0" stop-color="#4f8cff"/><stop offset="1" stop-color="#5eead4"/></linearGradient>
+</defs>
+<rect width="1200" height="300" rx="18" fill="url(#bg)"/>
+<g stroke="#ffffff" stroke-opacity=".06"><path d="M0 75H1200M0 150H1200M0 225H1200"/></g>
+<path d="M600 230 L660 205 L720 215 L780 170 L840 180 L900 130 L960 140 L1020 90 L1080 100 L1150 55" fill="none" stroke="url(#ln)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="900" stroke-dashoffset="900">
+<animate attributeName="stroke-dashoffset" from="900" to="0" dur="3s" fill="freeze"/></path>
+<circle r="7" fill="#5eead4"><animateMotion dur="3s" fill="freeze" path="M600 230 L660 205 L720 215 L780 170 L840 180 L900 130 L960 140 L1020 90 L1080 100 L1150 55"/></circle>
+<rect x="48" y="52" width="64" height="64" rx="16" fill="#4f8cff"/>
+<text x="80" y="98" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="44" font-weight="800" text-anchor="middle" fill="#0c1421">$</text>
+<text x="132" y="86" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="46" font-weight="800" fill="#e8eefc">Paper Trader</text>
+<text x="132" y="116" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="18" letter-spacing="3" fill="#4f8cff">THE $1,000 EXPERIMENT</text>
+<text x="48" y="180" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="24" fill="#c3cde3">A rules-based US-stock paper account, run on a schedule,</text>
+<text x="48" y="212" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="24" fill="#c3cde3">with every decision logged in public.</text>
+<text x="48" y="262" font-family="ui-monospace,Menlo,monospace" font-size="15" fill="#8ea0c4">SIMULATED · NO REAL MONEY · NO BROKER · NO LEVERAGE</text>
+</svg>

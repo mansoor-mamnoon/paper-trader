@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 200" role="img" aria-label="Daily pipeline: universe, daily bars, signals, queued orders, next-session fills, dashboard">
+<style>text{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;fill:#e8eefc}.s{font-size:13px;fill:#9fb0d0}.t{font-size:17px;font-weight:700}.b{fill:#13203a;stroke:#2a3f66}</style>
+<rect width="1100" height="200" rx="14" fill="#0c1421"/>
+<g>
+<rect class="b" x="20" y="50" width="160" height="100" rx="12"/><text class="t" x="100" y="90" text-anchor="middle">1. Universe</text><text class="s" x="100" y="115" text-anchor="middle">Nasdaq symbol</text><text class="s" x="100" y="133" text-anchor="middle">directory</text>
+<rect class="b" x="205" y="50" width="160" height="100" rx="12"/><text class="t" x="285" y="90" text-anchor="middle">2. Daily bars</text><text class="s" x="285" y="115" text-anchor="middle">Yahoo, delayed,</text><text class="s" x="285" y="133" text-anchor="middle">rotating batch</text>
+<rect class="b" x="390" y="50" width="160" height="100" rx="12"/><text class="t" x="470" y="90" text-anchor="middle">3. Signals</text><text class="s" x="470" y="115" text-anchor="middle">trend + momentum</text><text class="s" x="470" y="133" text-anchor="middle">+ liquidity</text>
+<rect class="b" x="575" y="50" width="160" height="100" rx="12"/><text class="t" x="655" y="90" text-anchor="middle">4. Queue</text><text class="s" x="655" y="115" text-anchor="middle">orders wait for</text><text class="s" x="655" y="133" text-anchor="middle">next session</text>
+<rect class="b" x="760" y="50" width="160" height="100" rx="12"/><text class="t" x="840" y="90" text-anchor="middle">5. Fill</text><text class="s" x="840" y="115" text-anchor="middle">next open + fee</text><text class="s" x="840" y="133" text-anchor="middle">+ slippage</text>
+<rect class="b" x="945" y="50" width="140" height="100" rx="12" stroke="#4f8cff"/><text class="t" x="1015" y="90" text-anchor="middle">6. Publish</text><text class="s" x="1015" y="115" text-anchor="middle">JSON + CSV +</text><text class="s" x="1015" y="133" text-anchor="middle">Pages</text>
+</g>
+<g stroke="#4f8cff" stroke-width="2" fill="none"><path d="M180 100h25M365 100h25M550 100h25M735 100h25M920 100h25"/></g>
+<circle r="5" fill="#5eead4"><animateMotion dur="6s" repeatCount="indefinite" path="M20 100H1085"/></circle>
+</svg>
