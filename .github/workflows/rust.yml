@@ -1,0 +1,13 @@
+name: Rust tests
+on:
+  push:
+    paths: ['rust/**']
+  pull_request:
+    paths: ['rust/**']
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test --manifest-path rust/Cargo.toml

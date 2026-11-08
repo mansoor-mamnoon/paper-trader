@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 640" role="img" aria-label="Project overview: data sources feed two paper accounts, a SQLite ledger stores every decision, and a static dashboard publishes the results">
+<style>
+text{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;fill:#e8eefc}
+.h{font-size:13px;letter-spacing:2px;fill:#4f8cff;font-weight:700}
+.t{font-size:18px;font-weight:700}
+.s{font-size:13px;fill:#9fb0d0}
+.m{font-size:12px;font-family:ui-monospace,Menlo,monospace;fill:#5eead4}
+.b{fill:#13203a;stroke:#2a3f66;stroke-width:1.5}
+.a{fill:none;stroke:#4f8cff;stroke-width:2}
+</style>
+<rect width="1200" height="640" rx="18" fill="#0c1421"/>
+<text class="h" x="40" y="46">DATA</text><text class="h" x="330" y="46">ACCOUNTS</text><text class="h" x="660" y="46">LEDGER</text><text class="h" x="900" y="46">PUBLISH</text>
+
+<rect class="b" x="40" y="70" width="230" height="86" rx="12"/><text class="t" x="60" y="102">Nasdaq directory</text><text class="s" x="60" y="124">US-listed symbols, test issues</text><text class="s" x="60" y="141">removed</text>
+<rect class="b" x="40" y="176" width="230" height="86" rx="12"/><text class="t" x="60" y="208">Yahoo daily bars</text><text class="s" x="60" y="230">delayed OHLCV, splits,</text><text class="s" x="60" y="247">dividends</text>
+<rect class="b" x="40" y="400" width="230" height="86" rx="12"/><text class="t" x="60" y="432">Kraken public API</text><text class="s" x="60" y="454">BTC ETH SOL ADA, hourly</text><text class="s" x="60" y="471">candles, bid and ask</text>
+
+<rect class="b" x="330" y="90" width="270" height="190" rx="14" stroke="#4f8cff"/>
+<text class="t" x="352" y="124">Stock account</text><text class="s" x="352" y="148">$1,000, long only, whole shares</text>
+<text class="s" x="352" y="176">20/50-day trend + 20-day momentum</text><text class="s" x="352" y="196">3 positions, 20% cap each</text>
+<text class="s" x="352" y="216">-4% stop, +8% target, 10% halt</text><text class="m" x="352" y="256">daily · 22:37 UTC</text>
+
+<rect class="b" x="330" y="380" width="270" height="130" rx="14" stroke="#5eead4"/>
+<text class="t" x="352" y="414">Crypto account</text><text class="s" x="352" y="438">$1,000, separate database</text>
+<text class="s" x="352" y="458">20h/50h trend + 24h momentum</text><text class="m" x="352" y="492">hourly · closed candles only</text>
+
+<rect class="b" x="660" y="170" width="190" height="260" rx="14"/>
+<text class="t" x="684" y="206">SQLite ledger</text>
+<text class="m" x="684" y="240">state</text><text class="m" x="684" y="266">decisions</text><text class="m" x="684" y="292">fills</text><text class="m" x="684" y="318">equity</text><text class="m" x="684" y="344">events</text>
+<text class="s" x="684" y="384">append-only evidence,</text><text class="s" x="684" y="402">one file per account</text>
+
+<rect class="b" x="900" y="90" width="260" height="190" rx="14" stroke="#4f8cff"/>
+<text class="t" x="922" y="124">Static export</text><text class="s" x="922" y="150">api/state, universe.json</text><text class="s" x="922" y="170">decisions, fills, equity</text><text class="s" x="922" y="190">and events as CSV</text>
+<rect x="922" y="212" width="216" height="46" rx="8" fill="#0c1421" stroke="#2a3f66"/>
+<polyline points="934,246 960,232 986,240 1012,222 1038,228 1064,220 1090,226 1126,218" fill="none" stroke="#5eead4" stroke-width="2.5"/>
+<rect class="b" x="900" y="320" width="260" height="110" rx="14"/>
+<text class="t" x="922" y="354">GitHub Pages</text><text class="s" x="922" y="378">read-only dashboard,</text><text class="s" x="922" y="398">rebuilt by GitHub Actions</text>
+
+<rect class="b" x="660" y="520" width="500" height="84" rx="14"/>
+<text class="t" x="684" y="552">Two implementations, one ledger format</text>
+<text class="s" x="684" y="576">Python (projects/, app/) and Rust (rust/) read and write the same SQLite files.</text>
+<text class="s" x="684" y="594">Stock-account parity was checked by replaying the same observations.</text>
+
+<g class="a"><path d="M270 113H300V185H330"/><path d="M270 219H300V185"/><path d="M270 443H330"/><path d="M600 185H630V260H660"/><path d="M600 445H630V340H660"/><path d="M850 300H875V185H900"/><path d="M1030 280V320"/></g>
+<g fill="#5eead4"><circle r="4"><animateMotion dur="5s" repeatCount="indefinite" path="M270 113H300V185H330"/></circle>
+<circle r="4"><animateMotion dur="5s" begin="1s" repeatCount="indefinite" path="M600 185H630V260H660"/></circle>
+<circle r="4"><animateMotion dur="5s" begin="2s" repeatCount="indefinite" path="M850 300H875V185H900"/></circle>
+<circle r="4"><animateMotion dur="5s" begin="3s" repeatCount="indefinite" path="M1030 280V320"/></circle>
+<circle r="4"><animateMotion dur="4s" repeatCount="indefinite" path="M270 443H330"/></circle></g>
+</svg>

@@ -4,3 +4,4 @@
 *.sqlite-*
 __pycache__/
 logs/
+!Cargo.lock
