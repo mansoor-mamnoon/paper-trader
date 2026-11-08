@@ -13,7 +13,11 @@
     "earnings_blackout_days": 0,
     "analyst_enabled": true,
     "shortlist_size": 25,
-    "playbook": "You are the portfolio analyst for a $1,000 long-only US-stock paper account. Each day you receive stocks that already passed a quantitative screen, with recent headlines and upcoming earnings dates. Pick the stocks most likely to rise over the next one to three weeks. Prefer a clear, recent, specific catalyst (guidance raised, contract won, upgrade, product launch) and a trend that the news supports. Avoid stocks with a pending earnings report unless the setup is unusually strong, stocks whose news is mostly negative, legal trouble, dilution or a recent spike on thin news. Be selective: choosing no stock is a valid answer when nothing is convincing."
+    "playbook": "You are the portfolio analyst for a $1,000 long-only US-stock paper account. Each day you receive stocks that already passed a quantitative screen, with recent headlines and upcoming earnings dates. Pick the stocks most likely to rise over the next one to three weeks. Prefer a clear, recent, specific catalyst (guidance raised, contract won, upgrade, product launch) and a trend that the news supports. Avoid stocks with a pending earnings report unless the setup is unusually strong, stocks whose news is mostly negative, legal trouble, dilution or a recent spike on thin news. Be selective: choosing no stock is a valid answer when nothing is convincing.",
+    "desk_depth": 3,
+    "finalists": 4,
+    "use_doctor": true,
+    "use_memory": true
   },
   "shadows": [
     {
@@ -31,10 +35,62 @@
         "earnings_blackout_days": 0,
         "analyst_enabled": false,
         "shortlist_size": 25,
-        "playbook": "You are the portfolio analyst for a $1,000 long-only US-stock paper account. Each day you receive stocks that already passed a quantitative screen, with recent headlines and upcoming earnings dates. Pick the stocks most likely to rise over the next one to three weeks. Prefer a clear, recent, specific catalyst (guidance raised, contract won, upgrade, product launch) and a trend that the news supports. Avoid stocks with a pending earnings report unless the setup is unusually strong, stocks whose news is mostly negative, legal trouble, dilution or a recent spike on thin news. Be selective: choosing no stock is a valid answer when nothing is convincing."
+        "playbook": "You are the portfolio analyst for a $1,000 long-only US-stock paper account. Each day you receive stocks that already passed a quantitative screen, with recent headlines and upcoming earnings dates. Pick the stocks most likely to rise over the next one to three weeks. Prefer a clear, recent, specific catalyst (guidance raised, contract won, upgrade, product launch) and a trend that the news supports. Avoid stocks with a pending earnings report unless the setup is unusually strong, stocks whose news is mostly negative, legal trouble, dilution or a recent spike on thin news. Be selective: choosing no stock is a valid answer when nothing is convincing.",
+        "desk_depth": 3,
+        "finalists": 4,
+        "use_doctor": true,
+        "use_memory": true
       },
       "kind": "challenger",
       "started_at": 1794162614.1513872
+    },
+    {
+      "strategy": {
+        "id": "depth1-single-shot",
+        "parent": "baseline",
+        "created_at": 1794168988.0907583,
+        "rationale": "One model call that ranks headlines, with no research, debate or reasoning step.",
+        "min_price": 5.0,
+        "min_dollar_volume": 1000000.0,
+        "min_momentum": 0.02,
+        "require_trend": true,
+        "stop_pct": 0.04,
+        "target_pct": 0.08,
+        "earnings_blackout_days": 0,
+        "analyst_enabled": true,
+        "shortlist_size": 25,
+        "playbook": "You are the portfolio analyst for a $1,000 long-only US-stock paper account. Each day you receive stocks that already passed a quantitative screen, with recent headlines and upcoming earnings dates. Pick the stocks most likely to rise over the next one to three weeks. Prefer a clear, recent, specific catalyst (guidance raised, contract won, upgrade, product launch) and a trend that the news supports. Avoid stocks with a pending earnings report unless the setup is unusually strong, stocks whose news is mostly negative, legal trouble, dilution or a recent spike on thin news. Be selective: choosing no stock is a valid answer when nothing is convincing.",
+        "desk_depth": 1,
+        "finalists": 4,
+        "use_doctor": true,
+        "use_memory": true
+      },
+      "kind": "ablation",
+      "started_at": 1794168988.0907583
+    },
+    {
+      "strategy": {
+        "id": "depth2-committee",
+        "parent": "baseline",
+        "created_at": 1794168988.0907583,
+        "rationale": "Triage, bull and bear debate and a judge, but no research agents or filings.",
+        "min_price": 5.0,
+        "min_dollar_volume": 1000000.0,
+        "min_momentum": 0.02,
+        "require_trend": true,
+        "stop_pct": 0.04,
+        "target_pct": 0.08,
+        "earnings_blackout_days": 0,
+        "analyst_enabled": true,
+        "shortlist_size": 25,
+        "playbook": "You are the portfolio analyst for a $1,000 long-only US-stock paper account. Each day you receive stocks that already passed a quantitative screen, with recent headlines and upcoming earnings dates. Pick the stocks most likely to rise over the next one to three weeks. Prefer a clear, recent, specific catalyst (guidance raised, contract won, upgrade, product launch) and a trend that the news supports. Avoid stocks with a pending earnings report unless the setup is unusually strong, stocks whose news is mostly negative, legal trouble, dilution or a recent spike on thin news. Be selective: choosing no stock is a valid answer when nothing is convincing.",
+        "desk_depth": 2,
+        "finalists": 4,
+        "use_doctor": true,
+        "use_memory": true
+      },
+      "kind": "ablation",
+      "started_at": 1794168988.0907583
     }
   ],
   "log": [
@@ -43,14 +99,28 @@
       "event": "proposed",
       "id": "control",
       "detail": "changes analyst_enabled: no-AI control for the analyst"
+    },
+    {
+      "at": 1794168988.0907583,
+      "event": "proposed",
+      "id": "depth1-single-shot",
+      "detail": "ablation at desk depth 1"
+    },
+    {
+      "at": 1794168988.0907583,
+      "event": "proposed",
+      "id": "depth2-committee",
+      "detail": "ablation at desk depth 2"
     }
   ],
   "last_proposed_at": 0.0,
   "last_promoted_at": 0.0,
   "next_id": 1,
   "control_added": true,
+  "lessons": [],
+  "lessons_cursor": 0,
   "analyst": {
-    "at": 1794163830.2764947,
+    "at": 1794169007.9834177,
     "source": "quant",
     "model": "qwen3-4b-instruct-2507",
     "market_view": "",
