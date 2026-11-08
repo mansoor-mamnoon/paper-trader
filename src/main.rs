@@ -293,7 +293,22 @@ fn run_meta(desk_minutes: f64) -> RunMeta {
                 .next()
                 .and_then(|n| n.parse::<u64>().ok())
         })
-        .map_or(0, |kb| kb / 1024);
+        .map_or_else(
+            || {
+                std::process::Command::new("sysctl")
+                    .args(["-n", "hw.memsize"])
+                    .output()
+                    .ok()
+                    .and_then(|o| {
+                        String::from_utf8_lossy(&o.stdout)
+                            .trim()
+                            .parse::<u64>()
+                            .ok()
+                    })
+                    .map_or(0, |bytes| bytes / 1024 / 1024)
+            },
+            |kb| kb / 1024,
+        );
     let trigger = match std::env::var("GITHUB_EVENT_NAME").as_deref() {
         Ok("schedule") => "schedule",
         Ok("workflow_dispatch") => "manual",
