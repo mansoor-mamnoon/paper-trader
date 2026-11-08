@@ -25,4 +25,5 @@ jobs:
           ./target/release/paper-trader stocks --db "$RUNNER_TEMP/scratch/account.sqlite" --output "$RUNNER_TEMP/scratch/site" --batch-size 200
           echo "seconds: $(( $(date +%s) - start ))"
           sqlite3 "$RUNNER_TEMP/scratch/account.sqlite" "select action, symbol, substr(reason,1,140) from decisions where action in ('BUY_SIGNAL','AVOID')"
-          python3 -c "import json,sys; d=json.load(open('$RUNNER_TEMP/scratch/site/api/state')); a=d['strategy']['analyst']; print(a); sys.exit(0 if a['source']=='llm' else 1)"
+          jq -c '.strategy.analyst' "$RUNNER_TEMP/scratch/site/api/state"
+          jq -e '.strategy.analyst.source == "llm"' "$RUNNER_TEMP/scratch/site/api/state" > /dev/null
