@@ -1,0 +1,49 @@
+name: Publish site
+# Republishes only the dashboard files, on top of the data from the last daily run, so a
+# change to web/ goes live in about a minute instead of waiting for the next full run.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - '.github/workflows/site.yml'
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: stock-account
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Restore the last published data
+        uses: actions/checkout@v7
+        with:
+          ref: account
+          path: account
+      - name: Apply the dashboard files
+        run: cp web/* account/site/
+      - name: Configure visitor analytics
+        # Off unless the repository variables GOATCOUNTER_CODE and/or GA4_ID are set.
+        env:
+          GOATCOUNTER_CODE: ${{ vars.GOATCOUNTER_CODE }}
+          GA4_ID: ${{ vars.GA4_ID }}
+        run: |
+          gc=$(printf '%s' "$GOATCOUNTER_CODE" | tr -cd 'A-Za-z0-9-')
+          ga=$(printf '%s' "$GA4_ID" | tr -cd 'A-Za-z0-9-')
+          printf 'window.PT_ANALYTICS = { goatcounter: "%s", ga4: "%s" };\n' "$gc" "$ga" > account/site/analytics-config.js
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: account/site
+      - name: Publish dashboard
+        id: deployment
+        uses: actions/deploy-pages@v5

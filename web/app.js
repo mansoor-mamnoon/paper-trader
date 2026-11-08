@@ -737,10 +737,8 @@ document.addEventListener("click", (e) => {
 });
 {
   const pa = window.ptAnalytics;
-  const names = { goatcounter: "GoatCounter", ga4: "Google Analytics, if you agree" };
   $("privacy").textContent = pa && pa.ignored ? "This browser is excluded from visit counts."
-    : !pa || !pa.providers.length ? "No visit tracking on this site."
-      : `Visits are counted anonymously with ${pa.providers.map((p) => names[p]).join(" and ")}.`;
+    : pa && pa.providers.length ? "Anonymous visit statistics." : "";
 }
 showTab(location.hash.slice(1), false);
 refresh();
