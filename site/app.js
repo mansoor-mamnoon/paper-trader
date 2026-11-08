@@ -114,7 +114,7 @@ function drawChart(points) {
   const tip = $("chart-tip");
   chart.replaceChildren(svg("title", {id: "chart-title"}, "Account value and SPY, in dollars"));
   tip.hidden = true;
-  const W = 900, H = 280, L = 64, R = 16, T = 16, B = 28;
+  const W = 900, H = 280, L = 92, R = 16, T = 16, B = 28;
   if (points.length < 2) {
     chart.append(svg("text", {x: W / 2, y: H / 2, "text-anchor": "middle"},
       "The chart fills in after the second daily scan."));
@@ -171,12 +171,14 @@ function renderOverview(s) {
   const queued = Object.keys(s.pending).length;
   const replay = a.mode === "stocks-replay";
 
-  let headline;
-  if (a.halted) headline = `Halted: ${a.halt_reason}`;
-  else if (!s.history.length) headline = "The account is waiting for its first scan";
-  else if (Math.abs(diff) < 0.5) headline = `Level with SPY at ${money(a.equity)}`;
-  else headline = `${diff > 0 ? "Ahead of" : "Behind"} SPY by ${money(Math.abs(diff))}`;
-  text("headline", headline);
+  let lead = "", marked = "";
+  if (a.halted) { lead = "Halted: "; marked = a.halt_reason; }
+  else if (!s.history.length) { marked = "Waiting for the first scan"; }
+  else if (Math.abs(diff) < 0.5) { lead = "Level with "; marked = `SPY at ${money(a.equity)}`; }
+  else { lead = diff > 0 ? "Ahead of " : "Behind "; marked = `SPY by ${money(Math.abs(diff))}`; }
+  $("headline").replaceChildren(lead, h("span", {class: "mark"}, marked));
+  text("script-note", a.halted ? "stopped to protect the account" : !s.history.length ? "no trades yet, just watching" :
+    Math.abs(diff) < 0.5 ? "dead even with the market" : diff > 0 ? "beating the market, so far" : "not winning yet");
   text("subline", held
     ? `Holding ${held} stock${held > 1 ? "s" : ""}${queued ? ` with ${queued} order${queued > 1 ? "s" : ""} waiting for the next session.` : "."}`
     : queued ? `Holding cash. ${queued} order${queued > 1 ? "s are" : " is"} queued and will fill at the next session's open.`
@@ -356,7 +358,7 @@ function renderLab(s) {
   text("analyst-view", ai ? (a.market_view || "No market view recorded.") : "No AI analysis today.");
   text("analyst-note", ai ? `Model: ${a.model}. It read headlines and earnings dates for the stocks that passed the screen.`
     : a.error ? `The analyst failed, so stocks were ranked by 20-day gain. Reason: ${a.error}`
-      : "The analyst is off or has no API key, so stocks were ranked by 20-day gain.");
+      : "The analyst is off or the model server was not available, so stocks were ranked by 20-day gain.");
 
   const c = lab.champion;
   text("champion-id", c.id);

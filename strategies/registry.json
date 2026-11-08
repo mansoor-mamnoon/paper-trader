@@ -50,7 +50,7 @@
   "next_id": 1,
   "control_added": true,
   "analyst": {
-    "at": 1794162647.9619699,
+    "at": 1794163830.2764947,
     "source": "quant",
     "model": "qwen3-4b-instruct-2507",
     "market_view": "",
