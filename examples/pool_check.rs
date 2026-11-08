@@ -2,8 +2,10 @@
 //! Prints load time, answer, speed and the determinism check, so a new machine or a new
 //! model pin can be checked in a few minutes.
 //!
-//!   PAPER_TRADER_LLAMA_SERVER=/path/to/llama-server \
-//!   PAPER_TRADER_MODELS_DIR=/path/to/models cargo run --release --example pool_check
+//! ```text
+//! PAPER_TRADER_LLAMA_SERVER=/path/to/llama-server \
+//! PAPER_TRADER_MODELS_DIR=/path/to/models cargo run --release --example pool_check
+//! ```
 use paper_trader::models::{Role, model_for};
 use paper_trader::pool::{Pool, Router};
 use serde_json::json;

@@ -879,7 +879,7 @@ mod tests {
                 .iter()
                 .any(|r| r["role"] == "judge")
         );
-        assert!(!s["stage_history"].as_array().unwrap().is_empty());
+        assert_ne!(s["stage_history"].as_array().unwrap().len(), 0);
     }
 
     #[test]
