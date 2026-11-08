@@ -2,8 +2,8 @@
 
 use anyhow::Result;
 use clap::Parser;
-use paper_trader::analyst::{Analyst, ClaudeAnalyst};
-use paper_trader::lab::{ClaudeProposer, Proposer};
+use paper_trader::analyst::{Analyst, LlmAnalyst, llm_from_env};
+use paper_trader::lab::{LlmProposer, Proposer};
 use paper_trader::{crypto, daily, export, ledger};
 use serde_json::json;
 use std::path::PathBuf;
@@ -121,10 +121,13 @@ fn main() -> Result<()> {
         batch_size: args.batch_size,
         replay: args.replay.clone(),
     };
-    let analyst = ClaudeAnalyst::from_env();
-    let proposer = ClaudeProposer::from_env();
-    if analyst.is_none() {
-        eprintln!("ANTHROPIC_API_KEY is not set: trading by the quantitative ranking only");
+    let llm = llm_from_env();
+    let analyst = llm.as_deref().map(|llm| LlmAnalyst { llm });
+    let proposer = llm.as_deref().map(|llm| LlmProposer { llm });
+    if llm.is_none() {
+        eprintln!(
+            "No model configured (PAPER_TRADER_LLM_URL or ANTHROPIC_API_KEY): trading by the quantitative ranking only"
+        );
     }
     let summary = daily::run(
         &options,

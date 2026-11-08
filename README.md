@@ -2,7 +2,7 @@
 
 <img src="docs/banner.svg" alt="Paper Trader, the $1,000 experiment" width="100%">
 
-**A $1,000 simulated US-stock account run by an AI analyst that reads the news and earnings calendar, tests its own improvements, and publishes every decision.**
+**A $1,000 simulated US-stock account run by a free, open-weights AI analyst that reads the news and earnings calendar, tests its own improvements, and publishes every decision.**
 
 [![Live dashboard](https://img.shields.io/badge/live-dashboard-4f8cff?style=for-the-badge)](https://mansoor-mamnoon.github.io/paper-trader/)
 ![Rust](https://img.shields.io/badge/rust-2024-dea584?style=for-the-badge&logo=rust&logoColor=white)
@@ -21,7 +21,7 @@
 
 ## What it is
 
-Paper Trader starts with $1,000 of simulated money and looks at US stocks once a day. A quantitative screen finds stocks in an uptrend, then an AI analyst reads their recent headlines and upcoming earnings dates and decides which to buy. A short rulebook handles sizing and exits. Every signal, every skipped stock and every fill goes into a SQLite ledger, and a read-only dashboard on GitHub Pages shows the whole ledger.
+Paper Trader starts with $1,000 of simulated money and looks at US stocks once a day. A quantitative screen finds stocks in an uptrend, then an open-weights language model (Qwen3 4B, Apache-2.0) reads their recent headlines and upcoming earnings dates and decides which to buy. A short rulebook handles sizing and exits. Every signal, every skipped stock and every fill goes into a SQLite ledger, and a read-only dashboard on GitHub Pages shows the whole ledger.
 
 The experiment asks whether a plain trend rule can beat buying SPY after fees and slippage over 60 days. It has no broker connection and places no orders.
 
@@ -72,7 +72,7 @@ If the analyst is unavailable, the account falls back to ranking by 20-day retur
 Nothing here is meant to stay fixed. The loop follows the pattern of recursive self-improvement in the [KISS `rsi7d` agent](https://github.com/ksenxx/kiss_ai/tree/main/src/kiss/agents/seas/rsi7d): mine recent runs for evidence, propose a bounded edit, test it, and keep it only if the evidence supports it. Here the edit target is the strategy and the test is a live shadow account.
 
 1. Once a week the system reviews how the live strategy traded: closed trades, win rate, what the analyst said, how buys near earnings dates behaved.
-2. Claude proposes one small change. It can adjust at most two things: numeric parameters inside fixed bounds, or the text of the analyst's playbook. Anything out of bounds is rejected and logged.
+2. The model proposes one small change. It can adjust at most two things: numeric parameters inside fixed bounds, or the text of the analyst's playbook. Anything out of bounds is rejected and logged.
 3. The change trades a separate $1,000 shadow account on the same daily data.
 4. After 14 days, a challenger replaces the live strategy only if it beats it by at least one percentage point with at least two trades and a drawdown no more than three points worse.
 5. The replaced strategy keeps trading as a shadow. If the promotion was luck, it wins the seat back under the same rule.
@@ -81,16 +81,28 @@ Position size, the three-position cap, costs and the loss halt live in code and 
 
 Two caveats apply. Two weeks of paper trades is a small sample, so the loop will sometimes promote noise, and the margin rules reduce that without removing it. And a language model reading headlines has no proven edge over the screen alone. The shadow accounts exist to measure that.
 
-## Autonomous setup
+## Free and autonomous
 
-The scheduled workflow needs no attention once one secret is set:
+There is no API key and no account to set up. Each scheduled run does this on a free GitHub runner:
+
+1. Restores the cached model (first run downloads about 2.5 GB from Hugging Face, later runs reuse it).
+2. Starts `llama-server` from [llama.cpp](https://github.com/ggml-org/llama.cpp) with [Qwen3-4B-Instruct-2507](https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507) quantized to 4 bits. Output is constrained to a JSON schema, so a 4B model cannot return malformed answers.
+3. Runs the day: scan, analyst, shadow accounts, weekly proposal, export.
+4. Commits the ledgers and redeploys the dashboard.
+
+Triggers: the weekday schedule, a manual run, or an external webhook (`repository_dispatch` with event type `run-account`). GitHub pauses scheduled workflows in quiet repositories, so every run also re-enables its own schedule. If the model server fails to start, the account still trades by momentum ranking and the dashboard says so.
+
+A 4B model is a weak reader of financial news, and this setup is built to find that out. On its first run the lab adds a no-AI control shadow (the same screen ranked by 20-day gain). If the analyst does not beat the control, the control becomes the live strategy.
+
+Run it yourself:
 
 ```bash
-gh secret set ANTHROPIC_API_KEY --repo mansoor-mamnoon/paper-trader
-gh variable set PAPER_TRADER_MODEL --body claude-opus-5-5 --repo mansoor-mamnoon/paper-trader   # optional
+scripts/llm.sh                                   # download and start the model on port 8080
+PAPER_TRADER_LLM_URL=http://127.0.0.1:8080 cargo run --release -- stocks --db account.sqlite --output site
+scripts/llm.sh stop
 ```
 
-Without the key the account still runs, ranked by 20-day return, and the dashboard says so. Each run makes one analyst call for the live strategy and one for each shadow, plus one proposal call a week.
+Any server that speaks the OpenAI chat protocol works (Ollama, LM Studio, vLLM). Set `PAPER_TRADER_LLM_URL`, and optionally `PAPER_TRADER_LLM_MODEL` and `PAPER_TRADER_LLM_KEY`. A paid model is also supported: set `ANTHROPIC_API_KEY` and, if you like, `PAPER_TRADER_MODEL`. When both are present the local server wins.
 
 ## Dashboard
 
@@ -142,7 +154,7 @@ To host your own copy, fork the repo and create an `account` branch containing a
 src/
   main.rs      command line
   account.rs   screen, queued orders, fills, risk limits
-  analyst.rs   the Claude analyst and its output checks
+  analyst.rs   model clients, the analyst and its output checks
   intel.rs     earnings calendar and headlines
   strategy.rs  the bounded, editable strategy
   lab.rs       shadow accounts, promotion rule, proposals
@@ -154,6 +166,7 @@ src/
 web/           the dashboard (plain HTML, CSS and JavaScript)
 docs/          README images
 .github/       scheduled run and CI
+scripts/       llm.sh installs and starts the local model
 ```
 
 The crate is a library plus a thin binary, builds on edition 2024, and passes `cargo clippy -- -D warnings` with the pedantic group enabled. It began as a Python program. Replaying the same four observations through both versions gave identical fills and equity curves to six decimals, and the Python code has since been removed.

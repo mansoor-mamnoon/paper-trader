@@ -350,11 +350,11 @@ function renderLab(s) {
     return;
   }
   const a = lab.analyst;
-  const claude = a.source === "claude";
-  text("analyst-badge", claude ? "Claude" : "Momentum ranking");
-  $("analyst-badge").className = `badge ${claude ? "buy" : ""}`;
-  text("analyst-view", claude ? (a.market_view || "No market view recorded.") : "No AI analysis today.");
-  text("analyst-note", claude ? `Model ${a.model.replace(/^claude \(|\)$/g, "")}. It read headlines and earnings dates for the stocks that passed the screen.`
+  const ai = a.source === "llm";
+  text("analyst-badge", ai ? "AI analyst" : "Momentum ranking");
+  $("analyst-badge").className = `badge ${ai ? "buy" : ""}`;
+  text("analyst-view", ai ? (a.market_view || "No market view recorded.") : "No AI analysis today.");
+  text("analyst-note", ai ? `Model: ${a.model}. It read headlines and earnings dates for the stocks that passed the screen.`
     : a.error ? `The analyst failed, so stocks were ranked by 20-day gain. Reason: ${a.error}`
       : "The analyst is off or has no API key, so stocks were ranked by 20-day gain.");
 

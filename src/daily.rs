@@ -48,6 +48,16 @@ fn state_of(path: &str) -> State {
         .unwrap_or_default()
 }
 
+fn observation_time(options: &Options) -> f64 {
+    options
+        .replay
+        .as_ref()
+        .and_then(|f| std::fs::read_to_string(f).ok())
+        .and_then(|t| serde_json::from_str::<Value>(&t).ok())
+        .and_then(|v| v["at"].as_f64())
+        .unwrap_or_else(ledger::now)
+}
+
 /// Run the whole day. Returns the strategy-lab summary for the dashboard.
 pub fn run(
     options: &Options,
@@ -57,6 +67,31 @@ pub fn run(
 ) -> Result<Value> {
     account::reserve(&options.db, mode)?;
     let mut registry = Registry::load(&options.strategies)?;
+    if analyst.is_some() && !registry.control_added && registry.champion.analyst_enabled {
+        // A permanent yardstick: the same screen ranked by momentum with no AI. If the
+        // analyst does not beat it, the lab will promote it.
+        let control = crate::strategy::Strategy {
+            id: "control".into(),
+            parent: Some(registry.champion.id.clone()),
+            created_at: observation_time(options),
+            rationale: "Control: the same screen ranked by 20-day gain, with no AI. Tests whether the analyst adds value.".into(),
+            analyst_enabled: false,
+            ..registry.champion.clone()
+        };
+        registry.control_added = true;
+        let at = control.created_at;
+        registry.shadows.push(lab::Shadow {
+            strategy: control,
+            kind: "challenger".into(),
+            started_at: at,
+        });
+        registry.log.push(lab::LogEntry {
+            at,
+            event: "proposed".into(),
+            id: "control".into(),
+            detail: "changes analyst_enabled: no-AI control for the analyst".into(),
+        });
+    }
     let all = variants(&options.strategies, &registry, &options.db);
 
     let mut observation: Observation = if let Some(file) = &options.replay {
@@ -90,11 +125,28 @@ pub fn run(
     observation.intel.news.retain(|_, v| !v.is_empty());
     let now = observation.at;
 
+    let mut memo: std::collections::BTreeMap<String, crate::analyst::Review> =
+        std::collections::BTreeMap::new();
     for (index, v) in all.iter().enumerate() {
         let result = (|| -> Result<()> {
             account::reserve(&v.db, mode)?;
             let brief = account::brief(&v.strategy, &observation, &state_of(&v.db));
-            let review = review_or_fallback(analyst, &v.strategy, &brief);
+            // Strategies that show the model the same stocks under the same playbook
+            // share one answer instead of paying for a second call.
+            let key = format!(
+                "{}|{}|{:?}",
+                v.strategy.playbook,
+                brief.open_slots,
+                brief
+                    .candidates
+                    .iter()
+                    .map(|c| c.symbol.as_str())
+                    .collect::<Vec<_>>()
+            );
+            let review = memo
+                .entry(key)
+                .or_insert_with(|| review_or_fallback(analyst, &v.strategy, &brief))
+                .clone();
             if index == 0 {
                 registry.analyst = lab::AnalystStatus {
                     at: now,
@@ -185,7 +237,7 @@ mod tests {
                     .collect(),
                 avoid: vec![],
                 market_view: "calm".into(),
-                source: "claude".into(),
+                source: "llm".into(),
                 error: None,
             })
         }
@@ -233,7 +285,7 @@ mod tests {
         let state = state_of(&options.db);
         assert_eq!(state.pending.keys().collect::<Vec<_>>(), ["SLOW"]);
         assert!(state.pending["SLOW"].reason.contains("test thesis"));
-        assert_eq!(summary["analyst"]["source"], "claude");
+        assert_eq!(summary["analyst"]["source"], "llm");
         assert_eq!(summary["champion"]["id"], "baseline");
     }
 }

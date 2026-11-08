@@ -1,6 +1,11 @@
 name: Stock paper account
 on:
   workflow_dispatch:
+  # An external webhook can also start a run:
+  #   curl -X POST -H "Authorization: Bearer $TOKEN" \
+  #     https://api.github.com/repos/mansoor-mamnoon/paper-trader/dispatches -d '{"event_type":"run-account"}'
+  repository_dispatch:
+    types: [run-account]
   schedule:
     # 17:37 New York in winter, 18:37 in summer; after the US session.
     - cron: '37 22 * * 1-5'
@@ -8,13 +13,14 @@ permissions:
   contents: write
   pages: write
   id-token: write
+  actions: write
 concurrency:
   group: stock-account
   cancel-in-progress: false
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 90
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -24,6 +30,15 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Build
         run: cargo build --release --locked
+      - name: Cache the open-weights model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/paper-trader-llm
+          key: llm-qwen3-4b-instruct-2507-q4km-b12211
+      - name: Start the open-weights model
+        # If this fails the account still trades, ranked by momentum, and says so.
+        continue-on-error: true
+        run: scripts/llm.sh
       - name: Restore durable account (absence is an error, never a reset)
         uses: actions/checkout@v7
         with:
@@ -38,8 +53,8 @@ jobs:
         id: scan
         continue-on-error: true
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          PAPER_TRADER_MODEL: ${{ vars.PAPER_TRADER_MODEL }}
+          PAPER_TRADER_LLM_URL: http://127.0.0.1:8080
+          PAPER_TRADER_LLM_MODEL: qwen3-4b-instruct-2507
         run: ./target/release/paper-trader stocks --db account/account.sqlite --output account/site
       - name: Apply static dashboard
         run: cp web/* account/site/
@@ -58,6 +73,13 @@ jobs:
       - name: Publish dashboard
         id: deployment
         uses: actions/deploy-pages@v5
+      - name: Keep the schedule alive
+        # GitHub pauses scheduled workflows in repositories with no recent activity.
+        # Re-enabling this one on every run keeps the account running unattended.
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow enable account.yml --repo "$GITHUB_REPOSITORY" || true
       - name: Report scan failure after preserving its evidence
         if: steps.scan.outcome == 'failure'
         run: exit 1

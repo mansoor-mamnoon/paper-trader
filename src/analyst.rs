@@ -59,7 +59,7 @@ pub struct Review {
     pub picks: Vec<Pick>,
     pub avoid: Vec<Avoid>,
     pub market_view: String,
-    /// `claude`, or `quant` when the analyst was off or failed.
+    /// `llm`, or `quant` when the analyst was off or failed.
     pub source: String,
     #[serde(default)]
     pub error: Option<String>,
@@ -142,88 +142,195 @@ pub fn parse_review(text: &str, allowed: &BTreeSet<String>, slots: usize) -> Res
             .chars()
             .take(600)
             .collect(),
-        source: "claude".into(),
+        source: "llm".into(),
         error: None,
     })
 }
 
-/// Call the Messages API and return the concatenated text blocks.
-pub fn complete(
-    api_key: &str,
-    model: &str,
-    system: &str,
-    user: &str,
-    effort: &str,
-) -> Result<String> {
-    let body = json!({
-        "model": model,
-        "max_tokens": 16000,
-        "system": system,
-        "output_config": {"effort": effort},
-        "messages": [{"role": "user", "content": user}],
-    });
-    let raw = http::post_json(
-        API_URL,
-        &[("x-api-key", api_key), ("anthropic-version", API_VERSION)],
-        &body.to_string(),
-        Duration::from_secs(300),
-    )?;
-    let reply: Value = serde_json::from_str(&raw)?;
-    if reply["stop_reason"] == "refusal" {
-        bail!("the model declined the request");
+/// A chat model behind a simple interface. `schema`, when given, asks the server to
+/// constrain the output to that JSON schema.
+pub trait Llm: std::fmt::Debug {
+    fn name(&self) -> String;
+    fn complete(&self, system: &str, user: &str, schema: Option<&Value>) -> Result<String>;
+    /// How many candidate stocks the model can read well in one prompt.
+    fn max_candidates(&self) -> usize {
+        25
     }
-    let text: String = reply["content"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .filter(|b| b["type"] == "text")
-        .filter_map(|b| b["text"].as_str())
-        .collect::<Vec<_>>()
-        .join("\n");
-    if text.is_empty() {
-        bail!("empty reply (stop_reason {})", reply["stop_reason"]);
-    }
-    Ok(text)
 }
 
-/// Claude as the analyst. Needs `ANTHROPIC_API_KEY`; the model can be set with
-/// `PAPER_TRADER_MODEL`.
+/// Claude through the Anthropic Messages API (optional, needs `ANTHROPIC_API_KEY`).
 #[derive(Debug)]
-pub struct ClaudeAnalyst {
+pub struct AnthropicLlm {
     api_key: String,
-    pub model: String,
+    model: String,
 }
 
-impl ClaudeAnalyst {
-    pub fn from_env() -> Option<Self> {
-        let api_key = std::env::var("ANTHROPIC_API_KEY")
-            .ok()
-            .filter(|k| !k.trim().is_empty())?;
-        let model = std::env::var("PAPER_TRADER_MODEL")
-            .ok()
-            .filter(|m| !m.is_empty())
-            .unwrap_or_else(|| DEFAULT_MODEL.into());
-        Some(ClaudeAnalyst { api_key, model })
-    }
-
-    pub fn key(&self) -> &str {
-        &self.api_key
-    }
-}
-
-impl Analyst for ClaudeAnalyst {
+impl Llm for AnthropicLlm {
     fn name(&self) -> String {
-        format!("claude ({})", self.model)
+        self.model.clone()
+    }
+
+    fn complete(&self, system: &str, user: &str, _schema: Option<&Value>) -> Result<String> {
+        let body = json!({
+            "model": self.model,
+            "max_tokens": 16000,
+            "system": system,
+            "output_config": {"effort": "medium"},
+            "messages": [{"role": "user", "content": user}],
+        });
+        let raw = http::post_json(
+            API_URL,
+            &[
+                ("x-api-key", &self.api_key),
+                ("anthropic-version", API_VERSION),
+            ],
+            &body.to_string(),
+            Duration::from_secs(300),
+        )?;
+        let reply: Value = serde_json::from_str(&raw)?;
+        if reply["stop_reason"] == "refusal" {
+            bail!("the model declined the request");
+        }
+        let text: String = reply["content"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter(|b| b["type"] == "text")
+            .filter_map(|b| b["text"].as_str())
+            .collect::<Vec<_>>()
+            .join("\n");
+        if text.is_empty() {
+            bail!("empty reply (stop_reason {})", reply["stop_reason"]);
+        }
+        Ok(text)
+    }
+}
+
+/// Any server that speaks the `OpenAI` chat-completions protocol: `llama-server` from
+/// llama.cpp, Ollama, LM Studio, vLLM. This is how the free, open-weights model runs.
+#[derive(Debug)]
+pub struct OpenAiLlm {
+    base_url: String,
+    api_key: Option<String>,
+    model: String,
+}
+
+impl Llm for OpenAiLlm {
+    fn name(&self) -> String {
+        self.model.clone()
+    }
+
+    fn max_candidates(&self) -> usize {
+        12
+    }
+
+    fn complete(&self, system: &str, user: &str, schema: Option<&Value>) -> Result<String> {
+        let mut body = json!({
+            "model": self.model,
+            "max_tokens": 1500,
+            "temperature": 0.2,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+        });
+        if let Some(schema) = schema {
+            body["response_format"] = json!({
+                "type": "json_schema",
+                "json_schema": {"name": "answer", "strict": true, "schema": schema},
+            });
+        }
+        let url = format!(
+            "{}/v1/chat/completions",
+            self.base_url.trim_end_matches('/')
+        );
+        let bearer = self.api_key.as_ref().map(|k| format!("Bearer {k}"));
+        let mut headers = Vec::new();
+        if let Some(bearer) = &bearer {
+            headers.push(("authorization", bearer.as_str()));
+        }
+        let raw = http::post_json(&url, &headers, &body.to_string(), Duration::from_secs(1500))?;
+        let reply: Value = serde_json::from_str(&raw)?;
+        reply["choices"][0]["message"]["content"]
+            .as_str()
+            .filter(|t| !t.trim().is_empty())
+            .map(str::to_string)
+            .ok_or_else(|| anyhow!("empty reply from the model server"))
+    }
+}
+
+/// Pick the model from the environment. A local open-weights server wins over a paid
+/// API when both are configured.
+///
+/// - `PAPER_TRADER_LLM_URL`: base URL of an OpenAI-compatible server, with optional
+///   `PAPER_TRADER_LLM_MODEL` (display name) and `PAPER_TRADER_LLM_KEY`
+/// - `ANTHROPIC_API_KEY`: Claude, with optional `PAPER_TRADER_MODEL`
+pub fn llm_from_env() -> Option<Box<dyn Llm>> {
+    let var = |name: &str| std::env::var(name).ok().filter(|v| !v.trim().is_empty());
+    if let Some(base_url) = var("PAPER_TRADER_LLM_URL") {
+        return Some(Box::new(OpenAiLlm {
+            base_url,
+            api_key: var("PAPER_TRADER_LLM_KEY"),
+            model: var("PAPER_TRADER_LLM_MODEL").unwrap_or_else(|| "local".into()),
+        }));
+    }
+    let api_key = var("ANTHROPIC_API_KEY")?;
+    Some(Box::new(AnthropicLlm {
+        api_key,
+        model: var("PAPER_TRADER_MODEL").unwrap_or_else(|| DEFAULT_MODEL.into()),
+    }))
+}
+
+fn review_schema() -> Value {
+    json!({
+        "type": "object",
+        "properties": {
+            "market_view": {"type": "string"},
+            "picks": {"type": "array", "items": {
+                "type": "object",
+                "properties": {
+                    "symbol": {"type": "string"},
+                    "conviction": {"type": "number"},
+                    "thesis": {"type": "string"},
+                },
+                "required": ["symbol", "conviction", "thesis"],
+            }},
+            "avoid": {"type": "array", "items": {
+                "type": "object",
+                "properties": {"symbol": {"type": "string"}, "reason": {"type": "string"}},
+                "required": ["symbol", "reason"],
+            }},
+        },
+        "required": ["market_view", "picks", "avoid"],
+    })
+}
+
+/// The analyst, backed by whichever [`Llm`] is configured.
+#[derive(Debug)]
+pub struct LlmAnalyst<'a> {
+    pub llm: &'a dyn Llm,
+}
+
+impl Analyst for LlmAnalyst<'_> {
+    fn name(&self) -> String {
+        self.llm.name()
     }
 
     fn review(&self, strategy: &Strategy, brief: &Brief) -> Result<Review> {
+        // Small models read a short prompt better: fewer stocks, fewer and shorter headlines.
+        let mut brief = brief.clone();
+        brief.candidates.truncate(self.llm.max_candidates());
+        for candidate in &mut brief.candidates {
+            candidate.headlines.truncate(4);
+            for headline in &mut candidate.headlines {
+                headline.title = headline.title.chars().take(140).collect();
+            }
+        }
         let system = format!("{}{CONTRACT}", strategy.playbook);
-        let text = complete(
-            &self.api_key,
-            &self.model,
+        let text = self.llm.complete(
             &system,
-            &serde_json::to_string(brief)?,
-            "medium",
+            &serde_json::to_string(&brief)?,
+            Some(&review_schema()),
         )?;
         let allowed = brief.candidates.iter().map(|c| c.symbol.clone()).collect();
         parse_review(&text, &allowed, brief.open_slots)
@@ -365,5 +472,53 @@ mod tests {
         };
         let review = review_or_fallback(Some(&Failing), &strategy, &brief());
         assert!(review.error.is_none());
+    }
+
+    #[test]
+    fn openai_compatible_client_sends_a_schema_and_reads_the_reply() {
+        use std::io::{Read, Write};
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let server = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut received = Vec::new();
+            let mut buffer = [0_u8; 4096];
+            loop {
+                let n = stream.read(&mut buffer).unwrap();
+                received.extend_from_slice(&buffer[..n]);
+                let text = String::from_utf8_lossy(&received).to_string();
+                if let Some(split) = text.find("\r\n\r\n") {
+                    let length = text[..split]
+                        .lines()
+                        .find_map(|l| {
+                            l.to_ascii_lowercase()
+                                .strip_prefix("content-length:")
+                                .map(|v| v.trim().parse::<usize>().unwrap())
+                        })
+                        .unwrap_or(0);
+                    if received.len() >= split + 4 + length {
+                        break;
+                    }
+                }
+            }
+            let body = r#"{"choices":[{"message":{"content":"{\"market_view\":\"ok\",\"picks\":[],\"avoid\":[]}"}}]}"#;
+            write!(stream, "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{body}", body.len()).unwrap();
+            String::from_utf8_lossy(&received).to_string()
+        });
+        let llm = OpenAiLlm {
+            base_url: format!("http://127.0.0.1:{port}"),
+            api_key: Some("k".into()),
+            model: "m".into(),
+        };
+        let reply = llm.complete("sys", "user", Some(&review_schema())).unwrap();
+        assert!(reply.contains("market_view"));
+        let request = server.join().unwrap();
+        assert!(request.starts_with("POST /v1/chat/completions"));
+        assert!(request.contains("json_schema"));
+        assert!(
+            request
+                .to_ascii_lowercase()
+                .contains("authorization: bearer k")
+        );
     }
 }
