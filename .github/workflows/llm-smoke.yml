@@ -1,34 +1,36 @@
 name: Model smoke test
-# Runs the open-weights analyst on a throwaway account so the live ledger is untouched.
+# Runs the full desk, with all nine models, on a throwaway account so the live ledger is
+# untouched. Use it to check timing, disk, determinism and SEC reachability on a real runner.
 on:
   workflow_dispatch:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 240
+    timeout-minutes: 345
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo build --release --locked
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/paper-trader-llm
-          key: llm-qwen3-4b-instruct-2507-q4km-b12211
-      - run: scripts/llm.sh
+      - name: Install llama.cpp
+        run: echo "PAPER_TRADER_LLAMA_SERVER=$(scripts/llm.sh install)" >> "$GITHUB_ENV"
       - name: Check that SEC EDGAR is reachable from the runner
         continue-on-error: true
         run: cargo run --release --example edgar_live
-      - name: Trade a scratch account with the model
+      - name: Trade a scratch account with the whole desk
         env:
-          PAPER_TRADER_LLM_URL: http://127.0.0.1:8080
-          PAPER_TRADER_LLM_MODEL: qwen3-4b-instruct-2507
-          PAPER_TRADER_DESK_MINUTES: "150"
+          PAPER_TRADER_MODELS_DIR: ${{ runner.temp }}/models
+          PAPER_TRADER_PRUNE_MODELS: "1"
+          PAPER_TRADER_DESK_MINUTES: "300"
         run: |
+          df -h / /mnt | tail -2
           start=$(date +%s)
           ./target/release/paper-trader stocks --db "$RUNNER_TEMP/scratch/account.sqlite" --output "$RUNNER_TEMP/scratch/site" --batch-size 200
           echo "seconds: $(( $(date +%s) - start ))"
-          sqlite3 "$RUNNER_TEMP/scratch/account.sqlite" "select action, symbol, substr(reason,1,140) from decisions where action in ('BUY_SIGNAL','AVOID')"
-          jq -c '.strategy.analyst' "$RUNNER_TEMP/scratch/site/api/state"
-          jq -c '.strategy.desk | {depth, minutes_left, degraded, finalists: [.finalists[].symbol], judge_regime: .judge.regime}' "$RUNNER_TEMP/scratch/site/api/state"
-          jq -e '.strategy.analyst.source == "llm"' "$RUNNER_TEMP/scratch/site/api/state" > /dev/null
+          df -h / /mnt | tail -2
+          state="$RUNNER_TEMP/scratch/site/api/state"
+          jq -c '.strategy.analyst' "$state"
+          jq -c '.strategy.desk | {depth, minutes_left, degraded, finalists: [.finalists[].symbol], judge_regime: .judge.regime}' "$state"
+          jq -c '.strategy.telemetry.stages' "$state"
+          jq -c '.strategy.telemetry.determinism' "$state"
+          jq -e '.strategy.analyst.source == "llm"' "$state" > /dev/null

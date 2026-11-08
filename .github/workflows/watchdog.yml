@@ -1,0 +1,35 @@
+name: Watchdog
+# GitHub cron is best effort. This checks every morning that the account actually ran after
+# the previous US session, and starts it if it did not. It also re-enables the schedules.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 7 * * 2-6'
+permissions:
+  actions: write
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Re-enable the schedules
+        run: |
+          gh workflow enable account.yml --repo "$GITHUB_REPOSITORY" || true
+          gh workflow enable watchdog.yml --repo "$GITHUB_REPOSITORY" || true
+      - name: Start the account if the last session was missed
+        run: |
+          last=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow account.yml --status success --limit 1 --json createdAt --jq '.[0].createdAt // empty')
+          now=$(date -u +%s)
+          if [ -z "$last" ]; then age=999999; else age=$(( now - $(date -u -d "$last" +%s) )); fi
+          echo "last successful account run: ${last:-never} (${age}s ago)"
+          # A run is due about every 24 hours on weekdays. 14 hours means this morning's check
+          # finds nothing from the previous evening.
+          if [ "$age" -gt 50400 ]; then
+            echo "No run since the last session. Starting one."
+            gh workflow run account.yml --repo "$GITHUB_REPOSITORY"
+          else
+            echo "The account ran on time."
+          fi
