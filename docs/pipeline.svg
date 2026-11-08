@@ -1,14 +1,31 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 200" role="img" aria-label="Daily pipeline: universe, daily bars, signals, queued orders, next-session fills, dashboard">
-<style>text{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;fill:#e8eefc}.s{font-size:13px;fill:#9fb0d0}.t{font-size:17px;font-weight:700}.b{fill:#13203a;stroke:#2a3f66}</style>
-<rect width="1100" height="200" rx="14" fill="#0c1421"/>
-<g>
-<rect class="b" x="20" y="50" width="160" height="100" rx="12"/><text class="t" x="100" y="90" text-anchor="middle">1. Universe</text><text class="s" x="100" y="115" text-anchor="middle">Nasdaq symbol</text><text class="s" x="100" y="133" text-anchor="middle">directory</text>
-<rect class="b" x="205" y="50" width="160" height="100" rx="12"/><text class="t" x="285" y="90" text-anchor="middle">2. Daily bars</text><text class="s" x="285" y="115" text-anchor="middle">Yahoo, delayed,</text><text class="s" x="285" y="133" text-anchor="middle">rotating batch</text>
-<rect class="b" x="390" y="50" width="160" height="100" rx="12"/><text class="t" x="470" y="90" text-anchor="middle">3. Signals</text><text class="s" x="470" y="115" text-anchor="middle">trend + momentum</text><text class="s" x="470" y="133" text-anchor="middle">+ liquidity</text>
-<rect class="b" x="575" y="50" width="160" height="100" rx="12"/><text class="t" x="655" y="90" text-anchor="middle">4. Queue</text><text class="s" x="655" y="115" text-anchor="middle">orders wait for</text><text class="s" x="655" y="133" text-anchor="middle">next session</text>
-<rect class="b" x="760" y="50" width="160" height="100" rx="12"/><text class="t" x="840" y="90" text-anchor="middle">5. Fill</text><text class="s" x="840" y="115" text-anchor="middle">next open + fee</text><text class="s" x="840" y="133" text-anchor="middle">+ slippage</text>
-<rect class="b" x="945" y="50" width="140" height="100" rx="12" stroke="#4f8cff"/><text class="t" x="1015" y="90" text-anchor="middle">6. Publish</text><text class="s" x="1015" y="115" text-anchor="middle">JSON + CSV +</text><text class="s" x="1015" y="133" text-anchor="middle">Pages</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 230" role="img" aria-label="Daily pipeline: scan, screen, news and earnings, model picks, queue and fill, publish">
+<defs><pattern id="g" width="44" height="44" patternUnits="userSpaceOnUse"><path d="M44 0H0V44" fill="none" stroke="#dde5f4" stroke-width="1.4"/></pattern></defs>
+<style>
+text{font-family:'Helvetica Neue',Arial,sans-serif;fill:#0f1115}
+.t{font-size:18px;font-weight:900;letter-spacing:-.4px}
+.s{font-size:13px;fill:#44505f;font-family:ui-monospace,Menlo,Consolas,monospace}
+.n{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;font-weight:700}
+.b{fill:#fff;stroke:#0f1115;stroke-width:2.5}
+.sh{fill:#0f1115}
+</style>
+<rect width="1100" height="230" fill="#fbfbf8"/><rect width="1100" height="230" fill="url(#g)"/><rect x="1.5" y="1.5" width="1097" height="227" fill="none" stroke="#0f1115" stroke-width="3"/>
+<g id="boxes">
+<rect class="sh" x="30" y="63" width="152" height="112" rx="10"/><rect class="b" x="24" y="57" width="152" height="112" rx="10"/>
+<rect class="sh" x="205" y="63" width="152" height="112" rx="10"/><rect class="b" x="199" y="57" width="152" height="112" rx="10"/>
+<rect class="sh" x="380" y="63" width="152" height="112" rx="10"/><rect class="b" x="374" y="57" width="152" height="112" rx="10"/>
+<rect class="sh" x="555" y="63" width="152" height="112" rx="10"/><rect x="549" y="57" width="152" height="112" rx="10" fill="#ffe14d" stroke="#0f1115" stroke-width="2.5"/>
+<rect class="sh" x="730" y="63" width="152" height="112" rx="10"/><rect class="b" x="724" y="57" width="152" height="112" rx="10"/>
+<rect class="sh" x="905" y="63" width="152" height="112" rx="10"/><rect class="b" x="899" y="57" width="152" height="112" rx="10"/>
 </g>
-<g stroke="#4f8cff" stroke-width="2" fill="none"><path d="M180 100h25M365 100h25M550 100h25M735 100h25M920 100h25"/></g>
-<circle r="5" fill="#5eead4"><animateMotion dur="6s" repeatCount="indefinite" path="M20 100H1085"/></circle>
+<text class="n" x="38" y="82">01</text><text class="t" x="38" y="108">Scan</text><text class="s" x="38" y="130">13k US tickers,</text><text class="s" x="38" y="148">rotating batch</text>
+<text class="n" x="213" y="82">02</text><text class="t" x="213" y="108">Screen</text><text class="s" x="213" y="130">trend, momentum,</text><text class="s" x="213" y="148">liquidity</text>
+<text class="n" x="388" y="82">03</text><text class="t" x="388" y="108">Read</text><text class="s" x="388" y="130">headlines and</text><text class="s" x="388" y="148">earnings dates</text>
+<text class="n" x="563" y="82">04</text><text class="t" x="563" y="108">Model picks</text><text class="s" x="563" y="130">open weights,</text><text class="s" x="563" y="148">free, on CPU</text>
+<text class="n" x="738" y="82">05</text><text class="t" x="738" y="108">Queue, fill</text><text class="s" x="738" y="130">next open, fees,</text><text class="s" x="738" y="148">slippage</text>
+<text class="n" x="913" y="82">06</text><text class="t" x="913" y="108">Publish</text><text class="s" x="913" y="130">ledger, CSV,</text><text class="s" x="913" y="148">dashboard</text>
+<g fill="none" stroke="#0f1115" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+<path d="M180 113h16M355 113h16M530 113h16M705 113h16M880 113h16"/>
+<path d="M190 107l7 6-7 6M365 107l7 6-7 6M540 107l7 6-7 6M715 107l7 6-7 6M890 107l7 6-7 6"/>
+</g>
+<text x="24" y="206" class="s">runs every weekday after the US close, with no one at the keyboard</text>
 </svg>

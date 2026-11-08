@@ -1,50 +1,56 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 640" role="img" aria-label="Project overview: data sources feed two paper accounts, a SQLite ledger stores every decision, and a static dashboard publishes the results">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 640" role="img" aria-label="Project overview: data sources feed the screen and the AI analyst, the live account and shadow accounts trade, ledgers are committed, and a static dashboard publishes the results">
+<defs><pattern id="g" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M48 0H0V48" fill="none" stroke="#dde5f4" stroke-width="1.4"/></pattern></defs>
 <style>
-text{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;fill:#e8eefc}
-.h{font-size:13px;letter-spacing:2px;fill:#4f8cff;font-weight:700}
-.t{font-size:18px;font-weight:700}
-.s{font-size:13px;fill:#9fb0d0}
-.m{font-size:12px;font-family:ui-monospace,Menlo,monospace;fill:#5eead4}
-.b{fill:#13203a;stroke:#2a3f66;stroke-width:1.5}
-.a{fill:none;stroke:#4f8cff;stroke-width:2}
+text{font-family:'Helvetica Neue',Arial,sans-serif;fill:#0f1115}
+.h{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;font-weight:700;letter-spacing:2px}
+.t{font-size:19px;font-weight:900;letter-spacing:-.4px}
+.s{font-size:13px;fill:#44505f;font-family:ui-monospace,Menlo,Consolas,monospace}
+.b{fill:#fff;stroke:#0f1115;stroke-width:2.5}
+.y{fill:#ffe14d;stroke:#0f1115;stroke-width:2.5}
+.sh{fill:#0f1115}
+.a{fill:none;stroke:#0f1115;stroke-width:2.5;stroke-linejoin:round}
 </style>
-<rect width="1200" height="640" rx="18" fill="#0c1421"/>
-<text class="h" x="40" y="46">DATA</text><text class="h" x="330" y="46">ACCOUNTS</text><text class="h" x="660" y="46">LEDGER</text><text class="h" x="900" y="46">PUBLISH</text>
+<rect width="1200" height="640" fill="#fbfbf8"/><rect width="1200" height="640" fill="url(#g)"/><rect x="1.5" y="1.5" width="1197" height="637" fill="none" stroke="#0f1115" stroke-width="3"/>
+<text class="h" x="40" y="46">DATA</text><text class="h" x="330" y="46">DECIDE</text><text class="h" x="650" y="46">LEDGER</text><text class="h" x="900" y="46">PUBLISH</text>
 
-<rect class="b" x="40" y="70" width="230" height="86" rx="12"/><text class="t" x="60" y="102">Nasdaq directory</text><text class="s" x="60" y="124">US-listed symbols, test issues</text><text class="s" x="60" y="141">removed</text>
-<rect class="b" x="40" y="176" width="230" height="86" rx="12"/><text class="t" x="60" y="208">Yahoo daily bars</text><text class="s" x="60" y="230">delayed OHLCV, splits,</text><text class="s" x="60" y="247">dividends</text>
-<rect class="b" x="40" y="400" width="230" height="86" rx="12"/><text class="t" x="60" y="432">Kraken public API</text><text class="s" x="60" y="454">BTC ETH SOL ADA, hourly</text><text class="s" x="60" y="471">candles, bid and ask</text>
+<rect class="sh" x="46" y="76" width="226" height="86" rx="10"/><rect class="b" x="40" y="70" width="226" height="86" rx="10"/>
+<text class="t" x="58" y="102">Nasdaq directory</text><text class="s" x="58" y="124">13k US-listed symbols</text><text class="s" x="58" y="142">and the earnings calendar</text>
+<rect class="sh" x="46" y="182" width="226" height="86" rx="10"/><rect class="b" x="40" y="176" width="226" height="86" rx="10"/>
+<text class="t" x="58" y="208">Yahoo Finance</text><text class="s" x="58" y="230">daily bars, splits,</text><text class="s" x="58" y="248">dividends, headlines</text>
+<rect class="sh" x="46" y="406" width="226" height="86" rx="10"/><rect class="b" x="40" y="400" width="226" height="86" rx="10"/>
+<text class="t" x="58" y="432">Kraken public API</text><text class="s" x="58" y="454">BTC ETH SOL ADA,</text><text class="s" x="58" y="472">hourly candles</text>
 
-<rect class="b" x="330" y="90" width="270" height="190" rx="14" stroke="#4f8cff"/>
-<text class="t" x="352" y="124">Stock account</text><text class="s" x="352" y="148">$1,000, long only, whole shares</text>
-<text class="s" x="352" y="176">20/50-day trend + 20-day momentum</text><text class="s" x="352" y="196">3 positions, 20% cap each</text>
-<text class="s" x="352" y="216">-4% stop, +8% target, 10% halt</text><text class="m" x="352" y="256">daily · 22:37 UTC</text>
+<rect class="sh" x="336" y="96" width="282" height="196" rx="12"/><rect class="y" x="330" y="90" width="282" height="196" rx="12"/>
+<text class="t" x="352" y="122">Stock account</text><text class="s" x="352" y="146">1. screen: trend + momentum</text>
+<text class="s" x="352" y="166">2. open-weights model ranks</text><text class="s" x="352" y="186">   by headlines and earnings</text>
+<text class="s" x="352" y="206">3. 3 positions, 20% cap each</text><text class="s" x="352" y="226">4. -4% stop, +8% target</text><text class="s" x="352" y="246">5. 10% drawdown halts buys</text>
+<text class="s" x="352" y="270">daily, after the close</text>
 
-<rect class="b" x="330" y="380" width="270" height="130" rx="14" stroke="#5eead4"/>
-<text class="t" x="352" y="414">Crypto account</text><text class="s" x="352" y="438">$1,000, separate database</text>
-<text class="s" x="352" y="458">20h/50h trend + 24h momentum</text><text class="m" x="352" y="492">hourly · closed candles only</text>
+<rect class="sh" x="336" y="326" width="282" height="76" rx="12"/><rect class="b" x="330" y="320" width="282" height="76" rx="12" stroke-dasharray="7 5"/>
+<text class="t" x="352" y="350">Shadow accounts</text><text class="s" x="352" y="372">challengers and a no-AI control</text><text class="s" x="352" y="388">trade the same data</text>
 
-<rect class="b" x="660" y="170" width="190" height="260" rx="14"/>
-<text class="t" x="684" y="206">SQLite ledger</text>
-<text class="m" x="684" y="240">state</text><text class="m" x="684" y="266">decisions</text><text class="m" x="684" y="292">fills</text><text class="m" x="684" y="318">equity</text><text class="m" x="684" y="344">events</text>
-<text class="s" x="684" y="384">append-only evidence,</text><text class="s" x="684" y="402">one file per account</text>
+<rect class="sh" x="336" y="426" width="282" height="86" rx="12"/><rect class="b" x="330" y="420" width="282" height="86" rx="12"/>
+<text class="t" x="352" y="450">Crypto account</text><text class="s" x="352" y="472">own database, 20h/50h trend,</text><text class="s" x="352" y="490">closed candles only</text>
 
-<rect class="b" x="900" y="90" width="260" height="190" rx="14" stroke="#4f8cff"/>
-<text class="t" x="922" y="124">Static export</text><text class="s" x="922" y="150">api/state, universe.json</text><text class="s" x="922" y="170">decisions, fills, equity</text><text class="s" x="922" y="190">and events as CSV</text>
-<rect x="922" y="212" width="216" height="46" rx="8" fill="#0c1421" stroke="#2a3f66"/>
-<polyline points="934,246 960,232 986,240 1012,222 1038,228 1064,220 1090,226 1126,218" fill="none" stroke="#5eead4" stroke-width="2.5"/>
-<rect class="b" x="900" y="320" width="260" height="110" rx="14"/>
-<text class="t" x="922" y="354">GitHub Pages</text><text class="s" x="922" y="378">read-only dashboard,</text><text class="s" x="922" y="398">rebuilt by GitHub Actions</text>
+<rect class="sh" x="686" y="176" width="190" height="286" rx="12"/><rect class="b" x="680" y="170" width="190" height="286" rx="12"/>
+<text class="t" x="702" y="204">SQLite ledgers</text>
+<text class="s" x="702" y="236">state</text><text class="s" x="702" y="260">decisions</text><text class="s" x="702" y="284">fills</text><text class="s" x="702" y="308">equity</text><text class="s" x="702" y="332">events</text>
+<text class="s" x="702" y="376">+ strategy registry</text><text class="s" x="702" y="396">committed to the</text><text class="s" x="702" y="416">account branch</text>
 
-<rect class="b" x="660" y="520" width="500" height="84" rx="14"/>
-<text class="t" x="684" y="552">Two implementations, one ledger format</text>
-<text class="s" x="684" y="576">Python (projects/, app/) and Rust (rust/) read and write the same SQLite files.</text>
-<text class="s" x="684" y="594">Stock-account parity was checked by replaying the same observations.</text>
+<rect class="sh" x="936" y="96" width="236" height="170" rx="12"/><rect class="b" x="930" y="90" width="236" height="170" rx="12"/>
+<text class="t" x="948" y="122">Static export</text><text class="s" x="948" y="146">api/state, universe</text><text class="s" x="948" y="164">decisions, fills, equity,</text><text class="s" x="948" y="182">events as CSV</text>
+<polyline points="950,238 976,224 1002,232 1028,212 1054,220 1080,206 1106,212 1146,200" fill="none" stroke="#0f1115" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
 
-<g class="a"><path d="M270 113H300V185H330"/><path d="M270 219H300V185"/><path d="M270 443H330"/><path d="M600 185H630V260H660"/><path d="M600 445H630V340H660"/><path d="M850 300H875V185H900"/><path d="M1030 280V320"/></g>
-<g fill="#5eead4"><circle r="4"><animateMotion dur="5s" repeatCount="indefinite" path="M270 113H300V185H330"/></circle>
-<circle r="4"><animateMotion dur="5s" begin="1s" repeatCount="indefinite" path="M600 185H630V260H660"/></circle>
-<circle r="4"><animateMotion dur="5s" begin="2s" repeatCount="indefinite" path="M850 300H875V185H900"/></circle>
-<circle r="4"><animateMotion dur="5s" begin="3s" repeatCount="indefinite" path="M1030 280V320"/></circle>
-<circle r="4"><animateMotion dur="4s" repeatCount="indefinite" path="M270 443H330"/></circle></g>
+<rect class="sh" x="936" y="306" width="236" height="110" rx="12"/><rect class="b" x="930" y="300" width="236" height="110" rx="12"/>
+<text class="t" x="948" y="334">GitHub Pages</text><text class="s" x="948" y="358">read-only dashboard,</text><text class="s" x="948" y="376">rebuilt by Actions</text><text class="s" x="948" y="394">no server to run</text>
+
+<rect class="sh" x="686" y="526" width="486" height="86" rx="12"/><rect class="b" x="680" y="520" width="486" height="86" rx="12"/>
+<text class="t" x="700" y="552">Free runner, free model</text>
+<text class="s" x="700" y="574">Qwen3 4B (Apache-2.0) on llama.cpp, inside the job.</text><text class="s" x="700" y="592">A schedule or webhook starts it. No key, no server.</text>
+
+<g class="a"><path d="M266 113H298V188H330"/><path d="M266 219H298V188"/><path d="M612 190H646V300H680"/><path d="M612 364H646V300"/><path d="M612 466H646V380H680"/><path d="M270 443H330"/><path d="M870 316H900V176H930"/><path d="M1048 260V300"/></g>
+<g fill="#ffe14d" stroke="#0f1115" stroke-width="2"><circle r="6"><animateMotion dur="5s" repeatCount="indefinite" path="M266 113H298V188H330"/></circle>
+<circle r="6"><animateMotion dur="5s" begin="1s" repeatCount="indefinite" path="M612 190H646V300H680"/></circle>
+<circle r="6"><animateMotion dur="5s" begin="2s" repeatCount="indefinite" path="M870 316H900V176H930"/></circle>
+<circle r="6"><animateMotion dur="5s" begin="3s" repeatCount="indefinite" path="M1048 260V300"/></circle></g>
 </svg>
