@@ -34,8 +34,10 @@ def universe():
             if not symbol or symbol.startswith("File Creation") or row.get("Test Issue") != "N":
                 continue
             result[symbol] = {
-                "symbol": symbol, "name": row["Security Name"],
-                "exchange": row.get("Exchange", "Q"), "etf": row.get("ETF") == "Y",
+                "symbol": symbol,
+                "name": row["Security Name"],
+                "exchange": row.get("Exchange", "Q"),
+                "etf": row.get("ETF") == "Y",
             }
     if len(result) < 5000:
         raise ValueError("Incomplete US symbol directory; refusing a truncated universe")
@@ -47,10 +49,12 @@ def history(symbol):
     # Class-share dots map to Yahoo dashes. Other unsupported security spellings
     # remain visible in coverage failures instead of being silently removed.
     ticker = quote(symbol.replace(".", "-"), safe="")
-    payload = json.loads(fetch(
-        f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}"
-        "?range=3mo&interval=1d&events=div%2Csplits"
-    ))
+    payload = json.loads(
+        fetch(
+            f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}"
+            "?range=3mo&interval=1d&events=div%2Csplits"
+        )
+    )
     chart = payload["chart"]
     if chart.get("error") or not chart.get("result"):
         raise ValueError("No daily price history")
@@ -104,13 +108,20 @@ def observe(state, batch_size=800):
             else:
                 quotes[symbol] = result
     return {
-        "at": time.time(), "universe": list(listing.values()), "quotes": quotes,
-        "errors": errors, "next_cursor": (cursor + count) % len(symbols),
+        "at": time.time(),
+        "universe": list(listing.values()),
+        "quotes": quotes,
+        "errors": errors,
+        "next_cursor": (cursor + count) % len(symbols),
         "coverage": {
-            "universe_count": len(symbols), "attempted": len(selected),
-            "succeeded": len(quotes), "failed": len(errors),
-            "remaining": len(set(symbols) - selected), "batch_size": count,
-            "scan_start_index": cursor, "rotation_cycles": math.ceil(len(symbols) / count),
+            "universe_count": len(symbols),
+            "attempted": len(selected),
+            "succeeded": len(quotes),
+            "failed": len(errors),
+            "remaining": len(set(symbols) - selected),
+            "batch_size": count,
+            "scan_start_index": cursor,
+            "rotation_cycles": math.ceil(len(symbols) / count),
             "scope": "US exchange-listed issues; not worldwide or OTC",
             "method": "Rotating alphabetical scan; positions, pending orders and SPY every run",
         },

@@ -38,13 +38,27 @@ def equity(state):
     return state["cash"] + sum(p["market_value"] for p in state["positions"].values())
 
 
+def update_risk(state):
+    """Update drawdown using only marks available at the execution or observation time."""
+    total = equity(state)
+    state["peak"] = max(state["peak"], total)
+    drawdown = 1 - total / state["peak"]
+    state["max_drawdown"] = max(state["max_drawdown"], drawdown)
+    if drawdown >= 0.10:
+        state["halted"], state["halt_reason"] = True, "10% drawdown halt (gaps can exceed limits)"
+    return total, drawdown
+
+
+def action_order(action):
+    """Apply splits before per-post-split-share distributions on the same ex-date."""
+    return action["date"], action["kind"] != "splits", action["kind"]
+
+
 def corporate_actions(db, state, symbol, quote, at):
     """Adjust held quantities for splits and credit reported cash distributions once."""
-    position = state["positions"].get(symbol)
-    if not position:
-        return
+    position = state["positions"][symbol]
     processed = state.setdefault("corporate_actions", [])
-    for action in sorted(quote.get("actions", []), key=lambda row: row["date"]):
+    for action in sorted(quote.get("actions", []), key=action_order):
         key = f"{symbol}:{action['kind']}:{action['date']}"
         if key in processed or not position["opened_at"] < action["date"] <= at:
             continue
@@ -77,13 +91,24 @@ def fill(db, state, symbol, order, bar, at):
         capital = equity(state)
         quantity = math.floor(min(state["cash"], capital * 0.20) / (price * (1 + FEE)))
         if state["halted"] or len(state["positions"]) >= 3 or quantity < 1:
-            decision(db, at, symbol, "REJECT", "Halted, three-position limit, or whole share unaffordable")
+            decision(
+                db,
+                at,
+                symbol,
+                "REJECT",
+                "Halted, three-position limit, or whole share unaffordable",
+            )
             return
         cost = quantity * price * (1 + FEE)
         state["cash"] -= cost
         state["positions"][symbol] = {
-            "symbol": symbol, "quantity": quantity, "entry": price, "cost": cost,
-            "stop": price * 0.96, "target": price * 1.08, "opened_at": bar["at"],
+            "symbol": symbol,
+            "quantity": quantity,
+            "entry": price,
+            "cost": cost,
+            "stop": price * 0.96,
+            "target": price * 1.08,
+            "opened_at": bar["at"],
             "planned_risk": cost - quantity * price * 0.96 * (1 - SLIP) * (1 - FEE),
             "market_value": quantity * price * (1 - SLIP) * (1 - FEE),
             "unrealized_pnl": 0,
@@ -102,13 +127,28 @@ def fill(db, state, symbol, order, bar, at):
     db.execute(
         "INSERT INTO fills(at,signal_at,symbol,side,quantity,price,notional,fee,"
         "realized_pnl,reason) VALUES(?,?,?,?,?,?,?,?,?,?)",
-        (bar["at"], order["at"], symbol, side, quantity, price, quantity * price,
-         fee, pnl, order["reason"]),
+        (
+            bar["at"],
+            order["at"],
+            symbol,
+            side,
+            quantity,
+            price,
+            quantity * price,
+            fee,
+            pnl,
+            order["reason"],
+        ),
     )
-    decision(db, at, symbol, side + "_FILLED",
-             "Daily simulation: latest completed session open after signal, plus adverse costs; "
-             "missed runs skip sessions",
-             {"bar_at": bar["at"], "price": price, "signal_at": order["at"]})
+    decision(
+        db,
+        at,
+        symbol,
+        side + "_FILLED",
+        "Daily simulation: latest completed session open after signal, plus adverse costs; "
+        "missed runs skip sessions",
+        {"bar_at": bar["at"], "price": price, "signal_at": order["at"]},
+    )
 
 
 def cycle(path, observation, mode="stocks-daily"):
@@ -128,11 +168,17 @@ def cycle(path, observation, mode="stocks-daily"):
         usable = {}
         for symbol, quote in quotes.items():
             bars = quote["bars"]
-            if len(bars) < 50 or any(
-                not all(math.isfinite(bar[k]) for k in ("at", "open", "close", "volume"))
-                or min(bar["open"], bar["close"]) <= 0 or bar["volume"] < 0
-                or bar["at"] >= at for bar in bars
-            ) or any(a["at"] >= b["at"] for a, b in zip(bars, bars[1:])):
+            if (
+                len(bars) < 50
+                or any(
+                    not all(math.isfinite(bar[k]) for k in ("at", "open", "close", "volume"))
+                    or min(bar["open"], bar["close"]) <= 0
+                    or bar["volume"] < 0
+                    or bar["at"] >= at
+                    for bar in bars
+                )
+                or any(a["at"] >= b["at"] for a, b in zip(bars, bars[1:]))
+            ):
                 raise ValueError("Invalid daily bars")
             if at - bars[-1]["at"] > 5 * DAY:
                 decision(db, at, symbol, "SKIP", "Daily bar older than five days")
@@ -142,43 +188,70 @@ def cycle(path, observation, mode="stocks-daily"):
             state["started_at"] = at
         if at - state["started_at"] >= 60 * DAY:
             state["halted"], state["halt_reason"] = True, "60-day experiment ended"
-        for symbol, quote in usable.items():
-            corporate_actions(db, state, symbol, quote, quote["bars"][-1]["at"])
         # Missing held marks freeze entries; absent/delisted stocks are not valued at zero.
         missing = set(state["positions"]) - set(usable)
         if missing:
-            decision(db, at, "ACCOUNT", "FREEZE", "Held symbols unavailable; retained last marks",
-                     {"symbols": sorted(missing)})
+            decision(
+                db,
+                at,
+                "ACCOUNT",
+                "FREEZE",
+                "Held symbols unavailable; retained last marks",
+                {"symbols": sorted(missing)},
+            )
+        executions = []
         for symbol, order in list(state["pending"].items()):
             if symbol not in usable:
                 continue
             eligible = [bar for bar in usable[symbol]["bars"] if bar["at"] > order["at"]]
             if not eligible:
                 continue
+            executions.append((eligible[-1]["at"], symbol, order, eligible[-1]))
+        for execution_at, symbol, order, bar in sorted(executions):
             del state["pending"][symbol]
-            if at - order["at"] > 7 * DAY or (order["side"] == "BUY" and missing):
+            unavailable = set()
+            for held, position in state["positions"].items():
+                opening = next(
+                    (
+                        row
+                        for row in usable.get(held, {}).get("bars", [])
+                        if row["at"] == execution_at
+                    ),
+                    None,
+                )
+                if opening is None:
+                    unavailable.add(held)
+                    continue
+                corporate_actions(db, state, held, usable[held], execution_at)
+                position["market_value"] = (
+                    position["quantity"] * opening["open"] * (1 - SLIP) * (1 - FEE)
+                )
+            update_risk(state)
+            if at - order["at"] > 7 * DAY or (order["side"] == "BUY" and unavailable):
                 decision(db, at, symbol, "EXPIRED", "Order stale or held prices unavailable")
                 continue
-            fill(db, state, symbol, order, eligible[-1], at)
+            fill(db, state, symbol, order, bar, at)
         for symbol, position in state["positions"].items():
             if symbol not in usable:
                 continue
+            corporate_actions(db, state, symbol, usable[symbol], usable[symbol]["bars"][-1]["at"])
             close = usable[symbol]["bars"][-1]["close"]
             position["market_value"] = position["quantity"] * close * (1 - SLIP) * (1 - FEE)
             position["unrealized_pnl"] = position["market_value"] - position["cost"]
             position["price_at"] = usable[symbol]["bars"][-1]["at"]
-        total = equity(state)
-        state["peak"] = max(state["peak"], total)
-        drawdown = 1 - total / state["peak"]
-        state["max_drawdown"] = max(state["max_drawdown"], drawdown)
-        if drawdown >= 0.10:
-            state["halted"], state["halt_reason"] = True, "10% drawdown halt (gaps can exceed limits)"
+        total, drawdown = update_risk(state)
         for symbol, position in state["positions"].items():
             if symbol in usable and symbol not in state["pending"]:
                 close = usable[symbol]["bars"][-1]["close"]
                 if state["halted"] or close <= position["stop"] or close >= position["target"]:
-                    state["pending"][symbol] = {"side": "SELL", "at": at,
-                        "reason": "Close crossed stop/target or account halted; later observed session open"}
+                    state["pending"][symbol] = {
+                        "side": "SELL",
+                        "at": at,
+                        "reason": (
+                            "Close crossed stop/target or account halted; "
+                            "later observed session open"
+                        ),
+                    }
                     decision(db, at, symbol, "SELL_SIGNAL", state["pending"][symbol]["reason"])
         candidates = []
         for symbol, quote in usable.items():
@@ -188,22 +261,47 @@ def cycle(path, observation, mode="stocks-daily"):
             sma50 = sum(bar["close"] for bar in bars[-50:]) / 50
             momentum = close / bars[-21]["close"] - 1
             dollar_volume = sum(bar["close"] * bar["volume"] for bar in bars[-20:]) / 20
-            evidence = {"sma20": sma20, "sma50": sma50, "momentum20d": momentum,
-                        "average_dollar_volume": dollar_volume, "price_at": bars[-1]["at"]}
-            eligible = close >= 5 and dollar_volume >= 1000000 and close > sma20 > sma50 and momentum > .02
-            decision(db, at, symbol, "CANDIDATE" if eligible else "PASS",
-                     "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day", evidence)
+            evidence = {
+                "sma20": sma20,
+                "sma50": sma50,
+                "momentum20d": momentum,
+                "average_dollar_volume": dollar_volume,
+                "price_at": bars[-1]["at"],
+            }
+            eligible = (
+                close >= 5
+                and dollar_volume >= 1000000
+                and close > sma20 > sma50
+                and momentum > 0.02
+            )
+            decision(
+                db,
+                at,
+                symbol,
+                "CANDIDATE" if eligible else "PASS",
+                "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+                evidence,
+            )
             if eligible:
                 candidates.append((momentum, symbol))
-        slots = 3 - len(state["positions"]) - sum(o["side"] == "BUY" for o in state["pending"].values())
+        slots = (
+            3 - len(state["positions"]) - sum(o["side"] == "BUY" for o in state["pending"].values())
+        )
         if not state["halted"] and not missing:
             for _, symbol in sorted(candidates, reverse=True):
                 if slots <= 0:
                     break
-                if symbol in state["positions"] or symbol in state["pending"] or state["cooldown"].get(symbol, 0) > at:
+                if (
+                    symbol in state["positions"]
+                    or symbol in state["pending"]
+                    or state["cooldown"].get(symbol, 0) > at
+                ):
                     continue
-                state["pending"][symbol] = {"side": "BUY", "at": at,
-                    "reason": "Positive liquid daily trend; whole shares capped at 20% of equity"}
+                state["pending"][symbol] = {
+                    "side": "BUY",
+                    "at": at,
+                    "reason": "Positive liquid daily trend; whole shares capped at 20% of equity",
+                }
                 decision(db, at, symbol, "BUY_SIGNAL", state["pending"][symbol]["reason"])
                 slots -= 1
         benchmark = 1000.0
@@ -216,8 +314,11 @@ def cycle(path, observation, mode="stocks-daily"):
             benchmark = state["benchmark_value"]
         state["benchmark_value"] = benchmark
         risk = sum(p["planned_risk"] for p in state["positions"].values())
-        db.execute("INSERT INTO equity(at,equity,cash,benchmark,drawdown,planned_risk) VALUES(?,?,?,?,?,?)",
-                   (at, total, state["cash"], benchmark, drawdown, risk))
+        db.execute(
+            "INSERT INTO equity(at,equity,cash,benchmark,drawdown,planned_risk) "
+            "VALUES(?,?,?,?,?,?)",
+            (at, total, state["cash"], benchmark, drawdown, risk),
+        )
         state["last_at"] = at
         state["scan_cursor"] = observation.get("next_cursor", 0)
         state["coverage"] = observation["coverage"]
@@ -231,10 +332,11 @@ def cycle(path, observation, mode="stocks-daily"):
         state["universe"] = observation["universe"]
         state["data_errors"] = observation["errors"]
         state["health"] = {
-            "status": "error" if not usable else "degraded" if missing else "delayed", "at": at,
+            "status": "error" if not usable else "degraded" if missing else "delayed",
+            "at": at,
             "message": "Daily-price simulation, not live quotes. Prior completed sessions only. "
-                       + ("Some holdings lack current marks. " if missing else "")
-                       + f"{len(usable)} usable prices; {len(observation['errors'])} provider errors.",
+            + ("Some holdings lack current marks. " if missing else "")
+            + f"{len(usable)} usable prices; {len(observation['errors'])} provider errors.",
         }
         ledger.event(db, at, "stock_scan", json.dumps(state["coverage"]))
         ledger.save(db, state)

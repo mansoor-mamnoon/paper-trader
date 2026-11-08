@@ -19,16 +19,24 @@ def export(path, output):
     db = ledger.connect(path)
     try:
         state = ledger.load(db)
-        report.update({
-            "coverage": state.get("coverage", {}),
-            "data_errors": state.get("data_errors", {}),
-            "source": stock_data.SOURCE,
-            "benchmark_label": "SPY price-only (dividends excluded)",
-            "simulation": "Prior completed daily bars; latest completed session open after signal; "
-                          "missed runs skip sessions; not real-time execution",
-        })
-        report["rules"].update(position_cap=0.20, fee=stock_account.FEE,
-                               slippage=stock_account.SLIP, cycle_seconds=86400)
+        report.update(
+            {
+                "coverage": state.get("coverage", {}),
+                "data_errors": state.get("data_errors", {}),
+                "source": stock_data.SOURCE,
+                "benchmark_label": "SPY price-only (dividends excluded)",
+                "simulation": (
+                    "Prior completed daily bars; latest completed session open after signal; "
+                    "missed runs skip sessions; not real-time execution"
+                ),
+            }
+        )
+        report["rules"].update(
+            position_cap=0.20,
+            fee=stock_account.FEE,
+            slippage=stock_account.SLIP,
+            cycle_seconds=86400,
+        )
         report["health"]["age_seconds"] = max(0, time.time() - state["last_at"])
         body = json.dumps(report, allow_nan=False, indent=2)
         for name in ("state", "state.json"):
@@ -51,11 +59,19 @@ def export(path, output):
 def main():
     """Execute one daily observation, or an explicitly isolated replay, and publish JSON."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--db", required=True, help="Persistent SQLite STOCK account; never a crypto DB")
+    parser.add_argument(
+        "--db", required=True, help="Persistent SQLite STOCK account; never a crypto DB"
+    )
     parser.add_argument("--output", required=True, help="Static output directory")
-    parser.add_argument("--batch-size", type=int, default=800,
-                        help="Rotating universe slice; use 20000 for entire directory (many requests)")
-    parser.add_argument("--replay", type=Path, help="Explicit observation JSON; separate replay account")
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=800,
+        help="Rotating universe slice; use 20000 for entire directory (many requests)",
+    )
+    parser.add_argument(
+        "--replay", type=Path, help="Explicit observation JSON; separate replay account"
+    )
     args = parser.parse_args()
     if args.batch_size < 1:
         parser.error("--batch-size must be positive")
@@ -77,8 +93,16 @@ def main():
         export(args.db, args.output)
         raise
     report = export(args.db, args.output)
-    print(json.dumps({"equity": report["account"]["equity"], "coverage": report["coverage"],
-                      "health": report["health"], "output": str(Path(args.output) / "api/state")}))
+    print(
+        json.dumps(
+            {
+                "equity": report["account"]["equity"],
+                "coverage": report["coverage"],
+                "health": report["health"],
+                "output": str(Path(args.output) / "api/state"),
+            }
+        )
+    )
 
 
 if __name__ == "__main__":
