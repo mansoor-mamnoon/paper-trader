@@ -673,8 +673,17 @@ impl<'a> Desk<'a> {
             notes.push("judge skipped: out of time".into());
             None
         };
-        let review =
+        let mut review =
             review.unwrap_or_else(|| triage_fallback(brief, &finalists, &self.triage, &notes));
+        // The account allows one new position in risk-off; show the capped list so the
+        // transcript matches what is actually bought.
+        if review.regime.as_deref() == Some("risk_off") && review.picks.len() > 1 {
+            review.picks.truncate(1);
+            if let Some(list) = transcript.judge["picks"].as_array_mut() {
+                list.truncate(1);
+            }
+            transcript.judge["capped_by_risk_off"] = json!(true);
+        }
         transcript.degraded = notes;
         transcript.minutes_left = self.budget.minutes_left();
         (review, transcript)
@@ -1142,5 +1151,36 @@ mod tests {
             "short fragment with no stop"
         );
         assert_eq!(tidy("Gain of 4%"), "Gain of 4%");
+    }
+
+    #[test]
+    fn risk_off_caps_the_transcript_to_one_pick() {
+        #[derive(Debug)]
+        struct TwoPicks;
+        impl Llm for TwoPicks {
+            fn name(&self) -> String {
+                "two".into()
+            }
+            fn complete(&self, system: &str, _: &str, _: Option<&Value>) -> Result<String> {
+                Ok(if system.contains("portfolio manager") {
+                    r#"{"reasoning":"weak breadth","regime":"risk_off","market_view":"x","picks":[{"symbol":"AAA","conviction":0.9,"size_fraction":1,"thesis":"a","key_risk":"","invalidation":""},{"symbol":"BBB","conviction":0.8,"size_fraction":1,"thesis":"b","key_risk":"","invalidation":""}],"avoid":[]}"#.into()
+                } else {
+                    r#"{"scores":[{"symbol":"AAA","score":9,"why":"x"},{"symbol":"BBB","score":8,"why":"x"},{"symbol":"CCC","score":1,"why":"x"}],"argument":"a","strongest_point":"b"}"#.into()
+                })
+            }
+        }
+        let llm = TwoPicks;
+        let obs = observation();
+        let budget = Budget::new(30.0);
+        let mut desk = Desk::new(&llm, None, &obs, &budget);
+        let strategy = Strategy {
+            desk_depth: 2,
+            finalists: 3,
+            ..Strategy::default()
+        };
+        let (review, transcript) = desk.review(&strategy, &brief(), None, &[]);
+        assert_eq!(review.picks.len(), 1);
+        assert_eq!(transcript.judge["picks"].as_array().unwrap().len(), 1);
+        assert_eq!(transcript.judge["capped_by_risk_off"], true);
     }
 }
