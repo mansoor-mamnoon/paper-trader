@@ -81,7 +81,7 @@ pub fn fetch_news(symbol: &str) -> Vec<Headline> {
     let url =
         format!("https://feeds.finance.yahoo.com/rss/2.0/headline?s={symbol}&region=US&lang=en-US");
     http::get(&url, AGENT, Duration::from_secs(15))
-        .map(|x| parse_rss(&x, 6))
+        .map(|x| parse_rss(&x, 12))
         .unwrap_or_default()
 }
 

@@ -67,9 +67,15 @@ pub struct Registry {
     pub last_promoted_at: f64,
     #[serde(default)]
     pub next_id: u32,
-    /// Whether the no-AI control shadow has been created.
+    /// Retained for older registries; the depth ladder replaced the single control.
     #[serde(default)]
     pub control_added: bool,
+    /// Lessons distilled from closed trades, oldest first.
+    #[serde(default)]
+    pub lessons: Vec<crate::desk::Lesson>,
+    /// Highest fill id that already has a post-mortem.
+    #[serde(default)]
+    pub lessons_cursor: i64,
     #[serde(default)]
     pub analyst: AnalystStatus,
 }
@@ -96,6 +102,8 @@ impl Registry {
                 last_promoted_at: 0.0,
                 next_id: 1,
                 control_added: false,
+                lessons: Vec::new(),
+                lessons_cursor: 0,
                 analyst: AnalystStatus::default(),
             }),
             Err(error) => Err(error.into()),
@@ -176,6 +184,8 @@ pub enum Verdict {
 #[derive(Debug)]
 pub struct Standing {
     pub id: String,
+    /// Ablation shadows are yardsticks and are never retired for age.
+    pub permanent: bool,
     pub started_at: f64,
     pub shadow: Stats,
     pub champion: Stats,
@@ -211,6 +221,9 @@ pub fn decide(now: f64, standings: &[Standing], last_promoted_at: f64) -> Vec<Ve
     }
     for s in standings {
         if winner.is_some_and(|w| w.id == s.id) {
+            continue;
+        }
+        if s.permanent {
             continue;
         }
         if age(s) >= RETIRE_AFTER_DAYS {
@@ -406,6 +419,7 @@ pub fn improve(
         if let (Some(shadow_stats), Some(champion_stats)) = (own, champ) {
             standings.push(Standing {
                 id,
+                permanent: shadow.kind == "ablation",
                 started_at: shadow.started_at,
                 shadow: shadow_stats,
                 champion: champion_stats,
@@ -461,7 +475,12 @@ pub fn improve(
     if let Some(proposer) = proposer.filter(|_| {
         !promoted
             && has_history
-            && registry.shadows.len() < MAX_SHADOWS
+            && registry
+                .shadows
+                .iter()
+                .filter(|s| s.kind == "challenger")
+                .count()
+                < MAX_SHADOWS
             && (now - registry.last_proposed_at) / DAY >= PROPOSE_EVERY_DAYS
     }) {
         registry.last_proposed_at = now;
@@ -547,6 +566,7 @@ mod tests {
     fn standing(id: &str, age_days: f64, shadow: Stats, champion: Stats) -> Standing {
         Standing {
             id: id.into(),
+            permanent: false,
             started_at: 1000.0 * DAY - age_days * DAY,
             shadow,
             champion,

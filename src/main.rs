@@ -2,8 +2,8 @@
 
 use anyhow::Result;
 use clap::Parser;
-use paper_trader::analyst::{Analyst, LlmAnalyst, llm_from_env};
-use paper_trader::lab::{LlmProposer, Proposer};
+use paper_trader::analyst::llm_from_env;
+use paper_trader::edgar::Edgar;
 use paper_trader::{crypto, daily, export, ledger};
 use serde_json::json;
 use std::path::PathBuf;
@@ -120,21 +120,22 @@ fn main() -> Result<()> {
         db: args.db.clone(),
         batch_size: args.batch_size,
         replay: args.replay.clone(),
+        desk_minutes: std::env::var("PAPER_TRADER_DESK_MINUTES")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(120.0),
     };
     let llm = llm_from_env();
-    let analyst = llm.as_deref().map(|llm| LlmAnalyst { llm });
-    let proposer = llm.as_deref().map(|llm| LlmProposer { llm });
     if llm.is_none() {
         eprintln!(
             "No model configured (PAPER_TRADER_LLM_URL or ANTHROPIC_API_KEY): trading by the quantitative ranking only"
         );
     }
-    let summary = daily::run(
-        &options,
-        mode,
-        analyst.as_ref().map(|a| a as &dyn Analyst),
-        proposer.as_ref().map(|p| p as &dyn Proposer),
-    );
+    let edgar = Edgar::load().ok();
+    if edgar.is_none() {
+        eprintln!("SEC EDGAR is unreachable: the desk will work from headlines only");
+    }
+    let summary = daily::run(&options, mode, llm.as_deref(), edgar.as_ref());
     let summary = match summary {
         Ok(summary) => summary,
         Err(error) => {
