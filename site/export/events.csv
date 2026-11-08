@@ -12,3 +12,15 @@ id,run_id,at,kind,subject,detail
 11,42526772466,1794175110.51687,model_load,qwen3-4b-instruct,Qwen3 4B Instruct 2507 (Alibaba) ready (4503 ms)
 12,42526772466,1794175110.51884,determinism,qwen3-4b-instruct,hash 293d2b271af8ea44 stable (5580 ms)
 13,42526772466,1794175110.7012413,degraded,desk,nothing to decide: no open slots or no candidates
+14,42529779491,1794176591.5123372,download,granite-4.0-h-micro,"1942 MB, sha256 verified, attempt 1 (11414 ms)"
+15,42529779491,1794176591.5140429,model_load,granite-4.0-h-micro,Granite 4.0 H Micro (IBM) ready (3004 ms)
+16,42529779491,1794176591.516073,determinism,granite-4.0-h-micro,hash dc192c7624001ab2 stable (3324 ms)
+17,42529779491,1794176699.5127168,download,llama-3.2-3b,"2019 MB, sha256 verified, attempt 1 (9117 ms)"
+18,42529779491,1794176699.5191495,model_load,llama-3.2-3b,Llama 3.2 3B Instruct (Meta) ready (3002 ms)
+19,42529779491,1794176699.5213583,determinism,llama-3.2-3b,hash 293d2b271af8ea44 stable (2815 ms)
+20,42529779491,1794176757.5411952,download,phi-4-mini,"2491 MB, sha256 verified, attempt 1 (18839 ms)"
+21,42529779491,1794176757.8027043,model_load,phi-4-mini,Phi-4 mini Instruct (Microsoft) ready (3002 ms)
+22,42529779491,1794176758.3293405,determinism,phi-4-mini,hash bd099a30714f1b21 stable (3619 ms)
+23,42529779491,1794176895.1642942,download,qwen3-4b-instruct,"2497 MB, sha256 verified, attempt 1 (13360 ms)"
+24,42529779491,1794176895.165817,model_load,qwen3-4b-instruct,Qwen3 4B Instruct 2507 (Alibaba) ready (3259 ms)
+25,42529779491,1794176895.1675427,determinism,qwen3-4b-instruct,hash 293d2b271af8ea44 stable (3283 ms)
