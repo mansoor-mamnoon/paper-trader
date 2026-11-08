@@ -15,15 +15,44 @@
     "shortlist_size": 25,
     "playbook": "You are the portfolio analyst for a $1,000 long-only US-stock paper account. Each day you receive stocks that already passed a quantitative screen, with recent headlines and upcoming earnings dates. Pick the stocks most likely to rise over the next one to three weeks. Prefer a clear, recent, specific catalyst (guidance raised, contract won, upgrade, product launch) and a trend that the news supports. Avoid stocks with a pending earnings report unless the setup is unusually strong, stocks whose news is mostly negative, legal trouble, dilution or a recent spike on thin news. Be selective: choosing no stock is a valid answer when nothing is convincing."
   },
-  "shadows": [],
-  "log": [],
+  "shadows": [
+    {
+      "strategy": {
+        "id": "control",
+        "parent": "baseline",
+        "created_at": 1794162614.1513872,
+        "rationale": "Control: the same screen ranked by 20-day gain, with no AI. Tests whether the analyst adds value.",
+        "min_price": 5.0,
+        "min_dollar_volume": 1000000.0,
+        "min_momentum": 0.02,
+        "require_trend": true,
+        "stop_pct": 0.04,
+        "target_pct": 0.08,
+        "earnings_blackout_days": 0,
+        "analyst_enabled": false,
+        "shortlist_size": 25,
+        "playbook": "You are the portfolio analyst for a $1,000 long-only US-stock paper account. Each day you receive stocks that already passed a quantitative screen, with recent headlines and upcoming earnings dates. Pick the stocks most likely to rise over the next one to three weeks. Prefer a clear, recent, specific catalyst (guidance raised, contract won, upgrade, product launch) and a trend that the news supports. Avoid stocks with a pending earnings report unless the setup is unusually strong, stocks whose news is mostly negative, legal trouble, dilution or a recent spike on thin news. Be selective: choosing no stock is a valid answer when nothing is convincing."
+      },
+      "kind": "challenger",
+      "started_at": 1794162614.1513872
+    }
+  ],
+  "log": [
+    {
+      "at": 1794162614.1513872,
+      "event": "proposed",
+      "id": "control",
+      "detail": "changes analyst_enabled: no-AI control for the analyst"
+    }
+  ],
   "last_proposed_at": 0.0,
   "last_promoted_at": 0.0,
   "next_id": 1,
+  "control_added": true,
   "analyst": {
-    "at": 1794159983.3787553,
+    "at": 1794162647.9619699,
     "source": "quant",
-    "model": "",
+    "model": "qwen3-4b-instruct-2507",
     "market_view": "",
     "error": null
   }
