@@ -1,6 +1,5 @@
 //! Data types shared by the stock and crypto accounts. The serialized form of `State`
-//! matches the JSON body that the Python ledger stores, so both implementations can open
-//! the same SQLite file.
+//! is the JSON body stored in the ledger, and unknown fields round-trip untouched.
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};

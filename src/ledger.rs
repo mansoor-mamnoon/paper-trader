@@ -1,5 +1,5 @@
-//! Transactional SQLite account and append-only trading evidence. The schema and the
-//! JSON state body match the Python ledger.
+//! Transactional SQLite account and append-only trading evidence. The state is one JSON body
+//! and everything else is append-only.
 
 use crate::model::State;
 use anyhow::{Result, bail};

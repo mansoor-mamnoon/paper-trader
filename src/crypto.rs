@@ -1,5 +1,4 @@
-//! Hourly crypto paper account on public Kraken data. Port of the Python `engine.py` and
-//! `market.py`. Entries are queued on one observation and filled on a later fresh one.
+//! Hourly crypto paper account on public Kraken data. Entries are queued on one observation and filled on a later fresh one.
 
 use crate::ledger;
 use crate::model::{Order, Position, State};

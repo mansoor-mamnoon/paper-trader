@@ -13,7 +13,7 @@ fn csv_cell(value: ValueRef) -> String {
         ValueRef::Null | ValueRef::Blob(_) => String::new(),
         ValueRef::Integer(i) => i.to_string(),
         ValueRef::Real(f) => {
-            // Match Python's float repr closely enough for round-tripping.
+            // Always print a decimal point so the column reads back as a float.
             let s = format!("{f}");
             if s.contains('.') || s.contains('e') || s.contains("inf") || s.contains("NaN") {
                 s
