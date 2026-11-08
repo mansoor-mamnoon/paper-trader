@@ -4,6 +4,8 @@ use anyhow::Result;
 use clap::Parser;
 use paper_trader::analyst::llm_from_env;
 use paper_trader::edgar::Edgar;
+use paper_trader::pool::{OneModel, Pool, Router};
+use paper_trader::telemetry::{RunMeta, RunOutcome, Telemetry};
 use paper_trader::{crypto, daily, export, ledger};
 use serde_json::json;
 use std::path::PathBuf;
@@ -125,26 +127,132 @@ fn main() -> Result<()> {
             .and_then(|v| v.parse().ok())
             .unwrap_or(120.0),
     };
-    let llm = llm_from_env();
-    if llm.is_none() {
+    // Skip quietly when a redundant trigger fires after the day has already been done.
+    if args.replay.is_none() {
+        let hours: f64 = std::env::var("PAPER_TRADER_SKIP_WITHIN_HOURS")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(0.0);
+        let last_at = ledger::connect(&args.db)
+            .and_then(|db| ledger::load(&db))
+            .map_or(0.0, |s| s.last_at);
+        if hours > 0.0 && ledger::now() - last_at < hours * 3600.0 {
+            println!(
+                "The account already ran {:.1} hours ago, so this trigger does nothing.",
+                (ledger::now() - last_at) / 3600.0
+            );
+            return Ok(());
+        }
+    }
+    let single = llm_from_env();
+    let one = single.as_deref().map(OneModel);
+    let pool = std::env::var("PAPER_TRADER_LLAMA_SERVER")
+        .ok()
+        .map(|server| {
+            let dir = std::env::var("PAPER_TRADER_MODELS_DIR").map_or_else(
+                |_| {
+                    std::path::PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| ".".into()))
+                        .join(".cache/paper-trader-llm/models")
+                },
+                std::path::PathBuf::from,
+            );
+            let port = std::env::var("PAPER_TRADER_LLM_PORT")
+                .ok()
+                .and_then(|p| p.parse().ok())
+                .unwrap_or(8091);
+            Pool::new(
+                dir,
+                std::path::PathBuf::from(server),
+                port,
+                std::env::var("PAPER_TRADER_PRUNE_MODELS").is_ok(),
+            )
+        });
+    let router: Option<&dyn Router> = match (&pool, &one) {
+        (Some(pool), _) => Some(pool),
+        (None, Some(one)) => Some(one),
+        (None, None) => None,
+    };
+    if router.is_none() {
         eprintln!(
-            "No model configured (PAPER_TRADER_LLM_URL or ANTHROPIC_API_KEY): trading by the quantitative ranking only"
+            "No model configured (PAPER_TRADER_LLAMA_SERVER, PAPER_TRADER_LLM_URL or ANTHROPIC_API_KEY): trading by the quantitative ranking only"
         );
     }
     let edgar = Edgar::load().ok();
     if edgar.is_none() {
         eprintln!("SEC EDGAR is unreachable: the desk will work from headlines only");
     }
-    let summary = daily::run(&options, mode, llm.as_deref(), edgar.as_ref());
-    let summary = match summary {
+    let started = ledger::now();
+    let meta = run_meta(options.desk_minutes);
+    let run_id =
+        std::env::var("GITHUB_RUN_ID").unwrap_or_else(|_| format!("local-{}", started as u64));
+    let telemetry = Telemetry::open(
+        &options
+            .strategies
+            .join("telemetry.sqlite")
+            .to_string_lossy(),
+        &run_id,
+        &meta,
+        started,
+    )?;
+    let summary = daily::run(&options, mode, router, edgar.as_ref(), &telemetry);
+    let mut summary = match summary {
         Ok(summary) => summary,
         Err(error) => {
+            telemetry.event("error", "run", &error.to_string());
+            let _ = telemetry.finish(
+                &RunOutcome {
+                    status: "failed".into(),
+                    notes: error.to_string(),
+                    minutes_budget: options.desk_minutes,
+                    ..RunOutcome::default()
+                },
+                ledger::now(),
+            );
             let _ = ledger::failure(&args.db, &error.to_string());
             let _ = export::export(&args.db, &args.output, None);
             return Err(error);
         }
     };
+    let degraded: Vec<String> = summary["desk"]["degraded"]
+        .as_array()
+        .map(|a| {
+            a.iter()
+                .filter_map(|v| v.as_str().map(str::to_string))
+                .collect()
+        })
+        .unwrap_or_default();
+    let used = (ledger::now() - started) / 60.0;
+    telemetry.finish(
+        &RunOutcome {
+            status: if degraded.is_empty() {
+                "ok".into()
+            } else {
+                "degraded".into()
+            },
+            minutes_used: used,
+            minutes_budget: options.desk_minutes,
+            degraded,
+            notes: String::new(),
+        },
+        ledger::now(),
+    )?;
+    summary["telemetry"] = telemetry.summary_json();
     let report = export::export(&args.db, &args.output, Some(&summary))?;
+    let _ = telemetry.export_csv(&std::path::Path::new(&args.output).join("export"));
+    let markdown = telemetry.markdown_summary();
+    match std::env::var("GITHUB_STEP_SUMMARY") {
+        Ok(path) => {
+            use std::io::Write;
+            if let Ok(mut file) = std::fs::OpenOptions::new()
+                .append(true)
+                .create(true)
+                .open(path)
+            {
+                let _ = writeln!(file, "{markdown}");
+            }
+        }
+        Err(_) => eprintln!("{markdown}"),
+    }
     println!(
         "{}",
         json!({
@@ -152,8 +260,53 @@ fn main() -> Result<()> {
             "coverage": report["coverage"],
             "health": report["health"],
             "analyst": summary["analyst"],
+            "minutes_used": used,
             "output": format!("{}/api/state", args.output),
         })
     );
     Ok(())
+}
+
+/// What machine this is and why it is running, for the telemetry store.
+fn run_meta(desk_minutes: f64) -> RunMeta {
+    let read = |path: &str| std::fs::read_to_string(path).unwrap_or_default();
+    let cpu = read("/proc/cpuinfo")
+        .lines()
+        .find_map(|l| {
+            l.strip_prefix("model name")
+                .and_then(|r| r.split(':').nth(1))
+                .map(|v| v.trim().to_string())
+        })
+        .or_else(|| {
+            std::process::Command::new("sysctl")
+                .args(["-n", "machdep.cpu.brand_string"])
+                .output()
+                .ok()
+                .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+        })
+        .unwrap_or_default();
+    let ram_mb = read("/proc/meminfo")
+        .lines()
+        .find_map(|l| l.strip_prefix("MemTotal:"))
+        .and_then(|r| {
+            r.split_whitespace()
+                .next()
+                .and_then(|n| n.parse::<u64>().ok())
+        })
+        .map_or(0, |kb| kb / 1024);
+    let trigger = match std::env::var("GITHUB_EVENT_NAME").as_deref() {
+        Ok("schedule") => "schedule",
+        Ok("workflow_dispatch") => "manual",
+        Ok("repository_dispatch") => "webhook",
+        _ => "local",
+    };
+    RunMeta {
+        trigger: trigger.into(),
+        git_sha: std::env::var("GITHUB_SHA")
+            .map_or_else(|_| "local".into(), |s| s.chars().take(7).collect()),
+        cpu,
+        cores: std::thread::available_parallelism().map_or(1, std::num::NonZero::get),
+        ram_mb,
+        desk_minutes,
+    }
 }

@@ -424,12 +424,12 @@ fn review_schema() -> Value {
 /// The analyst, backed by whichever [`Llm`] is configured.
 #[derive(Debug)]
 pub struct LlmAnalyst<'a> {
-    pub llm: &'a dyn Llm,
+    pub llm: &'a dyn crate::pool::Router,
 }
 
 impl Analyst for LlmAnalyst<'_> {
     fn name(&self) -> String {
-        self.llm.name()
+        self.llm.label()
     }
 
     fn review(&self, strategy: &Strategy, brief: &Brief) -> Result<Review> {
@@ -443,13 +443,14 @@ impl Analyst for LlmAnalyst<'_> {
             }
         }
         let system = format!("{}{CONTRACT}", strategy.playbook);
-        let text = self.llm.complete(
+        let reply = self.llm.complete(
+            crate::models::Role::SingleShot,
             &system,
             &serde_json::to_string(&brief)?,
             Some(&review_schema()),
         )?;
         let allowed = brief.candidates.iter().map(|c| c.symbol.clone()).collect();
-        parse_review(&text, &allowed, brief.open_slots)
+        parse_review(&reply.text, &allowed, brief.open_slots)
     }
 }
 

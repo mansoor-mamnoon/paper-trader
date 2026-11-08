@@ -2,26 +2,33 @@
 //! shadows) trade it in its own ledger, learn from closed trades, then run the
 //! improvement step.
 //!
-//! Each strategy runs at its own desk depth. Depth 0 is the momentum ranking with no AI,
-//! depth 1 a single-shot analyst, depth 2 a committee, depth 3 the full desk with research
-//! agents. The champion sits at the top of a ladder of shadows one rung down each, so the
-//! lab measures what every layer of AI adds.
+//! Model calls run in blocks so the pool swaps models as little as possible: shared
+//! research first (triage, research agents, bull cases, bear cases), then every judge,
+//! then every single-shot analyst, then every doctor. Each strategy runs at its own desk
+//! depth. Depth 0 is the momentum ranking with no AI, depth 1 a single-shot analyst,
+//! depth 2 a committee, depth 3 the full desk. The champion sits at the top of a ladder
+//! of shadows one rung down each, so the lab measures what every layer of AI adds.
 
 use crate::account;
-use crate::analyst::{Llm, LlmAnalyst, review_or_fallback};
+use crate::analyst::{Completion, LlmAnalyst, Review, review_or_fallback};
 use crate::data;
-use crate::desk::{self, Budget, ClosedTrade, Desk, Transcript};
+use crate::desk::{self, Budget, ClosedTrade, Desk, Prepared, Transcript};
 use crate::edgar::{self, Edgar};
+use crate::http;
 use crate::intel;
 use crate::lab::{self, LlmProposer, Proposer, Registry, Shadow};
 use crate::ledger;
 use crate::model::{Observation, State};
+use crate::models::{MODELS, Role};
+use crate::pool::{PoolEvent, Router};
 use crate::scorecard;
 use crate::strategy::Strategy;
+use crate::telemetry::{CallRecord, Telemetry, short_hash};
 use anyhow::Result;
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 
 #[derive(Debug)]
 pub struct Options {
@@ -77,7 +84,7 @@ pub fn ensure_ladder(registry: &mut Registry, now: f64) {
         let (id, why) = match depth {
             0 => (
                 "depth0-no-ai",
-                "No AI: the same screen ranked by 20-day gain. If the model cannot beat this, the lab will switch it off.",
+                "No AI: the same screen ranked by 20-day gain. If the models cannot beat this, the lab will switch them off.",
             ),
             1 => (
                 "depth1-single-shot",
@@ -178,20 +185,135 @@ fn closed_trades(db_path: &str, after_id: i64) -> Result<Vec<(i64, ClosedTrade)>
     Ok(out)
 }
 
-/// Gather filings for the symbols the desk may look at.
-fn attach_filings(observation: &mut Observation, symbols: &[String], edgar: &Edgar) {
-    let today = chrono::DateTime::from_timestamp(observation.at as i64, 0)
-        .unwrap_or_default()
-        .date_naive();
-    observation.intel.filings = edgar::gather_filings(edgar, symbols, today, 45, 6);
+/// A router that times every call and reports it to the telemetry store, and turns the
+/// pool's load, download and determinism events into telemetry too.
+#[derive(Debug)]
+struct Metered<'a> {
+    inner: &'a dyn Router,
+    telemetry: &'a Telemetry,
+}
+
+impl Metered<'_> {
+    fn flush(&self) {
+        for PoolEvent {
+            kind,
+            subject,
+            detail,
+            ms,
+        } in self.inner.take_events()
+        {
+            if kind == "determinism" {
+                let company = MODELS
+                    .iter()
+                    .find(|m| m.id == subject)
+                    .map_or("", |m| m.company);
+                let hash = detail.split(' ').nth(1).unwrap_or("").to_string();
+                self.telemetry.call(&CallRecord {
+                    stage: "canary".into(),
+                    role: "canary".into(),
+                    model_id: subject.clone(),
+                    company: company.into(),
+                    prompt_chars: 0,
+                    prompt_hash: String::new(),
+                    output_chars: 0,
+                    output_hash: hash,
+                    latency_ms: ms,
+                    prompt_tokens: None,
+                    completion_tokens: None,
+                    prompt_tps: None,
+                    gen_tps: None,
+                    ok: !detail.contains("UNSTABLE"),
+                    error: None,
+                });
+            }
+            self.telemetry
+                .event(&kind, &subject, &format!("{detail} ({ms} ms)"));
+        }
+    }
+}
+
+impl Router for Metered<'_> {
+    fn complete(
+        &self,
+        role: Role,
+        system: &str,
+        user: &str,
+        schema: Option<&Value>,
+    ) -> Result<Completion> {
+        let started = Instant::now();
+        let result = self.inner.complete(role, system, user, schema);
+        self.flush();
+        let (model_id, company) = self.inner.describe(role);
+        let latency_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
+        let (output, ok, error) = match &result {
+            Ok(c) => (c.text.as_str(), true, None),
+            Err(e) => ("", false, Some(e.to_string().chars().take(300).collect())),
+        };
+        let (pt, ct, pps, gps) = result.as_ref().map_or((None, None, None, None), |c| {
+            (
+                c.prompt_tokens,
+                c.completion_tokens,
+                c.prompt_tps,
+                c.gen_tps,
+            )
+        });
+        self.telemetry.call(&CallRecord {
+            stage: role.name().into(),
+            role: role.name().into(),
+            model_id,
+            company,
+            prompt_chars: system.len() + user.len(),
+            prompt_hash: short_hash(&format!("{system}\n{user}")),
+            output_chars: output.len(),
+            output_hash: short_hash(output),
+            latency_ms,
+            prompt_tokens: pt,
+            completion_tokens: ct,
+            prompt_tps: pps,
+            gen_tps: gps,
+            ok,
+            error,
+        });
+        result
+    }
+
+    fn describe(&self, role: Role) -> (String, String) {
+        self.inner.describe(role)
+    }
+
+    fn max_candidates(&self) -> usize {
+        self.inner.max_candidates()
+    }
+
+    fn label(&self) -> String {
+        self.inner.label()
+    }
+}
+
+/// Everything decided for one strategy before its cycle runs.
+struct Plan {
+    state: State,
+    brief: crate::analyst::Brief,
+    depth: u8,
+    feedback: Option<String>,
+    prepared: Option<Prepared>,
+    review: Option<Review>,
+}
+
+fn record_fetches(telemetry: &Telemetry) {
+    for f in http::drain_fetches() {
+        telemetry.fetch(&f.source, f.ok, f.ms);
+    }
 }
 
 /// Run the whole day. Returns the dashboard summary.
+#[allow(clippy::too_many_lines)]
 pub fn run(
     options: &Options,
     mode: &str,
-    llm: Option<&dyn Llm>,
+    llm: Option<&dyn Router>,
     edgar: Option<&Edgar>,
+    telemetry: &Telemetry,
 ) -> Result<Value> {
     account::reserve(&options.db, mode)?;
     let mut registry = Registry::load(&options.strategies)?;
@@ -218,7 +340,11 @@ pub fn run(
                 extra.extend(scorecard::open_symbols(&db, ledger::now()).unwrap_or_default());
             }
         }
-        let mut observed = data::observe(&champion_state, options.batch_size, &extra)?;
+        let mut observed = {
+            let _span = telemetry.span("scan");
+            data::observe(&champion_state, options.batch_size, &extra)?
+        };
+        record_fetches(telemetry);
         let mut wanted = BTreeSet::new();
         for v in &all {
             let state = state_of(&v.db);
@@ -234,9 +360,15 @@ pub fn run(
             .unwrap_or_default()
             .date_naive();
         let wanted: Vec<String> = wanted.into_iter().collect();
-        observed.intel = intel::gather(&wanted, today)?;
+        {
+            let _span = telemetry.span("intel");
+            observed.intel = intel::gather(&wanted, today)?;
+        }
+        record_fetches(telemetry);
         if let Some(edgar) = edgar {
-            attach_filings(&mut observed, &wanted, edgar);
+            let _span = telemetry.span("edgar");
+            observed.intel.filings = edgar::gather_filings(edgar, &wanted, today, 45, 6);
+            record_fetches(telemetry);
         }
         observed
     };
@@ -244,101 +376,175 @@ pub fn run(
     let now = observation.at;
 
     let budget = Budget::new(options.desk_minutes);
-    let mut desk_state = llm.map(|llm| Desk::new(llm, edgar, &observation, &budget));
-    let mut memo: BTreeMap<String, crate::analyst::Review> = BTreeMap::new();
+    let metered = llm.map(|inner| Metered { inner, telemetry });
+    let router: Option<&dyn Router> = metered.as_ref().map(|m| m as &dyn Router);
+    let mut desk_state = router.map(|r| Desk::new(r, edgar, &observation, &budget));
     let mut champion_transcript = Transcript::default();
-    let mut doctor_notes: Vec<String> = Vec::new();
+    let mut notes: Vec<String> = Vec::new();
 
-    for (index, v) in all.iter().enumerate() {
-        let result = (|| -> Result<()> {
-            account::reserve(&v.db, mode)?;
-            let state = state_of(&v.db);
-            let brief = account::brief(&v.strategy, &observation, &state);
-            let depth = v.strategy.effective_depth();
-            let feedback = if v.strategy.use_memory {
-                ledger::connect(&v.db)
-                    .ok()
-                    .and_then(|db| scorecard::feedback(&db).ok().flatten())
+    // Plan every strategy: its state, its brief, and the depth it runs at.
+    let mut plans: Vec<Option<Plan>> = Vec::new();
+    for v in &all {
+        if let Err(error) = account::reserve(&v.db, mode) {
+            registry.log.push(lab::LogEntry {
+                at: now,
+                event: "error".into(),
+                id: v.id.clone(),
+                detail: format!("could not open ledger: {error}"),
+            });
+            plans.push(None);
+            continue;
+        }
+        let state = state_of(&v.db);
+        let brief = account::brief(&v.strategy, &observation, &state);
+        let feedback = if v.strategy.use_memory {
+            ledger::connect(&v.db)
+                .ok()
+                .and_then(|db| scorecard::feedback(&db).ok().flatten())
+        } else {
+            None
+        };
+        plans.push(Some(Plan {
+            state,
+            brief,
+            depth: if router.is_some() {
+                v.strategy.effective_depth()
             } else {
-                None
-            };
-            let mut review = match (&mut desk_state, llm) {
-                (Some(desk), Some(_)) if depth >= 2 => {
-                    let (review, transcript) =
-                        desk.review(&v.strategy, &brief, feedback.as_deref(), &registry.lessons);
-                    if index == 0 {
-                        champion_transcript = transcript;
-                    }
-                    review
+                0
+            },
+            feedback,
+            prepared: None,
+            review: None,
+        }));
+    }
+
+    // Block 1: the shared research, which every deep strategy reuses.
+    if let Some(desk) = &mut desk_state {
+        let _span = telemetry.span("desk.prepare");
+        for (v, plan) in all.iter().zip(plans.iter_mut()) {
+            if let Some(plan) = plan.as_mut().filter(|p| p.depth >= 2) {
+                plan.prepared = Some(desk.prepare(&v.strategy, &plan.brief));
+            }
+        }
+    }
+    // Block 2: every judge, on the judge's model.
+    if let Some(desk) = &mut desk_state {
+        let _span = telemetry.span("desk.judge");
+        for (index, (v, plan)) in all.iter().zip(plans.iter_mut()).enumerate() {
+            let Some(plan) = plan.as_mut() else { continue };
+            if let Some(prepared) = &plan.prepared {
+                let (review, transcript) = desk.judge(
+                    &v.strategy,
+                    &plan.brief,
+                    prepared,
+                    plan.feedback.as_deref(),
+                    &registry.lessons,
+                );
+                plan.review = Some(review);
+                if index == 0 {
+                    champion_transcript = transcript;
                 }
-                (_, Some(llm)) if depth == 1 => {
-                    // Strategies that show the model the same stocks under the same playbook
-                    // share one answer instead of paying for a second call.
-                    let key = format!(
-                        "{}|{}|{:?}",
-                        v.strategy.playbook,
-                        brief.open_slots,
-                        brief
-                            .candidates
-                            .iter()
-                            .map(|c| c.symbol.as_str())
-                            .collect::<Vec<_>>()
-                    );
-                    let analyst = LlmAnalyst { llm };
-                    memo.entry(key)
-                        .or_insert_with(|| review_or_fallback(Some(&analyst), &v.strategy, &brief))
-                        .clone()
-                }
-                _ => review_or_fallback(None, &v.strategy, &brief),
+            }
+        }
+    }
+    // Block 3: the single-shot analysts (depth 1), sharing answers between strategies.
+    if let Some(router) = router {
+        let _span = telemetry.span("desk.single_shot");
+        let mut memo: BTreeMap<String, Review> = BTreeMap::new();
+        for (v, plan) in all.iter().zip(plans.iter_mut()) {
+            let Some(plan) = plan.as_mut().filter(|p| p.depth == 1) else {
+                continue;
             };
-            if v.strategy.use_doctor
-                && depth >= 1
-                && !state.positions.is_empty()
-                && let Some(desk) = &mut desk_state
-            {
-                let symbols: Vec<String> = state.positions.keys().cloned().collect();
-                let held = desk::held_views(&state, &observation, &theses(&v.db, &symbols));
-                let (calls, shown) = desk.doctor(&held, &mut doctor_notes);
-                review.doctor = calls;
+            let key = format!(
+                "{}|{}|{:?}",
+                v.strategy.playbook,
+                plan.brief.open_slots,
+                plan.brief
+                    .candidates
+                    .iter()
+                    .map(|c| c.symbol.as_str())
+                    .collect::<Vec<_>>()
+            );
+            let analyst = LlmAnalyst { llm: router };
+            plan.review = Some(
+                memo.entry(key)
+                    .or_insert_with(|| review_or_fallback(Some(&analyst), &v.strategy, &plan.brief))
+                    .clone(),
+            );
+        }
+    }
+    for plan in plans.iter_mut().flatten() {
+        if plan.review.is_none() {
+            plan.review = Some(review_or_fallback(None, &Strategy::default(), &plan.brief));
+        }
+    }
+    // Block 4: the position doctor for every strategy that holds something.
+    if let Some(desk) = &mut desk_state {
+        let _span = telemetry.span("desk.doctor");
+        for (index, (v, plan)) in all.iter().zip(plans.iter_mut()).enumerate() {
+            let Some(plan) = plan.as_mut() else { continue };
+            if v.strategy.use_doctor && plan.depth >= 1 && !plan.state.positions.is_empty() {
+                let symbols: Vec<String> = plan.state.positions.keys().cloned().collect();
+                let held = desk::held_views(&plan.state, &observation, &theses(&v.db, &symbols));
+                let (calls, shown) = desk.doctor(&held, &mut notes);
+                if let Some(review) = plan.review.as_mut() {
+                    review.doctor = calls;
+                }
                 if index == 0 {
                     champion_transcript.doctor = shown;
                 }
             }
-            if index == 0 {
-                registry.analyst = lab::AnalystStatus {
-                    at: now,
-                    source: review.source.clone(),
-                    model: llm.map(Llm::name).unwrap_or_default(),
-                    market_view: review.market_view.clone(),
-                    error: review.error.clone(),
-                };
-            }
-            account::cycle_with(&v.db, &observation, mode, &v.strategy, Some(&review))
-        })();
-        match result {
-            Ok(()) => {}
-            Err(error) if index == 0 => return Err(error),
-            Err(error) => {
-                let message = format!("shadow cycle failed: {error}");
-                registry.log.push(lab::LogEntry {
-                    at: now,
-                    event: "error".into(),
-                    id: v.id.clone(),
-                    detail: message,
-                });
+        }
+    }
+    if let Some(Some(plan)) = plans.first()
+        && let Some(review) = &plan.review
+    {
+        registry.analyst = lab::AnalystStatus {
+            at: now,
+            source: review.source.clone(),
+            model: router.map(Router::label).unwrap_or_default(),
+            market_view: review.market_view.clone(),
+            error: review.error.clone(),
+        };
+    }
+
+    // Block 5: every strategy trades its day.
+    {
+        let _span = telemetry.span("cycles");
+        for (index, (v, plan)) in all.iter().zip(plans.iter()).enumerate() {
+            let Some(plan) = plan else { continue };
+            let _one = telemetry.span(&format!("cycle:{}", v.id));
+            let result =
+                account::cycle_with(&v.db, &observation, mode, &v.strategy, plan.review.as_ref());
+            match result {
+                Ok(()) => {}
+                Err(error) if index == 0 => return Err(error),
+                Err(error) => {
+                    telemetry.event("error", &v.id, &format!("shadow cycle failed: {error}"));
+                    registry.log.push(lab::LogEntry {
+                        at: now,
+                        event: "error".into(),
+                        id: v.id.clone(),
+                        detail: format!("shadow cycle failed: {error}"),
+                    });
+                }
             }
         }
     }
-    champion_transcript.degraded.extend(doctor_notes);
+    champion_transcript.degraded.extend(notes);
+    for d in &champion_transcript.degraded {
+        telemetry.event("degraded", "desk", d);
+    }
 
     // Learn from trades that closed since the last run.
-    if let Some(llm) = llm.filter(|_| options.replay.is_none()) {
+    if let Some(router) = router.filter(|_| options.replay.is_none()) {
+        let _span = telemetry.span("post_mortem");
         for (id, trade) in closed_trades(&options.db, registry.lessons_cursor)? {
             registry.lessons_cursor = registry.lessons_cursor.max(id);
             if !budget.has(60) {
                 continue;
             }
-            if let Ok(lesson) = desk::post_mortem(llm, &trade, now)
+            if let Ok(lesson) = desk::post_mortem(router, &trade, now)
                 && !lesson.lesson.to_lowercase().contains("no clear lesson")
             {
                 registry.lessons.push(lesson);
@@ -349,7 +555,8 @@ pub fn run(
     }
 
     if options.replay.is_none() {
-        let proposer = llm.map(|llm| LlmProposer { llm });
+        let _span = telemetry.span("lab");
+        let proposer = router.map(|llm| LlmProposer { llm });
         for line in lab::improve(
             &options.strategies,
             &mut registry,
@@ -359,6 +566,9 @@ pub fn run(
         )? {
             eprintln!("lab: {line}");
         }
+    }
+    if let Some(m) = &metered {
+        m.flush();
     }
     registry.save(&options.strategies)?;
 
@@ -373,6 +583,7 @@ pub fn run(
     summary["scorecards"] = json!(scorecards);
     summary["lessons"] = json!(registry.lessons.iter().rev().take(12).collect::<Vec<_>>());
     summary["desk"] = serde_json::to_value(&champion_transcript)?;
+    summary["minutes_left"] = json!(budget.minutes_left());
     Ok(summary)
 }
 
@@ -389,7 +600,10 @@ fn observation_time(options: &Options) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::analyst::Llm;
     use crate::model::{Bar, Intel, Quote};
+    use crate::pool::OneModel;
+    use crate::telemetry::RunMeta;
 
     const T0: f64 = 1_700_000_000.0;
     const DAY: f64 = 86400.0;
@@ -406,6 +620,18 @@ mod tests {
                 }
             })
             .collect()
+    }
+
+    fn telemetry() -> Telemetry {
+        let meta = RunMeta {
+            trigger: "test".into(),
+            git_sha: "x".into(),
+            cpu: "test".into(),
+            cores: 1,
+            ram_mb: 1,
+            desk_minutes: 5.0,
+        };
+        Telemetry::open_memory("t", &meta, 0.0).unwrap()
     }
 
     /// Always answers with a review that picks SLOW, whichever stage asks.
@@ -470,19 +696,26 @@ mod tests {
     #[test]
     fn a_single_shot_analyst_overrides_momentum_order_and_is_recorded() {
         let (options, _dir) = setup("single", 1);
-        let summary = run(&options, "stocks-replay", Some(&Picker), None).unwrap();
+        let llm = Picker;
+        let router = OneModel(&llm);
+        let t = telemetry();
+        let summary = run(&options, "stocks-replay", Some(&router), None, &t).unwrap();
         let state = state_of(&options.db);
         assert_eq!(state.pending.keys().collect::<Vec<_>>(), ["SLOW"]);
         assert!(state.pending["SLOW"].reason.contains("test thesis"));
         assert_eq!(summary["analyst"]["source"], "llm");
         assert_eq!(summary["champion"]["id"], "baseline");
+        // Every model call was metered.
+        assert!(t.summary_json()["totals"]["calls"].as_u64().unwrap() >= 1);
     }
 
     #[test]
     fn the_full_desk_runs_and_leaves_a_transcript_and_a_depth_ladder() {
         let (options, _dir) = setup("desk", 3);
-        let summary = run(&options, "stocks-replay", Some(&Picker), None).unwrap();
-        // Three rungs below depth 3: no AI, single shot, committee.
+        let llm = Picker;
+        let router = OneModel(&llm);
+        let t = telemetry();
+        let summary = run(&options, "stocks-replay", Some(&router), None, &t).unwrap();
         let ids: Vec<&str> = summary["shadows"]
             .as_array()
             .unwrap()
@@ -495,12 +728,22 @@ mod tests {
         );
         assert_eq!(summary["desk"]["depth"], 3);
         assert!(summary["scorecards"].as_array().unwrap().len() >= 4);
+        let stage_names: Vec<String> = t.summary_json()["stages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|s| s["name"].as_str().unwrap().to_string())
+            .collect();
+        for expected in ["desk.prepare", "desk.judge", "cycles"] {
+            assert!(stage_names.iter().any(|n| n == expected), "{stage_names:?}");
+        }
     }
 
     #[test]
     fn without_a_model_nothing_is_added_and_the_momentum_rank_trades() {
         let (options, _dir) = setup("none", 3);
-        let summary = run(&options, "stocks-replay", None, None).unwrap();
+        let t = telemetry();
+        let summary = run(&options, "stocks-replay", None, None, &t).unwrap();
         assert_eq!(summary["shadows"].as_array().unwrap().len(), 0);
         let state = state_of(&options.db);
         assert_eq!(state.pending.keys().next().unwrap(), "FAST");

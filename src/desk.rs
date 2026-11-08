@@ -18,10 +18,12 @@
 //! applies a [`Review`] enforces position size, slot count and stop direction.
 
 use crate::analyst::{
-    Avoid, Brief, Candidate, DoctorCall, Llm, Pick, Review, extract_json, quant_review,
+    Avoid, Brief, Candidate, DoctorCall, Pick, Review, extract_json, quant_review,
 };
 use crate::edgar::{self, Edgar};
 use crate::model::{Filing, Observation, State};
+use crate::models::Role;
+use crate::pool::Router;
 use crate::strategy::Strategy;
 use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize};
@@ -102,23 +104,33 @@ pub struct Transcript {
 
 type Cached<T> = BTreeMap<String, T>;
 
+/// The shared work done before the judge decides.
+#[derive(Clone, Debug)]
+pub struct Prepared {
+    pub finalists: Vec<Candidate>,
+    pub packets: Vec<Value>,
+    pub transcript: Transcript,
+    pub notes: Vec<String>,
+}
+
 /// One day's desk. Stages that depend only on a stock (triage, research, debate) are
 /// computed once and shared by every strategy being tested.
 pub struct Desk<'a> {
-    llm: &'a dyn Llm,
+    llm: &'a dyn Router,
     edgar: Option<&'a Edgar>,
     observation: &'a Observation,
     budget: &'a Budget,
     triage: Cached<(f64, String)>,
     research: Cached<Value>,
-    debate: Cached<(String, String)>,
+    bull: Cached<String>,
+    bear: Cached<String>,
     doctor: Cached<DoctorCall>,
 }
 
 impl std::fmt::Debug for Desk<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Desk")
-            .field("model", &self.llm.name())
+            .field("model", &self.llm.label())
             .finish_non_exhaustive()
     }
 }
@@ -293,7 +305,7 @@ when the result was noise. Reply with JSON.";
 
 impl<'a> Desk<'a> {
     pub fn new(
-        llm: &'a dyn Llm,
+        llm: &'a dyn Router,
         edgar: Option<&'a Edgar>,
         observation: &'a Observation,
         budget: &'a Budget,
@@ -305,13 +317,14 @@ impl<'a> Desk<'a> {
             budget,
             triage: Cached::new(),
             research: Cached::new(),
-            debate: Cached::new(),
+            bull: Cached::new(),
+            bear: Cached::new(),
             doctor: Cached::new(),
         }
     }
 
-    fn ask(&self, system: &str, user: &str, schema: &Value) -> Result<Value> {
-        let mut value = extract_json(&self.llm.complete(system, user, Some(schema))?)?;
+    fn ask(&self, role: Role, system: &str, user: &str, schema: &Value) -> Result<Value> {
+        let mut value = extract_json(&self.llm.complete(role, system, user, Some(schema))?.text)?;
         tidy_value(&mut value);
         Ok(value)
     }
@@ -370,7 +383,7 @@ impl<'a> Desk<'a> {
                 .map(|c| dossier(c, self.filings(&c.symbol), self.observation))
                 .collect::<Vec<_>>()
                 .join("\n");
-            match self.ask(TRIAGE, &user, &schema_scores()) {
+            match self.ask(Role::Triage, TRIAGE, &user, &schema_scores()) {
                 Ok(value) => {
                     for item in value["scores"].as_array().into_iter().flatten() {
                         let symbol = item["symbol"].as_str().unwrap_or("").to_uppercase();
@@ -494,7 +507,8 @@ impl<'a> Desk<'a> {
             } else {
                 RESEARCH.to_string()
             };
-            let Ok(decision) = self.ask(&system, &user, &schema_step(has_filings)) else {
+            let Ok(decision) = self.ask(Role::Research, &system, &user, &schema_step(has_filings))
+            else {
                 notes.push(format!("research step on {} failed", c.symbol));
                 break;
             };
@@ -513,7 +527,7 @@ impl<'a> Desk<'a> {
             json!({"summary": "", "key_facts": [], "red_flags": []})
         } else {
             let user = format!("{base}\nResearch notes:\n{}", log.join("\n"));
-            self.ask(FINDINGS, &user, &schema_findings())
+            self.ask(Role::Research, FINDINGS, &user, &schema_findings())
                 .unwrap_or_else(|_| json!({"summary": "", "key_facts": [], "red_flags": []}))
         };
         let result = json!({"steps": steps, "findings": findings});
@@ -521,17 +535,21 @@ impl<'a> Desk<'a> {
         result
     }
 
-    fn debate(
+    /// One side of the debate for one finalist, from its own model.
+    fn argue(
         &mut self,
+        bull: bool,
         c: &Candidate,
         research: &Value,
         notes: &mut Vec<String>,
-    ) -> Option<(String, String)> {
-        if let Some(done) = self.debate.get(&c.symbol) {
+    ) -> Option<String> {
+        let cache = if bull { &self.bull } else { &self.bear };
+        if let Some(done) = cache.get(&c.symbol) {
             return Some(done.clone());
         }
-        if !self.budget.has(120) {
-            notes.push(format!("debate on {} skipped: out of time", c.symbol));
+        let side = if bull { "bull" } else { "bear" };
+        if !self.budget.has(90) {
+            notes.push(format!("{side} case on {} skipped: out of time", c.symbol));
             return None;
         }
         let user = format!(
@@ -539,48 +557,55 @@ impl<'a> Desk<'a> {
             dossier(c, self.filings(&c.symbol), self.observation),
             clip(&research["findings"].to_string(), 1500)
         );
-        let bull = self.ask(BULL, &user, &schema_argument()).ok()?;
-        let bear = self.ask(BEAR, &user, &schema_argument()).ok()?;
-        let side = |v: &Value| {
-            clip(
-                &format!(
-                    "{} Strongest point: {}",
-                    v["argument"].as_str().unwrap_or(""),
-                    v["strongest_point"].as_str().unwrap_or("")
-                ),
-                900,
-            )
+        let (role, system) = if bull {
+            (Role::Bull, BULL)
+        } else {
+            (Role::Bear, BEAR)
         };
-        let pair = (side(&bull), side(&bear));
-        self.debate.insert(c.symbol.clone(), pair.clone());
-        Some(pair)
+        let reply = match self.ask(role, system, &user, &schema_argument()) {
+            Ok(v) => v,
+            Err(error) => {
+                notes.push(format!("{side} case on {} failed: {error}", c.symbol));
+                return None;
+            }
+        };
+        let text = clip(
+            &format!(
+                "{} Strongest point: {}",
+                reply["argument"].as_str().unwrap_or(""),
+                reply["strongest_point"].as_str().unwrap_or("")
+            ),
+            900,
+        );
+        if bull {
+            self.bull.insert(c.symbol.clone(), text.clone());
+        } else {
+            self.bear.insert(c.symbol.clone(), text.clone());
+        }
+        Some(text)
     }
 
-    /// Run the committee for one strategy and portfolio. Returns the review the account
-    /// applies and the transcript for the dashboard.
-    pub fn review(
-        &mut self,
-        strategy: &Strategy,
-        brief: &Brief,
-        feedback: Option<&str>,
-        lessons: &[Lesson],
-    ) -> (Review, Transcript) {
+    /// Everything before the judge: triage, then research, then the bull cases, then the
+    /// bear cases. Each block runs on one model so the pool swaps as little as possible,
+    /// and the answers are shared by every strategy being tested.
+    pub fn prepare(&mut self, strategy: &Strategy, brief: &Brief) -> Prepared {
         let mut transcript = Transcript {
             at: self.observation.at,
             depth: strategy.effective_depth(),
-            model: self.llm.name(),
+            model: self.llm.label(),
             regime_stats: self.regime_stats(),
-            feedback: feedback.map(str::to_string),
             ..Transcript::default()
         };
-        if brief.candidates.is_empty() || brief.open_slots == 0 {
-            transcript
-                .degraded
-                .push("nothing to decide: no open slots or no candidates".into());
-            return (quant_review(brief, None), transcript);
-        }
         let mut notes = Vec::new();
-        // 1. triage
+        if brief.candidates.is_empty() || brief.open_slots == 0 {
+            notes.push("nothing to decide: no open slots or no candidates".into());
+            return Prepared {
+                finalists: Vec::new(),
+                packets: Vec::new(),
+                transcript,
+                notes,
+            };
+        }
         if brief.candidates.len() > strategy.finalists {
             self.triage(&brief.candidates, &mut notes);
         }
@@ -609,32 +634,64 @@ impl<'a> Desk<'a> {
             .take(strategy.finalists)
             .cloned()
             .collect();
-
-        // 2 and 3. research and debate
+        let empty =
+            json!({"steps": [], "findings": {"summary": "", "key_facts": [], "red_flags": []}});
+        let research: Vec<Value> = finalists
+            .iter()
+            .map(|c| {
+                if strategy.effective_depth() >= 3 {
+                    self.research(c, &mut notes)
+                } else {
+                    empty.clone()
+                }
+            })
+            .collect();
+        let bulls: Vec<Option<String>> = finalists
+            .iter()
+            .zip(&research)
+            .map(|(c, r)| self.argue(true, c, r, &mut notes))
+            .collect();
+        let bears: Vec<Option<String>> = finalists
+            .iter()
+            .zip(&research)
+            .map(|(c, r)| self.argue(false, c, r, &mut notes))
+            .collect();
         let mut packets = Vec::new();
-        for c in &finalists {
-            let research = if strategy.effective_depth() >= 3 {
-                self.research(c, &mut notes)
-            } else {
-                json!({"steps": [], "findings": {"summary": "", "key_facts": [], "red_flags": []}})
-            };
-            let debate = self.debate(c, &research, &mut notes);
+        for (i, c) in finalists.iter().enumerate() {
+            let text = dossier(c, self.filings(&c.symbol), self.observation);
             transcript.finalists.push(json!({
-                "symbol": c.symbol,
-                "dossier": dossier(c, self.filings(&c.symbol), self.observation),
-                "research": research,
-                "bull": debate.as_ref().map(|d| d.0.clone()),
-                "bear": debate.as_ref().map(|d| d.1.clone()),
+                "symbol": c.symbol, "dossier": text, "research": research[i],
+                "bull": bulls[i], "bear": bears[i],
             }));
             packets.push(json!({
-                "dossier": dossier(c, self.filings(&c.symbol), self.observation),
-                "research_findings": research["findings"],
-                "bull_case": debate.as_ref().map(|d| d.0.clone()),
-                "bear_case": debate.as_ref().map(|d| d.1.clone()),
+                "dossier": text, "research_findings": research[i]["findings"],
+                "bull_case": bulls[i], "bear_case": bears[i],
             }));
         }
+        Prepared {
+            finalists,
+            packets,
+            transcript,
+            notes,
+        }
+    }
 
-        // 4. judge
+    /// The portfolio manager's decision for one strategy and portfolio.
+    pub fn judge(
+        &mut self,
+        strategy: &Strategy,
+        brief: &Brief,
+        prepared: &Prepared,
+        feedback: Option<&str>,
+        lessons: &[Lesson],
+    ) -> (Review, Transcript) {
+        let mut transcript = prepared.transcript.clone();
+        transcript.feedback = feedback.map(str::to_string);
+        let mut notes = prepared.notes.clone();
+        if prepared.finalists.is_empty() {
+            transcript.degraded = notes;
+            return (quant_review(brief, None), transcript);
+        }
         let shown: Vec<String> = if strategy.use_memory {
             lessons
                 .iter()
@@ -646,6 +703,7 @@ impl<'a> Desk<'a> {
             Vec::new()
         };
         transcript.lessons_shown.clone_from(&shown);
+        let finalists = &prepared.finalists;
         let allowed: std::collections::BTreeSet<String> =
             finalists.iter().map(|c| c.symbol.clone()).collect();
         let review = if self.budget.has(240) {
@@ -655,10 +713,10 @@ impl<'a> Desk<'a> {
                 "market_regime_stats": transcript.regime_stats,
                 "your_track_record": if strategy.use_memory { feedback } else { None },
                 "lessons_from_past_trades": shown,
-                "finalists": packets,
+                "finalists": prepared.packets,
             });
             let system = format!("{}{JUDGE_RULES}", strategy.playbook);
-            match self.ask(&system, &user.to_string(), &schema_judge()) {
+            match self.ask(Role::Judge, &system, &user.to_string(), &schema_judge()) {
                 Ok(value) => {
                     transcript.judge = value.clone();
                     crate::analyst::parse_review(&value.to_string(), &allowed, brief.open_slots)
@@ -674,7 +732,7 @@ impl<'a> Desk<'a> {
             None
         };
         let mut review =
-            review.unwrap_or_else(|| triage_fallback(brief, &finalists, &self.triage, &notes));
+            review.unwrap_or_else(|| triage_fallback(brief, finalists, &self.triage, &notes));
         // The account allows one new position in risk-off; show the capped list so the
         // transcript matches what is actually bought.
         if review.regime.as_deref() == Some("risk_off") && review.picks.len() > 1 {
@@ -687,6 +745,18 @@ impl<'a> Desk<'a> {
         transcript.degraded = notes;
         transcript.minutes_left = self.budget.minutes_left();
         (review, transcript)
+    }
+
+    /// Prepare and judge in one go.
+    pub fn review(
+        &mut self,
+        strategy: &Strategy,
+        brief: &Brief,
+        feedback: Option<&str>,
+        lessons: &[Lesson],
+    ) -> (Review, Transcript) {
+        let prepared = self.prepare(strategy, brief);
+        self.judge(strategy, brief, &prepared, feedback, lessons)
     }
 
     /// Re-check every holding. Returns one call per position the model answered for.
@@ -725,7 +795,7 @@ impl<'a> Desk<'a> {
                 "headlines_now": headlines,
                 "filings": self.filings(&h.symbol).iter().take(4).map(edgar::describe).collect::<Vec<_>>(),
             });
-            match self.ask(DOCTOR, &user.to_string(), &schema_doctor()) {
+            match self.ask(Role::Doctor, DOCTOR, &user.to_string(), &schema_doctor()) {
                 Ok(v) => {
                     let action = match v["action"].as_str() {
                         Some(a @ ("hold" | "exit" | "tighten")) => a.to_string(),
@@ -818,12 +888,17 @@ fn triage_fallback(
 }
 
 /// Turn a closed trade into a lesson.
-pub fn post_mortem(llm: &dyn Llm, trade: &ClosedTrade, at: f64) -> Result<Lesson> {
-    let reply = extract_json(&llm.complete(
-        POST_MORTEM,
-        &serde_json::to_string(trade)?,
-        Some(&schema_lesson()),
-    )?)?;
+pub fn post_mortem(llm: &dyn Router, trade: &ClosedTrade, at: f64) -> Result<Lesson> {
+    let mut reply = extract_json(
+        &llm.complete(
+            Role::PostMortem,
+            POST_MORTEM,
+            &serde_json::to_string(trade)?,
+            Some(&schema_lesson()),
+        )?
+        .text,
+    )?;
+    tidy_value(&mut reply);
     let lesson = reply["lesson"]
         .as_str()
         .filter(|l| !l.trim().is_empty())
@@ -839,7 +914,9 @@ pub fn post_mortem(llm: &dyn Llm, trade: &ClosedTrade, at: f64) -> Result<Lesson
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::analyst::Llm;
     use crate::model::{Bar, Headline, Intel, Quote};
+    use crate::pool::OneModel;
     use std::cell::RefCell;
 
     const T0: f64 = 1_700_000_000.0;
@@ -965,7 +1042,8 @@ mod tests {
         let llm = Scripted::default();
         let obs = observation();
         let budget = Budget::new(30.0);
-        let mut desk = Desk::new(&llm, None, &obs, &budget);
+        let router = OneModel(&llm);
+        let mut desk = Desk::new(&router, None, &obs, &budget);
         let strategy = Strategy {
             finalists: 3,
             ..Strategy::default()
@@ -1005,7 +1083,8 @@ mod tests {
         let llm = Scripted::default();
         let obs = observation();
         let budget = Budget::new(30.0);
-        let mut desk = Desk::new(&llm, None, &obs, &budget);
+        let router = OneModel(&llm);
+        let mut desk = Desk::new(&router, None, &obs, &budget);
         let strategy = Strategy {
             desk_depth: 2,
             finalists: 2,
@@ -1022,7 +1101,8 @@ mod tests {
         let llm = Scripted::default();
         let obs = observation();
         let budget = Budget::new(30.0);
-        let mut desk = Desk::new(&llm, None, &obs, &budget);
+        let router = OneModel(&llm);
+        let mut desk = Desk::new(&router, None, &obs, &budget);
         let strategy = Strategy {
             finalists: 3,
             ..Strategy::default()
@@ -1048,7 +1128,8 @@ mod tests {
         };
         let obs = observation();
         let budget = Budget::new(30.0);
-        let mut desk = Desk::new(&llm, None, &obs, &budget);
+        let router = OneModel(&llm);
+        let mut desk = Desk::new(&router, None, &obs, &budget);
         let strategy = Strategy {
             finalists: 3,
             ..Strategy::default()
@@ -1070,7 +1151,8 @@ mod tests {
         let obs = observation();
         let budget = Budget::new(0.001);
         std::thread::sleep(Duration::from_millis(20));
-        let mut desk = Desk::new(&llm, None, &obs, &budget);
+        let router = OneModel(&llm);
+        let mut desk = Desk::new(&router, None, &obs, &budget);
         let (review, transcript) = desk.review(&Strategy::default(), &brief(), None, &[]);
         assert_eq!(llm.calls.borrow().len(), 0);
         assert_eq!(review.source, "quant");
@@ -1082,7 +1164,8 @@ mod tests {
         let llm = Scripted::default();
         let obs = observation();
         let budget = Budget::new(30.0);
-        let mut desk = Desk::new(&llm, None, &obs, &budget);
+        let router = OneModel(&llm);
+        let mut desk = Desk::new(&router, None, &obs, &budget);
         let held = [HeldView {
             symbol: "AAA".into(),
             thesis: "t".into(),
@@ -1105,7 +1188,7 @@ mod tests {
             days_held: 3.0,
             exit_reason: "stop".into(),
         };
-        let lesson = post_mortem(&llm, &trade, 1.0).unwrap();
+        let lesson = post_mortem(&router, &trade, 1.0).unwrap();
         assert!(lesson.lesson.starts_with("Skip stocks"));
     }
 
@@ -1114,7 +1197,8 @@ mod tests {
         let llm = Scripted::default();
         let obs = observation();
         let budget = Budget::new(30.0);
-        let desk = Desk::new(&llm, None, &obs, &budget);
+        let router = OneModel(&llm);
+        let desk = Desk::new(&router, None, &obs, &budget);
         let stats = desk.regime_stats();
         assert_eq!(stats["stocks_scanned"], 2);
         assert!(stats["pct_above_50d_avg"].as_f64().unwrap() > 99.0);
@@ -1172,7 +1256,8 @@ mod tests {
         let llm = TwoPicks;
         let obs = observation();
         let budget = Budget::new(30.0);
-        let mut desk = Desk::new(&llm, None, &obs, &budget);
+        let router = OneModel(&llm);
+        let mut desk = Desk::new(&router, None, &obs, &budget);
         let strategy = Strategy {
             desk_depth: 2,
             finalists: 3,

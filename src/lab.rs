@@ -8,8 +8,10 @@
 //! comparable drawdown. The strategy it replaces stays on as a shadow of kind
 //! `previous`, so if the promotion was luck it wins the seat back under the same test.
 
-use crate::analyst::{self, Llm};
+use crate::analyst;
 use crate::ledger;
+use crate::models::Role;
+use crate::pool::Router;
 use crate::strategy::{BOUNDS, Strategy};
 use anyhow::{Result, bail};
 use serde::{Deserialize, Serialize};
@@ -335,7 +337,7 @@ pub fn findings(db_path: &str, since: f64) -> Result<Value> {
 /// The proposer, backed by whichever [`Llm`] is configured.
 #[derive(Debug)]
 pub struct LlmProposer<'a> {
-    pub llm: &'a dyn Llm,
+    pub llm: &'a dyn Router,
 }
 
 fn bounds_text() -> String {
@@ -382,7 +384,8 @@ Put only the parameters you want to change inside changes, and use null for play
         let user = serde_json::to_string(&json!({"champion": champion, "evidence": evidence}))?;
         let text = self
             .llm
-            .complete(&system, &user, Some(&proposal_schema()))?;
+            .complete(Role::Proposer, &system, &user, Some(&proposal_schema()))?
+            .text;
         let value = analyst::extract_json(&text)?;
         Ok(Proposal {
             rationale: value["rationale"].as_str().unwrap_or("").to_string(),
