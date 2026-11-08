@@ -1074,7 +1074,7 @@ mod tests {
         let (review, transcript) = desk.review(&Strategy::default(), &brief(), None, &[]);
         assert_eq!(llm.calls.borrow().len(), 0);
         assert_eq!(review.source, "quant");
-        assert!(!transcript.degraded.is_empty());
+        assert_ne!(transcript.degraded.len(), 0);
     }
 
     #[test]
