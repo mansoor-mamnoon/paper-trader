@@ -24,6 +24,7 @@
       <button role="tab" data-tab="trades" aria-selected="false">Trades</button>
       <button role="tab" data-tab="journal" aria-selected="false">Journal</button>
       <button role="tab" data-tab="lab" aria-selected="false">Strategy lab</button>
+      <button role="tab" data-tab="ops" aria-selected="false">Ops</button>
       <button role="tab" data-tab="about" aria-selected="false">How it works</button>
     </nav>
     <a class="star" href="https://github.com/mansoor-mamnoon/paper-trader" rel="noopener">★ Star on GitHub</a>
@@ -95,6 +96,12 @@
 
   <div class="card regime" id="desk-regime"></div>
   <ol class="funnel" id="desk-funnel" aria-label="From screened stocks to picks"></ol>
+
+  <section class="card" id="desk-roster" hidden>
+    <div class="head"><h2>Who decides what</h2><span class="mono-note">9 roles · 9 companies</span></div>
+    <p class="muted small">Every role runs on an open-weights model from a different company, so one model's habits and blind spots cannot decide the whole result. Each file is pinned to an exact version and checked by hash.</p>
+    <ul class="roster" id="desk-roster-list"></ul>
+  </section>
 
   <div id="desk-finalists" class="finalists"></div>
 
@@ -170,17 +177,95 @@
   </div>
 </section>
 
+<!-- OPS -->
+<section id="ops" class="view" role="tabpanel" hidden>
+  <div class="page-head">
+    <span class="pill" style="justify-self:start">Ops</span>
+    <h1>Where the time <span class="mark">goes</span>.</h1>
+    <p>Logs and metrics for every stage, model and data source, so slow or failing parts show up fast.</p>
+  </div>
+  <p id="ops-empty" class="empty card" hidden>Telemetry appears after the next daily run.</p>
+  <div id="ops-content" hidden>
+    <section class="card" id="ops-status"></section>
+
+    <section class="card">
+      <div class="head"><h2>Where the time went</h2><span class="mono-note" id="ops-stage-total"></span></div>
+      <div id="ops-waterfall" class="waterfall"></div>
+    </section>
+
+    <section class="card">
+      <div class="head"><h2>Bottlenecks over the last 30 runs</h2></div>
+      <p id="ops-bottleneck" class="lead"></p>
+      <p class="small muted">p95 means 19 out of 20 runs were faster than this number. It shows the bad days, which the average hides.</p>
+      <div class="table-wrap" tabindex="0"><table>
+        <thead><tr><th>Stage</th><th class="num">Mean</th><th class="num">p95</th><th class="num">Max</th><th class="num">Fails</th><th>Share of the slowest</th></tr></thead>
+        <tbody id="ops-stage-rows"></tbody></table></div>
+    </section>
+
+    <section class="card">
+      <div class="head"><h2>Run history</h2>
+        <span class="legend"><span><i class="sw"></i>OK</span><span><i class="sw yellow"></i>Degraded</span><span><i class="sw hatch"></i>Failed</span></span></div>
+      <div id="ops-runs" class="runs"></div>
+      <p class="foot muted">Minutes of work per run, oldest on the left. The dashed line is the time budget.</p>
+    </section>
+
+    <section class="card table-card">
+      <div class="head pad"><h2>By decision role</h2></div>
+      <div class="table-wrap" tabindex="0"><table>
+        <thead><tr><th>Role</th><th>Model</th><th>Company</th><th class="num">Calls</th><th class="num">OK</th><th class="num">Mean latency</th><th class="num">Total time</th></tr></thead>
+        <tbody id="ops-role-rows"></tbody></table></div>
+    </section>
+
+    <section class="card table-card">
+      <div class="head pad"><h2>Models</h2></div>
+      <p class="small muted pad">The determinism check (a canary) asks each model the same short question twice at temperature 0 and compares the answers, then compares today's answer with the last run's. STABLE means identical. DRIFT means the answer changed, usually because the runner hardware did.</p>
+      <div class="table-wrap" tabindex="0"><table>
+        <thead><tr><th>Model</th><th>Company</th><th class="num">Calls</th><th class="num">OK</th><th class="num">Mean</th><th class="num">p95</th><th class="num">Tokens/s out</th><th class="num">Tokens/s in</th><th class="num">Errors</th><th>Canary</th></tr></thead>
+        <tbody id="ops-model-rows"></tbody></table></div>
+    </section>
+
+    <section class="card table-card">
+      <div class="head pad"><h2>Data sources</h2></div>
+      <div class="table-wrap" tabindex="0"><table>
+        <thead><tr><th>Source</th><th class="num">Requests</th><th class="num">OK</th><th class="num">Mean</th><th class="num">p95</th></tr></thead>
+        <tbody id="ops-fetch-rows"></tbody></table></div>
+    </section>
+
+    <section class="card">
+      <div class="head"><h2>Events</h2><span class="mono-note" id="ops-event-count"></span></div>
+      <ul class="timeline" id="ops-events"></ul>
+    </section>
+
+    <section class="card">
+      <div class="head"><h2>Download the raw logs</h2></div>
+      <p class="small muted">Everything above is built from these files. They keep the last 120 runs.</p>
+      <div class="outline-pills">
+        <a class="chip" href="export/runs.csv">runs.csv</a><a class="chip" href="export/stages.csv">stages.csv</a><a class="chip" href="export/llm_calls.csv">llm_calls.csv</a><a class="chip" href="export/events.csv">events.csv</a><a class="chip" href="export/fetches.csv">fetches.csv</a>
+      </div>
+    </section>
+  </div>
+</section>
+
 <!-- ABOUT -->
 <section id="about" class="view" role="tabpanel" hidden>
   <div class="page-head"><h1>How it works</h1><p class="muted">A fake $1,000, a committee of model calls, and nothing hidden.</p></div>
   <ol class="steps">
-    <li><h3>Scan and screen</h3><p>After the US close the program loads a rotating batch of US stocks, their daily prices, the earnings calendar, headlines and recent SEC filings. A stock moves on only if it clears the trend, momentum and liquidity screen shown in the Strategy lab.</p></li>
+    <li><h3>Scan and screen</h3><p>After the US close the program loads a rotating batch of US stocks, their daily prices, the earnings calendar, headlines and, when a contact address is configured for the SEC, recent filings. A stock moves on only if it clears the trend, momentum and liquidity screen shown in the Strategy lab.</p></li>
     <li><h3>Triage</h3><p>The model scores the survivors in small batches for how specific and recent their catalyst is, and keeps the best few as finalists.</p></li>
     <li><h3>Research agents</h3><p>For each finalist an agent decides what to look up next: read a filing, pull older headlines, inspect price action. Each step is shown on The Desk tab.</p></li>
     <li><h3>Bull and bear</h3><p>Two calls argue the stock for and against, using only the evidence gathered.</p></li>
     <li><h3>The judge</h3><p>A portfolio manager writes out its reasoning, calls the market regime, and picks, sizes and states what would prove it wrong. Orders fill at a later open with fees and slippage, and a 10% drop from peak stops all buying.</p></li>
     <li><h3>Doctor, memory and scorecard</h3><p>A doctor re-checks every holding and may exit or tighten a stop. Closed trades become lessons. Every pick, veto and near miss is scored against SPY, and shadow accounts at lower desk depths show whether each layer earns its place.</p></li>
   </ol>
+  <section class="card"><div class="head"><h2>Independent models</h2></div>
+    <p>Each decision is made by a different open-weights model from a different company: triage, research, the bull case, the bear case, the judge, the doctor, the post-mortem, the strategy proposer and the single-shot analyst. A model that reads the debate did not write both sides of it. The Desk tab lists who decides what, and every model file is pinned to an exact version and checked by hash.</p>
+    <p class="small muted">The runner holds one model at a time, so the work runs in blocks and swaps models between them.</p></section>
+  <section class="card"><div class="head"><h2>Same prompt, same answer</h2></div>
+    <p>Every model call uses greedy decoding with a fixed seed, and each model file is checked against a pinned hash before it loads. When a model loads it answers the same small prompt twice. If the two answers ever differ, the Ops tab shows the model as unstable. The CPU of each run is logged, because different machines can round differently.</p></section>
+  <section class="card"><div class="head"><h2>Why it keeps running</h2></div>
+    <p>The job runs on GitHub's free runners. GitHub can delay or drop scheduled runs, so the job is scheduled three times a day and skips itself when the account already ran. A watchdog starts a run each morning if one was missed, and every run re-enables the schedule so GitHub never pauses it for inactivity.</p></section>
+  <section class="card"><div class="head"><h2>Reading the Ops tab</h2></div>
+    <p>Start at the top: the status word says whether the last run finished cleanly, and the bar shows how much of its time budget it used. "Where the time went" shows each stage of that run, and "Bottlenecks" shows which stage is slowest on average across the last 30 runs. If a model's latency or error count climbs, or a data source starts failing, it shows in the tables below before it shows in the results. The raw logs are downloadable.</p></section>
   <div class="two">
     <section class="card"><div class="head"><h2>Guardrails</h2></div>
       <dl class="facts"><div><dt>Biggest position</dt><dd>20% of the account</dd></div><div><dt>Open positions</dt><dd>3 at most</dd></div><div><dt>Stop / target</dt><dd>−4% / +8%</dd></div><div><dt>Loss limit</dt><dd>10% drawdown</dd></div><div><dt>Leverage and shorting</dt><dd>None</dd></div><div><dt>Real orders</dt><dd>None</dd></div></dl></section>

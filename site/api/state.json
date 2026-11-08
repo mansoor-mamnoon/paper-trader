@@ -1,6 +1,6 @@
 {
   "account": {
-    "at": 1794169007.9834177,
+    "at": 1794174404.067928,
     "benchmark": 999.9999999999999,
     "benchmark_return_pct": -1.1102230246251565e-14,
     "cash": 1000.0,
@@ -10,8 +10,8 @@
     "fees": 0.0,
     "halt_reason": "",
     "halted": false,
-    "id": 9,
-    "last_at": 1794169007.9834175,
+    "id": 10,
+    "last_at": 1794174404.067928,
     "max_drawdown": 0.0,
     "mode": "stocks-daily",
     "peak": 1000.0,
@@ -49,1059 +49,1073 @@
   ],
   "benchmark_label": "SPY price-only (dividends excluded)",
   "coverage": {
-    "attempted": 805,
-    "attempted_ever": 5604,
+    "attempted": 845,
+    "attempted_ever": 6404,
     "batch_size": 800,
-    "failed": 74,
+    "failed": 82,
     "method": "Rotating alphabetical scan; positions, pending orders and SPY every run",
-    "never_attempted": 7635,
-    "remaining": 12434,
+    "never_attempted": 6835,
+    "remaining": 12394,
     "rotation_cycles": 17,
-    "scan_start_index": 6400,
+    "scan_start_index": 7200,
     "scope": "US exchange-listed issues; not worldwide or OTC",
-    "succeeded": 731,
+    "succeeded": 763,
     "universe_count": 13239,
-    "usable": 731
+    "usable": 763
   },
   "data_errors": {
-    "JINT": "Fewer than 50 completed daily bars",
-    "JONE": "Fewer than 50 completed daily bars",
-    "JONER": "Fewer than 50 completed daily bars",
-    "JPM$C": "http status: 404",
-    "JPM$D": "http status: 404",
-    "JPM$J": "http status: 404",
-    "JPM$K": "http status: 404",
-    "JPM$L": "http status: 404",
-    "JPM$M": "http status: 404",
-    "JQTY": "Fewer than 50 completed daily bars",
-    "JULV": "Fewer than 50 completed daily bars",
-    "JXN$A": "http status: 404",
-    "KATT": "Fewer than 50 completed daily bars",
-    "KBONW": "Fewer than 50 completed daily bars",
-    "KCA.U": "http status: 404",
-    "KCAC.U": "http status: 404",
-    "KCAC.W": "http status: 404",
-    "KCHP": "Fewer than 50 completed daily bars",
-    "KCHVR": "Fewer than 50 completed daily bars",
-    "KEY$I": "http status: 404",
-    "KEY$J": "http status: 404",
-    "KEY$K": "http status: 404",
-    "KEY$L": "http status: 404",
-    "KEYYW": "Fewer than 50 completed daily bars",
-    "KFIIR": "Fewer than 50 completed daily bars",
-    "KIDZW": "Fewer than 50 completed daily bars",
-    "KIM$L": "http status: 404",
-    "KIM$M": "http status: 404",
-    "KIM$N": "http status: 404",
-    "KITTW": "Fewer than 50 completed daily bars",
-    "KKR$D": "http status: 404",
-    "KOYNW": "Fewer than 50 completed daily bars",
-    "KPET.U": "http status: 404",
-    "KPET.W": "http status: 404",
-    "KRAQW": "Fewer than 50 completed daily bars",
-    "KREF$A": "http status: 404",
-    "KRSP.U": "http status: 404",
-    "KRSP.W": "http status: 404",
-    "KTWOR": "Fewer than 50 completed daily bars",
-    "KYIVW": "Fewer than 50 completed daily bars",
-    "LATAW": "Fewer than 50 completed daily bars",
-    "LBOX": "Fewer than 50 completed daily bars",
-    "LCCCR": "Fewer than 50 completed daily bars",
-    "LCFYW": "Fewer than 50 completed daily bars",
-    "LCIV": "Fewer than 50 completed daily bars",
-    "LEDR": "Fewer than 50 completed daily bars",
-    "LEDRU": "Fewer than 50 completed daily bars",
-    "LEDRW": "Fewer than 50 completed daily bars",
-    "LEGO.U": "http status: 404",
-    "LEGO.W": "http status: 404",
-    "LFACW": "Fewer than 50 completed daily bars",
-    "LFT$A": "http status: 404",
-    "LIGB": "Fewer than 50 completed daily bars",
-    "LIMNW": "Fewer than 50 completed daily bars",
-    "LKSPR": "Fewer than 50 completed daily bars",
-    "LLMA": "Fewer than 50 completed daily bars",
-    "LNC$D": "http status: 404",
-    "LNZAW": "Fewer than 50 completed daily bars",
-    "LOB$A": "http status: 404",
-    "LOTWW": "Fewer than 50 completed daily bars",
-    "LOVIU": "Fewer than 50 completed daily bars",
-    "LPAAW": "Fewer than 50 completed daily bars",
-    "LPBBW": "Fewer than 50 completed daily bars",
-    "LPCVW": "Fewer than 50 completed daily bars",
-    "LPSV": "Fewer than 50 completed daily bars",
-    "LTB": "Fewer than 50 completed daily bars",
-    "LTGRW": "Fewer than 50 completed daily bars",
-    "LUCYW": "Non-USD security is not eligible",
-    "LUNC": "Fewer than 50 completed daily bars",
-    "LVWR.W": "http status: 404",
-    "LWACW": "Fewer than 50 completed daily bars",
-    "LYCA": "Fewer than 50 completed daily bars",
-    "LZM.W": "http status: 404",
-    "MACIW": "Fewer than 50 completed daily bars"
+    "MBVIW": "Fewer than 50 completed daily bars",
+    "MCAHR": "Fewer than 50 completed daily bars",
+    "MCGAW": "Fewer than 50 completed daily bars",
+    "MDAIW": "Fewer than 50 completed daily bars",
+    "MDCXW": "Fewer than 50 completed daily bars",
+    "MER$K": "http status: 404",
+    "MESHW": "Fewer than 50 completed daily bars",
+    "MET$A": "http status: 404",
+    "MET$E": "http status: 404",
+    "MET$F": "http status: 404",
+    "METAM": "Fewer than 50 completed daily bars",
+    "MEVOW": "Fewer than 50 completed daily bars",
+    "MFA$B": "http status: 404",
+    "MFA$C": "http status: 404",
+    "MFICL": "Fewer than 50 completed daily bars",
+    "MFSD": "Fewer than 50 completed daily bars",
+    "MFSX": "Fewer than 50 completed daily bars",
+    "MGIN": "Fewer than 50 completed daily bars",
+    "MGOL": "Fewer than 50 completed daily bars",
+    "MIACW": "Fewer than 50 completed daily bars",
+    "MITT$A": "http status: 404",
+    "MITT$B": "http status: 404",
+    "MITT$C": "http status: 404",
+    "MKDWW": "Fewer than 50 completed daily bars",
+    "MKLYR": "Fewer than 50 completed daily bars",
+    "MLAAW": "Fewer than 50 completed daily bars",
+    "MLCC": "Fewer than 50 completed daily bars",
+    "MMF": "Fewer than 50 completed daily bars",
+    "MMHI": "Fewer than 50 completed daily bars",
+    "MMT": "Fewer than 50 completed daily bars",
+    "MMTXW": "Fewer than 50 completed daily bars",
+    "MN": "Fewer than 50 completed daily bars",
+    "MNGB": "Fewer than 50 completed daily bars",
+    "MNGZ": "Fewer than 50 completed daily bars",
+    "MOBBW": "Fewer than 50 completed daily bars",
+    "MOBXW": "Fewer than 50 completed daily bars",
+    "MRCOW": "Fewer than 50 completed daily bars",
+    "MRNOW": "Fewer than 50 completed daily bars",
+    "MS$A": "http status: 404",
+    "MS$E": "http status: 404",
+    "MS$F": "http status: 404",
+    "MS$I": "http status: 404",
+    "MS$K": "http status: 404",
+    "MS$L": "http status: 404",
+    "MS$O": "http status: 404",
+    "MS$P": "http status: 404",
+    "MS$Q": "http status: 404",
+    "MSAIW": "Fewer than 50 completed daily bars",
+    "MSGR": "Fewer than 50 completed daily bars",
+    "MTAK": "Fewer than 50 completed daily bars",
+    "MTAKW": "Fewer than 50 completed daily bars",
+    "MTAL.U": "http status: 404",
+    "MTAL.W": "http status: 404",
+    "MTB$H": "http status: 404",
+    "MTB$J": "http status: 404",
+    "MTB$K": "http status: 404",
+    "MTB$L": "http status: 404",
+    "MTEKW": "Fewer than 50 completed daily bars",
+    "MTGG": "Fewer than 50 completed daily bars",
+    "MTNE.U": "http status: 404",
+    "MTNE.W": "http status: 404",
+    "MUNF": "Fewer than 50 completed daily bars",
+    "MUNG": "Fewer than 50 completed daily bars",
+    "MUNH": "Fewer than 50 completed daily bars",
+    "MUNJ": "Fewer than 50 completed daily bars",
+    "MUY": "Fewer than 50 completed daily bars",
+    "MUZEW": "Fewer than 50 completed daily bars",
+    "MYCP": "Fewer than 50 completed daily bars",
+    "MYHF": "Fewer than 50 completed daily bars",
+    "MYML": "Fewer than 50 completed daily bars",
+    "MYXXR": "Fewer than 50 completed daily bars",
+    "MYXXW": "Fewer than 50 completed daily bars",
+    "MZYX.U": "http status: 404",
+    "MZYX.W": "http status: 404",
+    "NANOW": "Fewer than 50 completed daily bars",
+    "NARA": "Fewer than 50 completed daily bars",
+    "NBRGR": "Fewer than 50 completed daily bars",
+    "NCOOR": "Fewer than 50 completed daily bars",
+    "NCOOW": "Fewer than 50 completed daily bars",
+    "NCPLW": "Fewer than 50 completed daily bars",
+    "NCV$A": "http status: 404",
+    "NCZ$A": "http status: 404"
   },
   "decisions": [
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
+      "at": 1794174404.067928,
       "evidence": "{\"average_dollar_volume\":35681570479.888306,\"earnings_date\":null,\"momentum20d\":-0.055589129930164294,\"price_at\":1793975400.0,\"sma20\":763.3634887695313,\"sma50\":765.679794921875}",
-      "id": 6600,
+      "id": 7363,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
       "symbol": "SPY"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":0.0,\"earnings_date\":null,\"momentum20d\":0.0,\"price_at\":1793975400.0,\"sma20\":6.760000228881836,\"sma50\":6.760000228881836}",
-      "id": 6599,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":50514.79009151459,\"earnings_date\":\"2026-11-13\",\"momentum20d\":-0.13369963625883696,\"price_at\":1793975400.0,\"sma20\":4.837800025939941,\"sma50\":5.4289000129699705}",
+      "id": 7362,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "MAGH"
+      "symbol": "NDRA"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":35436.990365982056,\"earnings_date\":null,\"momentum20d\":0.021488609022552563,\"price_at\":1793975400.0,\"sma20\":19.487450218200685,\"sma50\":19.47702003479004}",
-      "id": 6598,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":898583.9917945862,\"earnings_date\":null,\"momentum20d\":-0.02782581062484446,\"price_at\":1793975400.0,\"sma20\":28.547800064086914,\"sma50\":28.732800064086913}",
+      "id": 7361,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "MAGG"
+      "symbol": "NDOW"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":104797.41473197937,\"earnings_date\":null,\"momentum20d\":0.04143361876121965,\"price_at\":1793975400.0,\"sma20\":17.672999954223634,\"sma50\":17.938640098571778}",
-      "id": 6597,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":2697053.7111330032,\"earnings_date\":null,\"momentum20d\":0.0451467931946401,\"price_at\":1793975400.0,\"sma20\":9.130000019073487,\"sma50\":9.169400024414063}",
+      "id": 7360,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "MAGC"
+      "symbol": "NDMO"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":62558.179416656494,\"earnings_date\":null,\"momentum20d\":0.02002373821160508,\"price_at\":1793975400.0,\"sma20\":56.252899742126466,\"sma50\":55.71699989318848}",
-      "id": 6596,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":677240.5993556976,\"earnings_date\":\"2026-11-13\",\"momentum20d\":-0.01195499810841183,\"price_at\":1793975400.0,\"sma20\":13.99550004005432,\"sma50\":13.819599952697754}",
+      "id": 7359,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "MAGA"
+      "symbol": "NDLS"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":410133.2370185852,\"earnings_date\":null,\"momentum20d\":-0.08045648377197279,\"price_at\":1793975400.0,\"sma20\":33.720999813079835,\"sma50\":34.67437984466553}",
-      "id": 6595,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":446606.0162162781,\"earnings_date\":null,\"momentum20d\":-0.02442408887771297,\"price_at\":1793975400.0,\"sma20\":34.441650009155275,\"sma50\":34.518859939575194}",
+      "id": 7358,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "MADE"
+      "symbol": "NDIV"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":18364.099640846252,\"earnings_date\":null,\"momentum20d\":-0.26371685359386254,\"price_at\":1793975400.0,\"sma20\":9.890500020980834,\"sma50\":10.708600006103516}",
-      "id": 6594,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":52787.47500419617,\"earnings_date\":null,\"momentum20d\":0.11700791803323574,\"price_at\":1793975400.0,\"sma20\":26.608799934387207,\"sma50\":26.57145999908447}",
+      "id": 7357,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "MACIU"
+      "symbol": "NDIA"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":521351.8720340729,\"earnings_date\":null,\"momentum20d\":-0.3131768785275407,\"price_at\":1793975400.0,\"sma20\":9.539199995994569,\"sma50\":10.431880025863647}",
-      "id": 6593,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":92467.81995773315,\"earnings_date\":null,\"momentum20d\":-0.05838413022366007,\"price_at\":1793975400.0,\"sma20\":30.630000019073485,\"sma50\":30.729160079956056}",
+      "id": 7356,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "MACI"
-    },
-    {
-      "action": "CANDIDATE",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":75588460.14930725,\"earnings_date\":null,\"momentum20d\":0.11640450123990509,\"price_at\":1793975400.0,\"sma20\":23.833500099182128,\"sma50\":23.21520004272461}",
-      "id": 6592,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "MAC"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":196101.35839223862,\"earnings_date\":null,\"momentum20d\":-0.17062148743445227,\"price_at\":1793975400.0,\"sma20\":4.042999970912933,\"sma50\":4.645020003318787}",
-      "id": 6591,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "MAAY"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":889955.8651018143,\"earnings_date\":null,\"momentum20d\":-0.11851217902281219,\"price_at\":1793975400.0,\"sma20\":12.001249885559082,\"sma50\":14.015099983215332}",
-      "id": 6590,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "MAAS"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":119913144.80800629,\"earnings_date\":null,\"momentum20d\":0.017713500633345536,\"price_at\":1793975400.0,\"sma20\":118.11449966430663,\"sma50\":120.21220001220703}",
-      "id": 6589,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "MAA"
+      "symbol": "NDEC"
     },
     {
       "action": "CANDIDATE",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":2255634653.1106567,\"earnings_date\":null,\"momentum20d\":0.1078860643959525,\"price_at\":1793975400.0,\"sma20\":627.3534973144531,\"sma50\":593.0618017578125}",
-      "id": 6588,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":369730985.6880188,\"earnings_date\":null,\"momentum20d\":0.14383343300833684,\"price_at\":1793975400.0,\"sma20\":101.14400100708008,\"sma50\":96.60280090332031}",
+      "id": 7355,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "MA"
+      "symbol": "NDAQ"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":143809665.60726166,\"earnings_date\":null,\"momentum20d\":0.01808556885894541,\"price_at\":1793975400.0,\"sma20\":23.827000045776366,\"sma50\":22.937800025939943}",
-      "id": 6587,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":103662.73962974548,\"earnings_date\":null,\"momentum20d\":-0.04203774188253129,\"price_at\":1793975400.0,\"sma20\":23.80359992980957,\"sma50\":24.00870002746582}",
+      "id": 7354,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "M"
+      "symbol": "NDAA"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":13199.655024707317,\"earnings_date\":null,\"momentum20d\":-0.2095237895204357,\"price_at\":1793975400.0,\"sma20\":0.81875,\"sma50\":1.0357999992370606}",
-      "id": 6586,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":637015.3489923477,\"earnings_date\":null,\"momentum20d\":-0.0723638989780897,\"price_at\":1793975400.0,\"sma20\":14.030999994277954,\"sma50\":14.445600051879882}",
+      "id": 7353,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LZMH"
+      "symbol": "NCZ"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":2010648.6365282536,\"earnings_date\":null,\"momentum20d\":0.2352940268995054,\"price_at\":1793975400.0,\"sma20\":3.505499982833862,\"sma50\":3.7657999992370605}",
-      "id": 6585,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":961337.0481348038,\"earnings_date\":null,\"momentum20d\":-0.06445438570289441,\"price_at\":1793975400.0,\"sma20\":15.048999977111816,\"sma50\":15.502399959564208}",
+      "id": 7352,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LZM"
+      "symbol": "NCV"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":16575241.14537239,\"earnings_date\":\"2026-11-17\",\"momentum20d\":0.08590007829790336,\"price_at\":1793975400.0,\"sma20\":30.33800001144409,\"sma50\":30.411999969482423}",
-      "id": 6584,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":179037.74905323982,\"earnings_date\":null,\"momentum20d\":-0.2542372504653203,\"price_at\":1793975400.0,\"sma20\":3.12150000333786,\"sma50\":3.5762000131607055}",
+      "id": 7351,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LZB"
+      "symbol": "NCTY"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":17266930.481717587,\"earnings_date\":null,\"momentum20d\":-0.12458192026469406,\"price_at\":1793975400.0,\"sma20\":6.46049997806549,\"sma50\":6.146499996185303}",
-      "id": 6583,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":148977.7496778965,\"earnings_date\":null,\"momentum20d\":-0.3020134528882492,\"price_at\":1793975400.0,\"sma20\":1.3972499907016753,\"sma50\":13.461799993515015}",
+      "id": 7350,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LZ"
-    },
-    {
-      "action": "CANDIDATE",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":415162512.2039032,\"earnings_date\":null,\"momentum20d\":0.02888509432310893,\"price_at\":1793975400.0,\"sma20\":174.45799865722657,\"sma50\":172.80659912109374}",
-      "id": 6582,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LYV"
+      "symbol": "NCT"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":7170245.952558517,\"earnings_date\":null,\"momentum20d\":-0.16707016558465038,\"price_at\":1793975400.0,\"sma20\":20.074499988555907,\"sma50\":20.250400009155275}",
-      "id": 6581,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":34146.889751553535,\"earnings_date\":\"2026-11-13\",\"momentum20d\":-0.11180128270675282,\"price_at\":1793975400.0,\"sma20\":1.5291499972343445,\"sma50\":1.7488599944114684}",
+      "id": 7349,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LYTS"
+      "symbol": "NCRA"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":29655191.44953251,\"earnings_date\":null,\"momentum20d\":-0.44622792341551343,\"price_at\":1793975400.0,\"sma20\":18.709499883651734,\"sma50\":22.473999996185302}",
-      "id": 6580,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":27892836.163449883,\"earnings_date\":null,\"momentum20d\":0.10526316339839759,\"price_at\":1793975400.0,\"sma20\":1.5830000042915344,\"sma50\":1.1833400017023086}",
+      "id": 7348,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LYTE"
+      "symbol": "NCPL"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":6656930.696954727,\"earnings_date\":null,\"momentum20d\":0.24914381604276148,\"price_at\":1793975400.0,\"sma20\":11.33450002670288,\"sma50\":12.323200016021728}",
-      "id": 6579,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":218426.35347366333,\"earnings_date\":null,\"momentum20d\":0.01789166756186278,\"price_at\":1793975400.0,\"sma20\":24.056449985504152,\"sma50\":24.10154010772705}",
+      "id": 7347,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LYNX"
+      "symbol": "NCPB"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":511632.8100204468,\"earnings_date\":null,\"momentum20d\":0.04712145568531101,\"price_at\":1793975400.0,\"sma20\":33.7552001953125,\"sma50\":33.17026023864746}",
-      "id": 6578,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":1107.6999664306643,\"earnings_date\":null,\"momentum20d\":0.0,\"price_at\":1793975400.0,\"sma20\":10.06999969482422,\"sma50\":10.089399795532227}",
+      "id": 7346,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LYLD"
+      "symbol": "NCOOU"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":121295029.4495678,\"earnings_date\":null,\"momentum20d\":-0.05914966799440702,\"price_at\":1793975400.0,\"sma20\":5.326499962806702,\"sma50\":5.590399990081787}",
-      "id": 6577,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":93450.49980640411,\"earnings_date\":null,\"momentum20d\":0.0,\"price_at\":1793975400.0,\"sma20\":9.941999626159667,\"sma50\":9.927799797058105}",
+      "id": 7345,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LYG"
+      "symbol": "NCO"
     },
     {
       "action": "CANDIDATE",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":199441789.8657322,\"earnings_date\":null,\"momentum20d\":0.05363753859823506,\"price_at\":1793975400.0,\"sma20\":16.903500080108643,\"sma50\":16.195500011444093}",
-      "id": 6576,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":39949805.84075928,\"earnings_date\":null,\"momentum20d\":0.14901168790013952,\"price_at\":1793975400.0,\"sma20\":22.012500190734862,\"sma50\":21.219400062561036}",
+      "id": 7344,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LYFT"
+      "symbol": "NCNO"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":2766922.314171791,\"earnings_date\":null,\"momentum20d\":0.7060849129271265,\"price_at\":1793975400.0,\"sma20\":10.320250082015992,\"sma50\":10.85939998626709}",
-      "id": 6575,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":30469.114987552166,\"earnings_date\":\"2026-11-12\",\"momentum20d\":-0.1472727245141653,\"price_at\":1793975400.0,\"sma20\":1.0108500003814698,\"sma50\":1.1851400017738343}",
+      "id": 7343,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LYEL"
+      "symbol": "NCNA"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":238946069.3600273,\"earnings_date\":null,\"momentum20d\":0.011494293777067677,\"price_at\":1793975400.0,\"sma20\":64.21149940490723,\"sma50\":62.68819999694824}",
-      "id": 6574,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":1225584.201475978,\"earnings_date\":\"2026-11-10\",\"momentum20d\":-0.25471692065744156,\"price_at\":1793975400.0,\"sma20\":1.875,\"sma50\":2.1368000078201295}",
+      "id": 7342,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LYB"
+      "symbol": "NCMI"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":10350482.316269875,\"earnings_date\":null,\"momentum20d\":0.08053006402255547,\"price_at\":1793975400.0,\"sma20\":10.457000112533569,\"sma50\":10.562800121307372}",
-      "id": 6573,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":2740475.441904068,\"earnings_date\":null,\"momentum20d\":-0.0008003384532554447,\"price_at\":1793975400.0,\"sma20\":24.997500038146974,\"sma50\":25.034640045166014}",
+      "id": 7341,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LXU"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":3112407.3489147425,\"earnings_date\":null,\"momentum20d\":0.05952382557381353,\"price_at\":1793975400.0,\"sma20\":1.5360000014305115,\"sma50\":1.8124000000953675}",
-      "id": 6572,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LXRX"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":9517428.54104042,\"earnings_date\":null,\"momentum20d\":0.004640366865902079,\"price_at\":1793975400.0,\"sma20\":17.257499980926514,\"sma50\":17.246399993896485}",
-      "id": 6571,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LXFR"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":3935582.6615571976,\"earnings_date\":null,\"momentum20d\":-0.10526313070017856,\"price_at\":1793975400.0,\"sma20\":2.918750011920929,\"sma50\":3.557100019454956}",
-      "id": 6570,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LXEO"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":9011.615054607391,\"earnings_date\":null,\"momentum20d\":-0.21637426696745532,\"price_at\":1793975400.0,\"sma20\":1.4526000142097473,\"sma50\":1.5544199991226195}",
-      "id": 6569,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LXEH"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":714862.3250585794,\"earnings_date\":null,\"momentum20d\":-0.06107952140179285,\"price_at\":1793975400.0,\"sma20\":0.6568499952554703,\"sma50\":0.7382999992370606}",
-      "id": 6568,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LX"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":34908.800201416016,\"earnings_date\":null,\"momentum20d\":-0.3230000019073487,\"price_at\":1793975400.0,\"sma20\":7.187000060081482,\"sma50\":9.789399976730346}",
-      "id": 6567,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LWLX"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":16015895.988724232,\"earnings_date\":\"2026-11-10\",\"momentum20d\":-0.1207243319842135,\"price_at\":1793975400.0,\"sma20\":4.311999988555908,\"sma50\":4.866399974822998}",
-      "id": 6566,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LWLG"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":2145373.5811805725,\"earnings_date\":\"2026-11-12\",\"momentum20d\":-0.02301445092028709,\"price_at\":1793975400.0,\"sma20\":22.474999809265135,\"sma50\":23.00459991455078}",
-      "id": 6565,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LWAY"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":311.99998855590815,\"earnings_date\":null,\"momentum20d\":0.003861000306814244,\"price_at\":1793975400.0,\"sma20\":10.36399965286255,\"sma50\":10.361599655151368}",
-      "id": 6564,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LWACU"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":380574.60939407354,\"earnings_date\":null,\"momentum20d\":0.0009652730900806539,\"price_at\":1793975400.0,\"sma20\":10.362500095367432,\"sma50\":10.352680034637451}",
-      "id": 6563,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LWAC"
+      "symbol": "NCLO"
     },
     {
       "action": "CANDIDATE",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":114093937.81234741,\"earnings_date\":null,\"momentum20d\":0.15395869878896318,\"price_at\":1793975400.0,\"sma20\":53.95150012969971,\"sma50\":50.00059982299805}",
-      "id": 6562,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":368135694.1410351,\"earnings_date\":null,\"momentum20d\":0.1509313055575019,\"price_at\":1793975400.0,\"sma20\":16.279500007629395,\"sma50\":15.473799991607667}",
+      "id": 7340,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LW"
+      "symbol": "NCLH"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":373702.3962020874,\"earnings_date\":null,\"momentum20d\":-0.6590061988089585,\"price_at\":1793975400.0,\"sma20\":1.2858499884605408,\"sma50\":1.3401399970054626}",
-      "id": 6561,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":31706404.144015312,\"earnings_date\":null,\"momentum20d\":-0.38369411889977867,\"price_at\":1793975400.0,\"sma20\":16.401500034332276,\"sma50\":20.655199890136718}",
+      "id": 7339,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LVWR"
+      "symbol": "NCLD"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":260574865.8104515,\"earnings_date\":null,\"momentum20d\":0.12607137418121628,\"price_at\":1793975400.0,\"sma20\":37.71049976348877,\"sma50\":39.28119995117188}",
-      "id": 6560,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":379540.6468296051,\"earnings_date\":null,\"momentum20d\":-0.08914729685073086,\"price_at\":1793975400.0,\"sma20\":20.060700130462646,\"sma50\":20.3510799407959}",
+      "id": 7338,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LVS"
+      "symbol": "NCIQ"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":150838.3504295349,\"earnings_date\":\"2026-11-11\",\"momentum20d\":-0.09259259095734862,\"price_at\":1793975400.0,\"sma20\":2.6077499747276307,\"sma50\":2.911399984359741}",
-      "id": 6559,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":97990.26043653488,\"earnings_date\":null,\"momentum20d\":-0.3515358502948328,\"price_at\":1793975400.0,\"sma20\":0.6942499995231628,\"sma50\":5.875879946947098}",
+      "id": 7337,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LVO"
+      "symbol": "NCI"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":136616.44555568695,\"earnings_date\":\"2026-11-12\",\"momentum20d\":-0.12199172147391968,\"price_at\":1793975400.0,\"sma20\":11.720900011062621,\"sma50\":11.681160011291503}",
-      "id": 6558,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":1263.1499862670898,\"earnings_date\":null,\"momentum20d\":-0.016964277402072958,\"price_at\":1793975400.0,\"sma20\":16.82324981689453,\"sma50\":17.16869987487793}",
+      "id": 7336,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LVLU"
+      "symbol": "NCEW"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":189222.40265846252,\"earnings_date\":null,\"momentum20d\":-0.006107476457329675,\"price_at\":1793975400.0,\"sma20\":24.53115005493164,\"sma50\":24.668619995117187}",
-      "id": 6557,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":64737.74937272072,\"earnings_date\":null,\"momentum20d\":-0.10541874914263272,\"price_at\":1793975400.0,\"sma20\":2.6824999928474424,\"sma50\":2.9519800043106077}",
+      "id": 7335,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LVLN"
+      "symbol": "NCEL"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":259938.1485748291,\"earnings_date\":null,\"momentum20d\":0.01707518614132386,\"price_at\":1793975400.0,\"sma20\":96.48449974060058,\"sma50\":96.53220016479492}",
-      "id": 6556,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":3567686.4251947403,\"earnings_date\":null,\"momentum20d\":0.09250693442946778,\"price_at\":1793975400.0,\"sma20\":10.985000085830688,\"sma50\":11.49160005569458}",
+      "id": 7334,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LVIG"
+      "symbol": "NCDL"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":58233421.01383209,\"earnings_date\":null,\"momentum20d\":0.02511959943122677,\"price_at\":1793975400.0,\"sma20\":42.85699977874756,\"sma50\":42.50139991760254}",
-      "id": 6555,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":1482554.2341899872,\"earnings_date\":null,\"momentum20d\":0.024154567115350467,\"price_at\":1793975400.0,\"sma20\":8.396999883651734,\"sma50\":8.528399963378906}",
+      "id": 7333,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LVHI"
-    },
-    {
-      "action": "CANDIDATE",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":3472400.161628723,\"earnings_date\":null,\"momentum20d\":0.06946788884695354,\"price_at\":1793975400.0,\"sma20\":44.352350044250485,\"sma50\":43.38730003356934}",
-      "id": 6554,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LVHD"
+      "symbol": "NCA"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":430546.7657279968,\"earnings_date\":null,\"momentum20d\":0.01185660094799501,\"price_at\":1793975400.0,\"sma20\":60.52344989776611,\"sma50\":59.90242004394531}",
-      "id": 6553,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":850298.6966133118,\"earnings_date\":null,\"momentum20d\":-0.044419399210378074,\"price_at\":1793975400.0,\"sma20\":34.145499801635744,\"sma50\":36.74059997558594}",
+      "id": 7332,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LVDS"
+      "symbol": "NC"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":1581852.6709604263,\"earnings_date\":\"2026-11-17\",\"momentum20d\":-0.001958908686478522,\"price_at\":1793975400.0,\"sma20\":9.610000085830688,\"sma50\":9.124600028991699}",
-      "id": 6552,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":3321236.4062166214,\"earnings_date\":null,\"momentum20d\":-0.14971930563945735,\"price_at\":1793975400.0,\"sma20\":14.74850001335144,\"sma50\":15.218599967956543}",
+      "id": 7331,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LUXE"
-    },
-    {
-      "action": "CANDIDATE",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":276193622.6845932,\"earnings_date\":null,\"momentum20d\":0.06697073753591609,\"price_at\":1793975400.0,\"sma20\":42.08899993896485,\"sma50\":41.15220001220703}",
-      "id": 6551,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LUV"
+      "symbol": "NBXG"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":76697881.60836697,\"earnings_date\":\"2026-11-12\",\"momentum20d\":-0.20621678543491273,\"price_at\":1793975400.0,\"sma20\":10.845499992370605,\"sma50\":13.171199970245361}",
-      "id": 6550,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":4457989.110870361,\"earnings_date\":null,\"momentum20d\":0.2934965695110969,\"price_at\":1793975400.0,\"sma20\":27.576499938964844,\"sma50\":31.180399856567384}",
+      "id": 7330,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LUNR"
+      "symbol": "NBTX"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":3280447.732657194,\"earnings_date\":null,\"momentum20d\":-0.4584837507838979,\"price_at\":1793975400.0,\"sma20\":1.793749988079071,\"sma50\":2.9132399940490723}",
-      "id": 6549,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":112472.59922027588,\"earnings_date\":null,\"momentum20d\":0.013577844845046982,\"price_at\":1793975400.0,\"sma20\":48.0998498916626,\"sma50\":48.19617988586426}",
+      "id": 7329,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LUNL"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":3099454.4122207165,\"earnings_date\":null,\"momentum20d\":0.3913042914889946,\"price_at\":1793975400.0,\"sma20\":2.1974999964237214,\"sma50\":2.078800001144409}",
-      "id": 6548,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LUNG"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":71709872.82092214,\"earnings_date\":null,\"momentum20d\":-0.24431821004007692,\"price_at\":1793975400.0,\"sma20\":4.6075000166893005,\"sma50\":5.575000014305115}",
-      "id": 6547,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LUMN"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":434341.7995262146,\"earnings_date\":null,\"momentum20d\":-0.3750475567510563,\"price_at\":1793975400.0,\"sma20\":20.60149989128113,\"sma50\":23.354799976348875}",
-      "id": 6546,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LUMA"
+      "symbol": "NBTR"
     },
     {
       "action": "CANDIDATE",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":351986761.0123062,\"earnings_date\":null,\"momentum20d\":0.17238096206907239,\"price_at\":1793975400.0,\"sma20\":102.78799934387207,\"sma50\":102.1632000732422}",
-      "id": 6545,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":15984142.81162262,\"earnings_date\":null,\"momentum20d\":0.05533360730672254,\"price_at\":1793975400.0,\"sma20\":52.0355001449585,\"sma50\":51.499399948120114}",
+      "id": 7328,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LULU"
+      "symbol": "NBTB"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":1553023.4822678566,\"earnings_date\":null,\"momentum20d\":0.32421345840600324,\"price_at\":1793975400.0,\"sma20\":4.257549977302551,\"sma50\":4.339019980430603}",
-      "id": 6544,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":591480.312423706,\"earnings_date\":null,\"momentum20d\":0.03470719440047665,\"price_at\":1793975400.0,\"sma20\":28.394150066375733,\"sma50\":28.191300086975097}",
+      "id": 7327,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LULG"
+      "symbol": "NBSM"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":20269.575089216232,\"earnings_date\":null,\"momentum20d\":0.04087189477672326,\"price_at\":1793975400.0,\"sma20\":3.801000010967255,\"sma50\":3.9791000175476072}",
-      "id": 6543,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":20478792.23379135,\"earnings_date\":null,\"momentum20d\":0.00199964591431101,\"price_at\":1793975400.0,\"sma20\":50.012000274658206,\"sma50\":50.10629997253418}",
+      "id": 7326,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LUD"
+      "symbol": "NBSD"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":102067.78385192156,\"earnings_date\":\"2026-11-12\",\"momentum20d\":-0.08637874784832511,\"price_at\":1793975400.0,\"sma20\":0.8368499904870987,\"sma50\":0.8778599953651428}",
-      "id": 6542,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":2187.0500326156616,\"earnings_date\":null,\"momentum20d\":0.012512041399927787,\"price_at\":1793975400.0,\"sma20\":10.425500345230102,\"sma50\":10.358400192260742}",
+      "id": 7325,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LUCY"
+      "symbol": "NBRGU"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":380620.45254826546,\"earnings_date\":null,\"momentum20d\":-0.24151701023686523,\"price_at\":1793975400.0,\"sma20\":4.466999995708465,\"sma50\":5.115399994850159}",
-      "id": 6541,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":15641.449899673462,\"earnings_date\":null,\"momentum20d\":0.005946428645691615,\"price_at\":1793975400.0,\"sma20\":10.113999891281129,\"sma50\":10.090000076293945}",
+      "id": 7324,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LUCK"
+      "symbol": "NBRG"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":5399555.45598954,\"earnings_date\":\"2026-11-12\",\"momentum20d\":-0.3761755567895855,\"price_at\":1793975400.0,\"sma20\":0.4390499979257584,\"sma50\":0.6572799980640411}",
-      "id": 6540,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":20104317.08267212,\"earnings_date\":null,\"momentum20d\":-0.09259949659424649,\"price_at\":1793975400.0,\"sma20\":80.58299942016602,\"sma50\":83.66179962158203}",
+      "id": 7323,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LUCD"
+      "symbol": "NBR"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":2294651.190039158,\"earnings_date\":null,\"momentum20d\":-0.04693877848919503,\"price_at\":1793975400.0,\"sma20\":8.547500014305115,\"sma50\":10.494600114822388}",
-      "id": 6539,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":637267.8520217538,\"earnings_date\":null,\"momentum20d\":-0.3476702231768841,\"price_at\":1793975400.0,\"sma20\":1.2139000028371811,\"sma50\":1.4212600076198578}",
+      "id": 7322,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LU"
+      "symbol": "NBP"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":117209.68649864197,\"earnings_date\":null,\"momentum20d\":0.0428122038897254,\"price_at\":1793975400.0,\"sma20\":17.023449897766113,\"sma50\":17.012899971008302}",
-      "id": 6538,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":3660018.9407634735,\"earnings_date\":null,\"momentum20d\":-0.036354132131844796,\"price_at\":1793975400.0,\"sma20\":28.515149974822997,\"sma50\":28.52417999267578}",
+      "id": 7321,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LTTI"
+      "symbol": "NBOS"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":3144982.8664708138,\"earnings_date\":\"2026-11-09\",\"momentum20d\":-0.2452554528070081,\"price_at\":1793975400.0,\"sma20\":5.865500044822693,\"sma50\":6.012600002288818}",
-      "id": 6537,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":15405635.543632507,\"earnings_date\":null,\"momentum20d\":0.0023811656230219302,\"price_at\":1793975400.0,\"sma20\":127.5720001220703,\"sma50\":128.4263995361328}",
+      "id": 7320,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LTRX"
+      "symbol": "NBN"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":180850.18088310957,\"earnings_date\":\"2026-11-11\",\"momentum20d\":-0.3013530107346276,\"price_at\":1793975400.0,\"sma20\":0.6536499977111816,\"sma50\":1.135}",
-      "id": 6536,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":164530.53665161133,\"earnings_date\":null,\"momentum20d\":-0.09365996871331028,\"price_at\":1793975400.0,\"sma20\":34.89510021209717,\"sma50\":35.48428009033203}",
+      "id": 7319,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LTRN"
+      "symbol": "NBJP"
     },
     {
       "action": "CANDIDATE",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":30419677.47106552,\"earnings_date\":null,\"momentum20d\":0.04119594092567613,\"price_at\":1793975400.0,\"sma20\":46.75799980163574,\"sma50\":46.66540000915527}",
-      "id": 6535,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":48631412.81194687,\"earnings_date\":null,\"momentum20d\":1.1157800650613052,\"price_at\":1793975400.0,\"sma20\":36.50949993133545,\"sma50\":28.737199935913086}",
+      "id": 7318,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LTPZ"
+      "symbol": "NBIZ"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":47886222.76256561,\"earnings_date\":null,\"momentum20d\":-0.05134332002098885,\"price_at\":1793975400.0,\"sma20\":46.425,\"sma50\":49.197400131225585}",
-      "id": 6534,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":216644631.197052,\"earnings_date\":null,\"momentum20d\":0.15578490635405795,\"price_at\":1793975400.0,\"sma20\":146.09350051879883,\"sma50\":147.21600067138672}",
+      "id": 7317,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LTM"
+      "symbol": "NBIX"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":1576531.3020038605,\"earnings_date\":null,\"momentum20d\":-0.1064913135927198,\"price_at\":1793975400.0,\"sma20\":21.819500064849855,\"sma50\":23.36340003967285}",
-      "id": 6533,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":4132286026.35849,\"earnings_date\":\"2026-11-12\",\"momentum20d\":-0.41425792191133604,\"price_at\":1793975400.0,\"sma20\":165.23000144958496,\"sma50\":201.70030075073242}",
+      "id": 7316,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LTL"
+      "symbol": "NBIS"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":100728242.10201025,\"earnings_date\":null,\"momentum20d\":-0.7040951095948627,\"price_at\":1793975400.0,\"sma20\":12.262500047683716,\"sma50\":19.688700046539306}",
+      "id": 7315,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NBIL"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":45410391.07446909,\"earnings_date\":null,\"momentum20d\":-0.7040358752613517,\"price_at\":1793975400.0,\"sma20\":8.433500075340271,\"sma50\":13.566599988937378}",
+      "id": 7314,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NBIG"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":1195523.3549690247,\"earnings_date\":null,\"momentum20d\":-0.011715777651870707,\"price_at\":1793975400.0,\"sma20\":26.538999843597413,\"sma50\":26.77759983062744}",
+      "id": 7313,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NBIE"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":175364.10269021988,\"earnings_date\":null,\"momentum20d\":-0.70355729692821,\"price_at\":1793975400.0,\"sma20\":9.57050006389618,\"sma50\":15.435200090408324}",
+      "id": 7312,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NBIC"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":16098559.090499878,\"earnings_date\":null,\"momentum20d\":-0.026891654351621108,\"price_at\":1793975400.0,\"sma20\":37.910000038146975,\"sma50\":39.31779998779297}",
+      "id": 7311,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NBHC"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":1486956.1944818497,\"earnings_date\":null,\"momentum20d\":0.08548922900530043,\"price_at\":1793975400.0,\"sma20\":9.30649995803833,\"sma50\":9.434200038909912}",
+      "id": 7310,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NBH"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":20755.619945526123,\"earnings_date\":null,\"momentum20d\":-0.08834901623200919,\"price_at\":1793975400.0,\"sma20\":29.586299896240234,\"sma50\":29.865959930419923}",
+      "id": 7309,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NBGX"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":99001.15083694458,\"earnings_date\":null,\"momentum20d\":-0.09449106774921867,\"price_at\":1793975400.0,\"sma20\":26.245500087738037,\"sma50\":26.594800033569335}",
+      "id": 7308,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NBFR"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":236781.51794433594,\"earnings_date\":null,\"momentum20d\":-0.0003031710987577707,\"price_at\":1793975400.0,\"sma20\":49.30125045776367,\"sma50\":49.66780014038086}",
+      "id": 7307,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NBFC"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":378687.02043533325,\"earnings_date\":null,\"momentum20d\":-0.043109435953163966,\"price_at\":1793975400.0,\"sma20\":41.3921501159668,\"sma50\":41.25520011901855}",
+      "id": 7306,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NBET"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":159805.79648971558,\"earnings_date\":null,\"momentum20d\":-0.14715036856920616,\"price_at\":1793975400.0,\"sma20\":38.861800003051755,\"sma50\":39.993560256958006}",
+      "id": 7305,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NBDS"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":1014178.7134933472,\"earnings_date\":null,\"momentum20d\":-0.04896315389314454,\"price_at\":1793975400.0,\"sma20\":34.14130039215088,\"sma50\":34.25748016357422}",
+      "id": 7304,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NBCR"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":3226741.6627025604,\"earnings_date\":null,\"momentum20d\":-0.058823540114178896,\"price_at\":1793975400.0,\"sma20\":31.179500102996826,\"sma50\":31.271800079345702}",
+      "id": 7303,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NBCM"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":5112.7899742126465,\"earnings_date\":null,\"momentum20d\":-0.084782288391543,\"price_at\":1793975400.0,\"sma20\":33.973849868774415,\"sma50\":36.506020126342776}",
+      "id": 7302,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NBCE"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":6453308.885145187,\"earnings_date\":null,\"momentum20d\":-0.001356269688394307,\"price_at\":1793975400.0,\"sma20\":22.38499994277954,\"sma50\":22.505999984741212}",
+      "id": 7301,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NBBK"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":1576380.9971380234,\"earnings_date\":null,\"momentum20d\":0.03361348073434267,\"price_at\":1793975400.0,\"sma20\":14.364000034332275,\"sma50\":14.578200035095215}",
+      "id": 7300,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NBB"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":9724743.771404028,\"earnings_date\":null,\"momentum20d\":-0.13946581784933132,\"price_at\":1793975400.0,\"sma20\":3.1332500100135805,\"sma50\":3.4752000045776366}",
+      "id": 7299,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NB"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":455446.0070180893,\"earnings_date\":null,\"momentum20d\":-0.010318917284407925,\"price_at\":1793975400.0,\"sma20\":10.530500125885009,\"sma50\":11.068200073242188}",
+      "id": 7298,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NAZ"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":58239759.27992821,\"earnings_date\":null,\"momentum20d\":0.07783418782123963,\"price_at\":1793975400.0,\"sma20\":25.78749990463257,\"sma50\":24.087999992370605}",
+      "id": 7297,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NAVN"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":13687410.206108093,\"earnings_date\":null,\"momentum20d\":-0.0757409008108535,\"price_at\":1793975400.0,\"sma20\":8.908500003814698,\"sma50\":9.171999950408935}",
+      "id": 7296,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NAVI"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":25476817.365982533,\"earnings_date\":null,\"momentum20d\":-0.008888880411783817,\"price_at\":1793975400.0,\"sma20\":2.5047500252723696,\"sma50\":1.7277800118923188}",
+      "id": 7295,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NAUT"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":287857.4828052521,\"earnings_date\":null,\"momentum20d\":-0.06823702211733218,\"price_at\":1793975400.0,\"sma20\":32.76865034103393,\"sma50\":32.990460319519045}",
+      "id": 7294,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NAUG"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":2216067.5201272964,\"earnings_date\":null,\"momentum20d\":-0.14003167798161475,\"price_at\":1793975400.0,\"sma20\":12.257000064849853,\"sma50\":12.815800018310547}",
+      "id": 7293,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NATR"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":518150.74367523193,\"earnings_date\":null,\"momentum20d\":-0.009269482294695597,\"price_at\":1793975400.0,\"sma20\":36.440700149536134,\"sma50\":37.31190010070801}",
+      "id": 7292,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NATO"
     },
     {
       "action": "CANDIDATE",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":149918662.8019333,\"earnings_date\":null,\"momentum20d\":0.1600196989394258,\"price_at\":1793975400.0,\"sma20\":42.99699993133545,\"sma50\":41.80000007629395}",
-      "id": 6532,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":41309912.16415405,\"earnings_date\":null,\"momentum20d\":0.03035595898354937,\"price_at\":1793975400.0,\"sma20\":46.39300003051758,\"sma50\":46.060599899291994}",
+      "id": 7291,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LTH"
+      "symbol": "NATL"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":1913.200078010559,\"earnings_date\":null,\"momentum20d\":-0.01178780765832288,\"price_at\":1793975400.0,\"sma20\":10.156000328063964,\"sma50\":10.147200164794922}",
-      "id": 6531,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":37362314.35692072,\"earnings_date\":null,\"momentum20d\":-0.2125147737883467,\"price_at\":1793975400.0,\"sma20\":7.690999960899353,\"sma50\":7.709399967193604}",
+      "id": 7290,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LTGRU"
+      "symbol": "NAT"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":133986.70335769653,\"earnings_date\":null,\"momentum20d\":0.001004039040515492,\"price_at\":1793975400.0,\"sma20\":9.96200008392334,\"sma50\":9.963199958801269}",
-      "id": 6530,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":51785909.830207825,\"earnings_date\":null,\"momentum20d\":-0.19958503692144125,\"price_at\":1793975400.0,\"sma20\":20.76999988555908,\"sma50\":22.677400016784667}",
+      "id": 7289,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LTGR"
+      "symbol": "NASA"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":3294312.3759412766,\"earnings_date\":null,\"momentum20d\":-0.21249997615814198,\"price_at\":1793975400.0,\"sma20\":14.77450008392334,\"sma50\":17.95160001754761}",
-      "id": 6529,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":394672.4207305908,\"earnings_date\":null,\"momentum20d\":-0.0320953321196632,\"price_at\":1793975400.0,\"sma20\":60.53340034484863,\"sma50\":60.59154014587402}",
+      "id": 7288,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LTGO"
+      "symbol": "NAPR"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":473211.5549612045,\"earnings_date\":null,\"momentum20d\":-0.16736023013190393,\"price_at\":1793975400.0,\"sma20\":14.08589997291565,\"sma50\":14.298800029754638}",
-      "id": 6528,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":2505471.646347046,\"earnings_date\":null,\"momentum20d\":-0.04345875351622808,\"price_at\":1793975400.0,\"sma20\":86.74095039367675,\"sma50\":87.34171997070312}",
+      "id": 7287,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LTCC"
+      "symbol": "NANR"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":2150165.739803314,\"earnings_date\":null,\"momentum20d\":-0.6033676391438985,\"price_at\":1793975400.0,\"sma20\":6.659750008583069,\"sma50\":9.0685999584198}",
+      "id": 7286,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NANO"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":1030358.569984436,\"earnings_date\":null,\"momentum20d\":-0.09615497030618492,\"price_at\":1793975400.0,\"sma20\":50.95824966430664,\"sma50\":51.65341987609863}",
+      "id": 7285,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NANC"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":1732514.8140382767,\"earnings_date\":null,\"momentum20d\":0.062176207791509785,\"price_at\":1793975400.0,\"sma20\":9.895500040054321,\"sma50\":10.084200038909913}",
+      "id": 7284,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NAN"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":13000.449934005737,\"earnings_date\":null,\"momentum20d\":-0.24363639137961646,\"price_at\":1793975400.0,\"sma20\":9.548749923706055,\"sma50\":11.325899887084962}",
+      "id": 7283,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NAMSW"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":30621222.748098373,\"earnings_date\":null,\"momentum20d\":-0.12398614367625771,\"price_at\":1793975400.0,\"sma20\":20.33749990463257,\"sma50\":22.09909996032715}",
+      "id": 7282,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NAMS"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":11058.379806317389,\"earnings_date\":null,\"momentum20d\":0.37795268846272356,\"price_at\":1793975400.0,\"sma20\":0.13394999653100967,\"sma50\":0.15223999962210655}",
+      "id": 7281,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NAMMW"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":440722.10728764534,\"earnings_date\":null,\"momentum20d\":-0.29736841307232353,\"price_at\":1793975400.0,\"sma20\":0.8801500082015992,\"sma50\":1.1101200020313262}",
+      "id": 7280,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NAMM"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":49008.72545003891,\"earnings_date\":null,\"momentum20d\":-0.20091326288772138,\"price_at\":1793975400.0,\"sma20\":1.8577499985694885,\"sma50\":2.0207999992370604}",
+      "id": 7279,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NAMI"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":1207795.8543634415,\"earnings_date\":\"2026-11-18\",\"momentum20d\":-0.3360655618710733,\"price_at\":1793975400.0,\"sma20\":7.005000042915344,\"sma50\":8.058900022506714}",
+      "id": 7278,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NAKA"
+    },
+    {
+      "action": "PASS",
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":4393220.620923638,\"earnings_date\":\"2026-11-12\",\"momentum20d\":-0.4464285695279131,\"price_at\":1793975400.0,\"sma20\":0.8204999953508377,\"sma50\":1.167199994325638}",
+      "id": 7277,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "NAK"
     },
     {
       "action": "CANDIDATE",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":30980789.207611084,\"earnings_date\":null,\"momentum20d\":0.05440417859395974,\"price_at\":1793975400.0,\"sma20\":43.85,\"sma50\":42.97299987792969}",
-      "id": 6527,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":62927070.2113533,\"earnings_date\":null,\"momentum20d\":0.39914657618721905,\"price_at\":1793975400.0,\"sma20\":30.714000034332276,\"sma50\":30.567400093078614}",
+      "id": 7276,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LTC"
+      "symbol": "NAIL"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":3842701.0144484043,\"earnings_date\":null,\"momentum20d\":-0.30807253863461026,\"price_at\":1793975400.0,\"sma20\":5.0795000195503235,\"sma50\":6.139600024223328}",
-      "id": 6526,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":19989.55000936985,\"earnings_date\":\"2026-11-11\",\"momentum20d\":-0.026315764707210976,\"price_at\":1793975400.0,\"sma20\":1.1385000050067902,\"sma50\":1.5225999975204467}",
+      "id": 7275,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LTBR"
+      "symbol": "NAII"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":44115.69046020508,\"earnings_date\":null,\"momentum20d\":0.04853663463580449,\"price_at\":1793975400.0,\"sma20\":23.786000061035157,\"sma50\":23.804860076904298}",
-      "id": 6525,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":1341847.2385132313,\"earnings_date\":null,\"momentum20d\":-0.23048331256107812,\"price_at\":1793975400.0,\"sma20\":2.450499987602234,\"sma50\":2.7642000007629393}",
+      "id": 7274,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LTAX"
+      "symbol": "NAGE"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":30395.764198303223,\"earnings_date\":null,\"momentum20d\":-0.06539071953486231,\"price_at\":1793975400.0,\"sma20\":35.84569969177246,\"sma50\":36.163099670410155}",
-      "id": 6524,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":13796161.143274307,\"earnings_date\":null,\"momentum20d\":0.06960784817878585,\"price_at\":1793975400.0,\"sma20\":10.519999933242797,\"sma50\":10.605599956512451}",
+      "id": 7273,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LSVD"
+      "symbol": "NAD"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":72397499.45915222,\"earnings_date\":null,\"momentum20d\":-0.15238604564751868,\"price_at\":1793975400.0,\"sma20\":159.47649841308595,\"sma50\":166.64719909667969}",
-      "id": 6523,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":140808.90077590942,\"earnings_date\":null,\"momentum20d\":-0.08594004823789836,\"price_at\":1793975400.0,\"sma20\":59.85800018310547,\"sma50\":60.42920021057129}",
+      "id": 7272,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LSTR"
+      "symbol": "NACP"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":2416.599988937378,\"earnings_date\":null,\"momentum20d\":0.016722392025688038,\"price_at\":1793975400.0,\"sma20\":24.16599988937378,\"sma50\":24.219599990844728}",
-      "id": 6522,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":13784725.86865902,\"earnings_date\":null,\"momentum20d\":0.024582104043710418,\"price_at\":1793975400.0,\"sma20\":10.127499961853028,\"sma50\":10.48220001220703}",
+      "id": 7271,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LSTB"
+      "symbol": "NAC"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":66657.24895596504,\"earnings_date\":null,\"momentum20d\":-0.028301861329449007,\"price_at\":1793975400.0,\"sma20\":1.0349999845027924,\"sma50\":1.3235999989509581}",
-      "id": 6521,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":6601738.9712405205,\"earnings_date\":null,\"momentum20d\":0.04535637860828223,\"price_at\":1793975400.0,\"sma20\":4.880000042915344,\"sma50\":4.411000022888183}",
+      "id": 7270,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LSTA"
+      "symbol": "NABL"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":1664120.17868042,\"earnings_date\":null,\"momentum20d\":-0.04920008265045128,\"price_at\":1793975400.0,\"sma20\":47.728950119018556,\"sma50\":47.670220108032225}",
-      "id": 6520,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":64076.824954748154,\"earnings_date\":null,\"momentum20d\":-0.36170212599910445,\"price_at\":1793975400.0,\"sma20\":2.539499980211258,\"sma50\":2.9192199873924256}",
+      "id": 7269,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LST"
+      "symbol": "NAAS"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":9084941.721291542,\"earnings_date\":null,\"momentum20d\":-0.03289477163310184,\"price_at\":1793975400.0,\"sma20\":10.87950005531311,\"sma50\":10.344599990844726}",
-      "id": 6519,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":45239.22471165657,\"earnings_date\":null,\"momentum20d\":-0.35071086593293255,\"price_at\":1793975400.0,\"sma20\":1.6844999969005585,\"sma50\":2.017300002574921}",
+      "id": 7268,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LSPD"
+      "symbol": "NA"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":3856765.86063385,\"earnings_date\":null,\"momentum20d\":-0.06569594371209553,\"price_at\":1793975400.0,\"sma20\":44.84679985046387,\"sma50\":45.112519912719726}",
-      "id": 6518,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":20646.099932193756,\"earnings_date\":null,\"momentum20d\":0.037617518309275955,\"price_at\":1793975400.0,\"sma20\":6.457499957084655,\"sma50\":6.382799978256226}",
+      "id": 7267,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LSGR"
+      "symbol": "MZZ"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":110773.45108985901,\"earnings_date\":\"2026-11-12\",\"momentum20d\":-0.23972603746372279,\"price_at\":1793975400.0,\"sma20\":2.653000009059906,\"sma50\":3.2470000123977663}",
-      "id": 6517,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":547312.1424484253,\"earnings_date\":null,\"momentum20d\":0.0010010239350302097,\"price_at\":1793975400.0,\"sma20\":9.991499853134155,\"sma50\":9.991599845886231}",
+      "id": 7266,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LSF"
+      "symbol": "MZYX"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":18580.14507293701,\"earnings_date\":null,\"momentum20d\":-0.003099113985985724,\"price_at\":1793975400.0,\"sma20\":34.64259967803955,\"sma50\":34.30166007995606}",
-      "id": 6516,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":42846185.98312378,\"earnings_date\":null,\"momentum20d\":0.056696848745145356,\"price_at\":1793975400.0,\"sma20\":106.95699996948242,\"sma50\":104.6166000366211}",
+      "id": 7265,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LSEQ"
+      "symbol": "MZTI"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":10333.274974822998,\"earnings_date\":null,\"momentum20d\":-0.1331269684064026,\"price_at\":1793975400.0,\"sma20\":4.527800035476685,\"sma50\":4.864740056991577}",
-      "id": 6515,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":217722.40043640137,\"earnings_date\":null,\"momentum20d\":0.021587311275421683,\"price_at\":1793975400.0,\"sma20\":15.863000106811523,\"sma50\":15.778000049591064}",
+      "id": 7264,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LSE"
+      "symbol": "MYY"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":4572.950010299683,\"earnings_date\":null,\"momentum20d\":0.020920502425963994,\"price_at\":1793975400.0,\"sma20\":24.186500072479248,\"sma50\":24.216799964904784}",
-      "id": 6514,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":1921.5000438690186,\"earnings_date\":null,\"momentum20d\":0.13333339566498914,\"price_at\":1793975400.0,\"sma20\":10.35349998474121,\"sma50\":10.261399879455567}",
+      "id": 7263,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LSCP"
+      "symbol": "MYXXU"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":277857838.0498886,\"earnings_date\":null,\"momentum20d\":-0.16683860293169683,\"price_at\":1793975400.0,\"sma20\":104.99700012207032,\"sma50\":113.78820022583008}",
-      "id": 6513,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":94847.30238437653,\"earnings_date\":null,\"momentum20d\":0.0029910954580474325,\"price_at\":1793975400.0,\"sma20\":10.046000099182129,\"sma50\":10.022799949645997}",
+      "id": 7262,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LSCC"
+      "symbol": "MYX"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":380464.05117988586,\"earnings_date\":null,\"momentum20d\":0.03287673323121787,\"price_at\":1793975400.0,\"sma20\":18.46500015258789,\"sma50\":18.1703999710083}",
-      "id": 6512,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":114226.75896704197,\"earnings_date\":\"2026-11-13\",\"momentum20d\":-0.3599999904632568,\"price_at\":1793975400.0,\"sma20\":1.0296999961137772,\"sma50\":1.5302799952030182}",
+      "id": 7261,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LSBK"
+      "symbol": "MYSZ"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":164340.91640472412,\"earnings_date\":null,\"momentum20d\":0.06088161369017353,\"price_at\":1793975400.0,\"sma20\":47.4866003036499,\"sma50\":46.37322006225586}",
-      "id": 6511,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":40080.94980061054,\"earnings_date\":\"2026-11-12\",\"momentum20d\":-0.29213482544076297,\"price_at\":1793975400.0,\"sma20\":1.4424999952316284,\"sma50\":1.910699999332428}",
+      "id": 7260,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LSAT"
+      "symbol": "MYSE"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":940716.796258688,\"earnings_date\":null,\"momentum20d\":-0.24786322435056662,\"price_at\":1793975400.0,\"sma20\":4.1849999785423275,\"sma50\":4.305999970436096}",
-      "id": 6510,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":88706451.24610901,\"earnings_date\":null,\"momentum20d\":-0.15633924993526904,\"price_at\":1793975400.0,\"sma20\":276.97500076293943,\"sma50\":285.6566000366211}",
+      "id": 7259,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LSAK"
+      "symbol": "MYRG"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":342888.40030670166,\"earnings_date\":null,\"momentum20d\":0.037687548098091384,\"price_at\":1793975400.0,\"sma20\":56.57099990844726,\"sma50\":55.424399871826175}",
-      "id": 6509,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":317582.9505801201,\"earnings_date\":null,\"momentum20d\":0.13868605262959433,\"price_at\":1793975400.0,\"sma20\":4.247499966621399,\"sma50\":4.564999971389771}",
+      "id": 7258,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LSAF"
+      "symbol": "MYPS"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":168866.31103515625,\"earnings_date\":null,\"momentum20d\":-0.21733530949927526,\"price_at\":1793975400.0,\"sma20\":61.91205024719238,\"sma50\":64.25891990661621}",
-      "id": 6508,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":277853.9507782459,\"earnings_date\":\"2026-11-09\",\"momentum20d\":-0.15384609613320877,\"price_at\":1793975400.0,\"sma20\":1.2470000028610229,\"sma50\":1.3849999976158143}",
+      "id": 7257,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LRNZ"
+      "symbol": "MYO"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":2231.700019836426,\"earnings_date\":null,\"momentum20d\":-0.24632819379046367,\"price_at\":1793975400.0,\"sma20\":20.513000106811525,\"sma50\":21.38360008239746}",
-      "id": 6507,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":947507.8784434497,\"earnings_date\":null,\"momentum20d\":-0.14041099036180638,\"price_at\":1793975400.0,\"sma20\":0.2760500006377697,\"sma50\":0.3224999997019768}",
+      "id": 7256,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LRNX"
+      "symbol": "MYND"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":1255060.4650306702,\"earnings_date\":null,\"momentum20d\":-0.1171962525661493,\"price_at\":1793975400.0,\"sma20\":46.18115005493164,\"sma50\":46.820520095825195}",
-      "id": 6506,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":5028189.079732895,\"earnings_date\":null,\"momentum20d\":0.06939700333612397,\"price_at\":1793975400.0,\"sma20\":9.015499877929688,\"sma50\":9.06879997253418}",
+      "id": 7255,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LRND"
+      "symbol": "MYN"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":85806595.79799652,\"earnings_date\":null,\"momentum20d\":-0.1237293701483948,\"price_at\":1793975400.0,\"sma20\":79.43099975585938,\"sma50\":80.55259963989258}",
-      "id": 6505,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":13684.799871444702,\"earnings_date\":null,\"momentum20d\":0.02228645999708112,\"price_at\":1793975400.0,\"sma20\":24.53400001525879,\"sma50\":24.450340003967284}",
+      "id": 7254,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LRN"
+      "symbol": "MYMK"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":3796699.352596998,\"earnings_date\":null,\"momentum20d\":-0.10486890014565853,\"price_at\":1793975400.0,\"sma20\":2.3522499978542326,\"sma50\":3.049299991130829}",
-      "id": 6504,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":13519.549922943115,\"earnings_date\":null,\"momentum20d\":0.01959555144441616,\"price_at\":1793975400.0,\"sma20\":24.2042498588562,\"sma50\":24.23803985595703}",
+      "id": 7253,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LRMR"
+      "symbol": "MYMJ"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":425330.75278282166,\"earnings_date\":null,\"momentum20d\":-0.021408687497860845,\"price_at\":1793975400.0,\"sma20\":30.473900318145752,\"sma50\":30.138820075988768}",
-      "id": 6503,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":22031.274909973145,\"earnings_date\":null,\"momentum20d\":0.01817799667341835,\"price_at\":1793975400.0,\"sma20\":24.127250003814698,\"sma50\":24.091600036621095}",
+      "id": 7252,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LRGG"
+      "symbol": "MYMI"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":14453901.4144516,\"earnings_date\":null,\"momentum20d\":-0.058757064852725915,\"price_at\":1793975400.0,\"sma20\":77.90724983215333,\"sma50\":78.1829002380371}",
-      "id": 6502,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":16536.339960098267,\"earnings_date\":null,\"momentum20d\":0.012350729755171486,\"price_at\":1793975400.0,\"sma20\":24.455150032043456,\"sma50\":24.41988010406494}",
+      "id": 7251,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LRGF"
+      "symbol": "MYMH"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":485076.82231903076,\"earnings_date\":null,\"momentum20d\":-0.11509938174326562,\"price_at\":1793975400.0,\"sma20\":87.3261505126953,\"sma50\":88.8136799621582}",
-      "id": 6501,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":21450.094842910767,\"earnings_date\":null,\"momentum20d\":0.0069218273611808545,\"price_at\":1793975400.0,\"sma20\":24.67594976425171,\"sma50\":24.654259872436523}",
+      "id": 7250,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LRGE"
+      "symbol": "MYMG"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":2176896.401863098,\"earnings_date\":null,\"momentum20d\":-0.045146008780783786,\"price_at\":1793975400.0,\"sma20\":85.98120040893555,\"sma50\":86.0940202331543}",
-      "id": 6500,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":4850.529947280884,\"earnings_date\":null,\"momentum20d\":0.0010063001235611768,\"price_at\":1793975400.0,\"sma20\":24.87929983139038,\"sma50\":24.868919944763185}",
+      "id": 7249,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LRGC"
+      "symbol": "MYMF"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":7172.729998230934,\"earnings_date\":null,\"momentum20d\":-0.026548647359614486,\"price_at\":1793975400.0,\"sma20\":1.1028500080108643,\"sma50\":1.143919999599457}",
-      "id": 6499,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":111551.78960800171,\"earnings_date\":null,\"momentum20d\":0.01263481780500797,\"price_at\":1793975400.0,\"sma20\":33.134949684143066,\"sma50\":32.96243988037109}",
+      "id": 7248,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LRE"
+      "symbol": "MYLD"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":3199359297.2348785,\"earnings_date\":null,\"momentum20d\":-0.3713461148425369,\"price_at\":1793975400.0,\"sma20\":249.33600082397462,\"sma50\":284.367799987793}",
-      "id": 6498,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":10295140.904273987,\"earnings_date\":null,\"momentum20d\":0.07523514001972309,\"price_at\":1793975400.0,\"sma20\":9.922500085830688,\"sma50\":9.99140007019043}",
+      "id": 7247,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LRCX"
+      "symbol": "MYI"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":4642561.353473663,\"earnings_date\":null,\"momentum20d\":-0.6412643380820112,\"price_at\":1793975400.0,\"sma20\":31.04500017166138,\"sma50\":41.69642009735107}",
-      "id": 6497,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":23362.44978904724,\"earnings_date\":null,\"momentum20d\":-0.00586016715048987,\"price_at\":1793975400.0,\"sma20\":23.72550001144409,\"sma50\":24.079800033569335}",
+      "id": 7246,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LRCU"
+      "symbol": "MYHE"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":108629.45012569427,\"earnings_date\":null,\"momentum20d\":-0.6334816284556904,\"price_at\":1793975400.0,\"sma20\":10.888999891281127,\"sma50\":14.597399978637695}",
-      "id": 6496,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":24573.000116348267,\"earnings_date\":null,\"momentum20d\":-0.0037098166421591916,\"price_at\":1793975400.0,\"sma20\":24.182999897003175,\"sma50\":24.43520008087158}",
+      "id": 7245,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LRCC"
+      "symbol": "MYHD"
     },
     {
       "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":2421915.226049423,\"earnings_date\":null,\"momentum20d\":0.01576368103872583,\"price_at\":1793975400.0,\"sma20\":18.205999851226807,\"sma50\":18.27391990661621}",
-      "id": 6495,
+      "at": 1794174404.067928,
+      "evidence": "{\"average_dollar_volume\":92253.59939575195,\"earnings_date\":null,\"momentum20d\":-0.005290971199889194,\"price_at\":1793975400.0,\"sma20\":24.463000106811524,\"sma50\":24.66300006866455}",
+      "id": 7244,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LQTI"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":189822.40398406982,\"earnings_date\":null,\"momentum20d\":0.0,\"price_at\":1793975400.0,\"sma20\":24.815500450134277,\"sma50\":24.837400283813476}",
-      "id": 6494,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LQID"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":1136027.0548152924,\"earnings_date\":null,\"momentum20d\":0.006669614053216089,\"price_at\":1793975400.0,\"sma20\":22.7017502784729,\"sma50\":22.82824016571045}",
-      "id": 6493,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LQDW"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":10905.050144195557,\"earnings_date\":null,\"momentum20d\":0.05992844883767767,\"price_at\":1793975400.0,\"sma20\":23.123499965667726,\"sma50\":23.33080005645752}",
-      "id": 6492,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LQDU"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":10052156.864643097,\"earnings_date\":\"2026-11-19\",\"momentum20d\":0.01182467676566401,\"price_at\":1793975400.0,\"sma20\":44.31299991607666,\"sma50\":43.13060035705566}",
-      "id": 6491,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LQDT"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":103596.6987991333,\"earnings_date\":null,\"momentum20d\":0.012216434804252607,\"price_at\":1793975400.0,\"sma20\":23.09900016784668,\"sma50\":23.222000160217284}",
-      "id": 6490,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LQDM"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":448486.65662765503,\"earnings_date\":null,\"momentum20d\":0.012653087805457375,\"price_at\":1793975400.0,\"sma20\":25.160199928283692,\"sma50\":25.213019981384278}",
-      "id": 6489,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LQDI"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":4931177.542800903,\"earnings_date\":null,\"momentum20d\":-0.00663325451010055,\"price_at\":1793975400.0,\"sma20\":92.23210067749024,\"sma50\":92.4748405456543}",
-      "id": 6488,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LQDH"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":5746.599998474121,\"earnings_date\":null,\"momentum20d\":-0.0680647667659311,\"price_at\":1793975400.0,\"sma20\":52.24799995422363,\"sma50\":52.349399948120116}",
-      "id": 6487,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LQDD"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":206480.1425933838,\"earnings_date\":null,\"momentum20d\":0.014123186180870384,\"price_at\":1793975400.0,\"sma20\":83.03155097961425,\"sma50\":83.21884017944336}",
-      "id": 6486,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LQDB"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":169182397.36053467,\"earnings_date\":\"2026-11-10\",\"momentum20d\":0.621621727056173,\"price_at\":1793975400.0,\"sma20\":39.72500019073486,\"sma50\":50.38399990081787}",
-      "id": 6485,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LQDA"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":3621180037.389374,\"earnings_date\":null,\"momentum20d\":0.020701054988555567,\"price_at\":1793975400.0,\"sma20\":103.70650024414063,\"sma50\":103.85800018310547}",
-      "id": 6484,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LQD"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":10379.585037231445,\"earnings_date\":null,\"momentum20d\":-0.07694119667406252,\"price_at\":1793975400.0,\"sma20\":45.324950218200684,\"sma50\":45.91378005981446}",
-      "id": 6483,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LQAI"
-    },
-    {
-      "action": "CANDIDATE",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":107044899.8192215,\"earnings_date\":null,\"momentum20d\":0.1472065429982392,\"price_at\":1793975400.0,\"sma20\":72.21450004577636,\"sma50\":68.8497999572754}",
-      "id": 6482,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LPX"
-    },
-    {
-      "action": "PASS",
-      "at": 1794169007.9834177,
-      "evidence": "{\"average_dollar_volume\":24392092.523930073,\"earnings_date\":\"2026-11-10\",\"momentum20d\":-0.2736625772812218,\"price_at\":1793975400.0,\"sma20\":7.733499979972839,\"sma50\":9.112800016403199}",
-      "id": 6481,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "LPTH"
+      "symbol": "MYHC"
     }
   ],
   "events": [
+    {
+      "at": 1794174404.067928,
+      "id": 10,
+      "kind": "stock_scan",
+      "message": "{\"attempted\":845,\"attempted_ever\":6404,\"batch_size\":800,\"failed\":82,\"method\":\"Rotating alphabetical scan; positions, pending orders and SPY every run\",\"never_attempted\":6835,\"remaining\":12394,\"rotation_cycles\":17,\"scan_start_index\":7200,\"scope\":\"US exchange-listed issues; not worldwide or OTC\",\"succeeded\":763,\"universe_count\":13239,\"usable\":763}"
+    },
     {
       "at": 1794169007.9834177,
       "id": 9,
@@ -1159,9 +1173,9 @@
   ],
   "fills": [],
   "health": {
-    "age_seconds": 1106.0612397193909,
-    "at": 1794169007.9834175,
-    "message": "Daily-price simulation, not live quotes. Prior completed sessions only. 731 usable prices; 74 provider errors.",
+    "age_seconds": 706.6844596862793,
+    "at": 1794174404.067928,
+    "message": "Daily-price simulation, not live quotes. Prior completed sessions only. 763 usable prices; 82 provider errors.",
     "status": "delayed"
   },
   "history": [
@@ -1245,11 +1259,20 @@
       "equity": 1000.0,
       "id": 9,
       "planned_risk": 0.0
+    },
+    {
+      "at": 1794174404.067928,
+      "benchmark": 999.9999999999999,
+      "cash": 1000.0,
+      "drawdown": 0.0,
+      "equity": 1000.0,
+      "id": 10,
+      "planned_risk": 0.0
     }
   ],
   "last_scan": {
-    "candidates": 85,
-    "rejected": 646
+    "candidates": 116,
+    "rejected": 647
   },
   "pending": {
     "AAOZ": {
@@ -1289,10 +1312,10 @@
   "source": "Nasdaq symbol directory; Yahoo Finance unofficial daily chart endpoint",
   "strategy": {
     "analyst": {
-      "at": 1794169007.9834177,
+      "at": 1794174404.067928,
       "error": null,
       "market_view": "",
-      "model": "qwen3-4b-instruct-2507",
+      "model": "9 open-weights models from 9 companies",
       "source": "quant"
     },
     "champion": {
@@ -1316,7 +1339,7 @@
       "use_memory": true
     },
     "desk": {
-      "at": 1794169007.9834177,
+      "at": 1794174404.067928,
       "degraded": [
         "nothing to decide: no open slots or no candidates"
       ],
@@ -1327,12 +1350,12 @@
       "judge": null,
       "lessons_shown": [],
       "minutes_left": 0.0,
-      "model": "qwen3-4b-instruct-2507",
+      "model": "9 open-weights models from 9 companies",
       "regime_stats": {
-        "median_20d_return_pct": -1.1599397077147855,
-        "pct_above_50d_avg": 35.9781121751026,
+        "median_20d_return_pct": -1.0693087436185023,
+        "pct_above_50d_avg": 38.40104849279161,
         "spy_20d_return_pct": -5.558912993016429,
-        "stocks_scanned": 731
+        "stocks_scanned": 763
       },
       "triage": []
     },
@@ -1355,6 +1378,81 @@
         "detail": "changes analyst_enabled: no-AI control for the analyst",
         "event": "proposed",
         "id": "control"
+      }
+    ],
+    "minutes_left": 228.61598056888334,
+    "roster": [
+      {
+        "company": "IBM",
+        "license": "Apache-2.0",
+        "model_id": "granite-4.0-h-micro",
+        "name": "Granite 4.0 H Micro",
+        "role": "triage",
+        "size_mb": 1942
+      },
+      {
+        "company": "Google",
+        "license": "Apache-2.0",
+        "model_id": "gemma-4-e4b",
+        "name": "Gemma 4 E4B",
+        "role": "research",
+        "size_mb": 4977
+      },
+      {
+        "company": "Meta",
+        "license": "Llama 3.2 Community",
+        "model_id": "llama-3.2-3b",
+        "name": "Llama 3.2 3B Instruct",
+        "role": "bull",
+        "size_mb": 2019
+      },
+      {
+        "company": "Microsoft",
+        "license": "MIT",
+        "model_id": "phi-4-mini",
+        "name": "Phi-4 mini Instruct",
+        "role": "bear",
+        "size_mb": 2491
+      },
+      {
+        "company": "Alibaba",
+        "license": "Apache-2.0",
+        "model_id": "qwen3-4b-instruct",
+        "name": "Qwen3 4B Instruct 2507",
+        "role": "judge",
+        "size_mb": 2497
+      },
+      {
+        "company": "Mistral AI",
+        "license": "Apache-2.0",
+        "model_id": "ministral-3-3b",
+        "name": "Ministral 3 3B Instruct 2512",
+        "role": "doctor",
+        "size_mb": 2147
+      },
+      {
+        "company": "Hugging Face",
+        "license": "Apache-2.0",
+        "model_id": "smollm3-3b",
+        "name": "SmolLM3 3B",
+        "role": "post_mortem",
+        "size_mb": 1915
+      },
+      {
+        "company": "NVIDIA",
+        "license": "NVIDIA Open Model",
+        "model_id": "nemotron-3-nano-4b",
+        "name": "Nemotron 3 Nano 4B",
+        "role": "proposer",
+        "size_mb": 2837
+      },
+      {
+        "company": "Liquid AI",
+        "license": "LFM Open",
+        "model_id": "lfm2.5-2.6b",
+        "name": "LFM2.5 2.6B",
+        "role": "single_shot",
+        "size_mb": 1674
       }
     ],
     "rules": {
@@ -1445,7 +1543,7 @@
               }
             }
           },
-          "total_recorded": 40
+          "total_recorded": 80
         }
       },
       {
@@ -1528,7 +1626,7 @@
               }
             }
           },
-          "total_recorded": 40
+          "total_recorded": 80
         }
       },
       {
@@ -1611,7 +1709,7 @@
               }
             }
           },
-          "total_recorded": 44
+          "total_recorded": 84
         }
       },
       {
@@ -1694,18 +1792,18 @@
               }
             }
           },
-          "total_recorded": 41
+          "total_recorded": 85
         }
       }
     ],
     "shadows": [
       {
-        "age_days": 0.07400268553859658,
+        "age_days": 0.1364573673710779,
         "champion_return_pct": 0.0,
         "changes": [
           "analyst_enabled"
         ],
-        "days_to_decision": 13.925997314461403,
+        "days_to_decision": 13.863542632628922,
         "fills": 0,
         "id": "control",
         "kind": "challenger",
@@ -1714,10 +1812,10 @@
         "started_at": 1794162614.1513872
       },
       {
-        "age_days": 0.0002302391137237902,
+        "age_days": 0.0626849209462051,
         "champion_return_pct": 0.0,
         "changes": [],
-        "days_to_decision": 13.999769760886275,
+        "days_to_decision": 13.937315079053795,
         "fills": 0,
         "id": "depth1-single-shot",
         "kind": "ablation",
@@ -1726,10 +1824,10 @@
         "started_at": 1794168988.0907583
       },
       {
-        "age_days": 0.0002302391137237902,
+        "age_days": 0.0626849209462051,
         "champion_return_pct": 0.0,
         "changes": [],
-        "days_to_decision": 13.999769760886275,
+        "days_to_decision": 13.937315079053795,
         "fills": 0,
         "id": "depth2-committee",
         "kind": "ablation",
@@ -1737,6 +1835,463 @@
         "return_pct": 0.0,
         "started_at": 1794168988.0907583
       }
-    ]
+    ],
+    "telemetry": {
+      "current": {
+        "cores": 4,
+        "cpu": "AMD EPYC 7763 64-Core Processor",
+        "ended_at": 1794175110.722579,
+        "git_sha": "bd4d07b",
+        "minutes_budget": 240.0,
+        "minutes_used": 12.402727528413136,
+        "ram_mb": 15983,
+        "run_id": "42526772466",
+        "started_at": 1794174366.5589273,
+        "status": "degraded",
+        "trigger": "manual"
+      },
+      "determinism": [
+        {
+          "canary_hash_latest": "dc192c7624001ab2",
+          "canary_hash_previous": null,
+          "model_id": "granite-4.0-h-micro",
+          "stable": null
+        },
+        {
+          "canary_hash_latest": "293d2b271af8ea44",
+          "canary_hash_previous": null,
+          "model_id": "llama-3.2-3b",
+          "stable": null
+        },
+        {
+          "canary_hash_latest": "bd099a30714f1b21",
+          "canary_hash_previous": null,
+          "model_id": "phi-4-mini",
+          "stable": null
+        },
+        {
+          "canary_hash_latest": "293d2b271af8ea44",
+          "canary_hash_previous": null,
+          "model_id": "qwen3-4b-instruct",
+          "stable": null
+        }
+      ],
+      "events": [
+        {
+          "at": 1794175110.7012413,
+          "detail": "nothing to decide: no open slots or no candidates",
+          "kind": "degraded",
+          "subject": "desk"
+        },
+        {
+          "at": 1794175110.51884,
+          "detail": "hash 293d2b271af8ea44 stable (5580 ms)",
+          "kind": "determinism",
+          "subject": "qwen3-4b-instruct"
+        },
+        {
+          "at": 1794175110.51687,
+          "detail": "Qwen3 4B Instruct 2507 (Alibaba) ready (4503 ms)",
+          "kind": "model_load",
+          "subject": "qwen3-4b-instruct"
+        },
+        {
+          "at": 1794175110.5142722,
+          "detail": "2497 MB, sha256 verified, attempt 1 (16474 ms)",
+          "kind": "download",
+          "subject": "qwen3-4b-instruct"
+        },
+        {
+          "at": 1794174833.6363778,
+          "detail": "hash bd099a30714f1b21 stable (6559 ms)",
+          "kind": "determinism",
+          "subject": "phi-4-mini"
+        },
+        {
+          "at": 1794174833.6303697,
+          "detail": "Phi-4 mini Instruct (Microsoft) ready (4503 ms)",
+          "kind": "model_load",
+          "subject": "phi-4-mini"
+        },
+        {
+          "at": 1794174833.6290302,
+          "detail": "2491 MB, sha256 verified, attempt 1 (27264 ms)",
+          "kind": "download",
+          "subject": "phi-4-mini"
+        },
+        {
+          "at": 1794174725.0263202,
+          "detail": "hash 293d2b271af8ea44 stable (5535 ms)",
+          "kind": "determinism",
+          "subject": "llama-3.2-3b"
+        },
+        {
+          "at": 1794174725.0223763,
+          "detail": "Llama 3.2 3B Instruct (Meta) ready (4509 ms)",
+          "kind": "model_load",
+          "subject": "llama-3.2-3b"
+        },
+        {
+          "at": 1794174725.020505,
+          "detail": "2019 MB, sha256 verified, attempt 1 (8489 ms)",
+          "kind": "download",
+          "subject": "llama-3.2-3b"
+        },
+        {
+          "at": 1794174518.6171985,
+          "detail": "hash dc192c7624001ab2 stable (6065 ms)",
+          "kind": "determinism",
+          "subject": "granite-4.0-h-micro"
+        },
+        {
+          "at": 1794174518.6156342,
+          "detail": "Granite 4.0 H Micro (IBM) ready (3002 ms)",
+          "kind": "model_load",
+          "subject": "granite-4.0-h-micro"
+        },
+        {
+          "at": 1794174518.612521,
+          "detail": "1942 MB, sha256 verified, attempt 1 (15942 ms)",
+          "kind": "download",
+          "subject": "granite-4.0-h-micro"
+        }
+      ],
+      "fetches": [
+        {
+          "mean_ms": 209.0,
+          "ok_rate": 1.0,
+          "p95_ms": 211.0,
+          "requests": 2,
+          "source": "nasdaq-directory"
+        },
+        {
+          "mean_ms": 1936.9,
+          "ok_rate": 1.0,
+          "p95_ms": 3062.0,
+          "requests": 10,
+          "source": "nasdaq-earnings"
+        },
+        {
+          "mean_ms": 174.24260355029585,
+          "ok_rate": 0.9644970414201184,
+          "p95_ms": 1097.0,
+          "requests": 845,
+          "source": "yahoo-bars"
+        },
+        {
+          "mean_ms": 117.28571428571429,
+          "ok_rate": 1.0,
+          "p95_ms": 187.0,
+          "requests": 28,
+          "source": "yahoo-news"
+        }
+      ],
+      "models": [
+        {
+          "calls": 1,
+          "company": "Alibaba",
+          "errors": 0,
+          "mean_completion_tokens": 893.0,
+          "mean_gen_tps": 6.801800134532288,
+          "mean_latency_ms": 240154.0,
+          "mean_prompt_tps": 23.556932509400585,
+          "model_id": "qwen3-4b-instruct",
+          "ok_rate": 1.0,
+          "p95_latency_ms": 240154.0,
+          "roles": [
+            "judge"
+          ]
+        },
+        {
+          "calls": 4,
+          "company": "IBM",
+          "errors": 0,
+          "mean_completion_tokens": 353.75,
+          "mean_gen_tps": 13.246599280678447,
+          "mean_latency_ms": 65735.25,
+          "mean_prompt_tps": 31.0883102094123,
+          "model_id": "granite-4.0-h-micro",
+          "ok_rate": 1.0,
+          "p95_latency_ms": 90835.0,
+          "roles": [
+            "triage"
+          ]
+        },
+        {
+          "calls": 4,
+          "company": "Microsoft",
+          "errors": 0,
+          "mean_completion_tokens": 82.75,
+          "mean_gen_tps": 11.365357446953789,
+          "mean_latency_ms": 24037.25,
+          "mean_prompt_tps": 30.92714640427738,
+          "model_id": "phi-4-mini",
+          "ok_rate": 1.0,
+          "p95_latency_ms": 59432.0,
+          "roles": [
+            "bear"
+          ]
+        },
+        {
+          "calls": 4,
+          "company": "Meta",
+          "errors": 0,
+          "mean_completion_tokens": 137.25,
+          "mean_gen_tps": 14.444385915649669,
+          "mean_latency_ms": 20865.5,
+          "mean_prompt_tps": 34.246534297935895,
+          "model_id": "llama-3.2-3b",
+          "ok_rate": 1.0,
+          "p95_latency_ms": 34292.0,
+          "roles": [
+            "bull"
+          ]
+        }
+      ],
+      "roles": [
+        {
+          "calls": 4,
+          "company": "Microsoft",
+          "mean_latency_ms": 24037.25,
+          "model_id": "phi-4-mini",
+          "ok_rate": 1.0,
+          "role": "bear",
+          "total_minutes": 1.6024833333333333
+        },
+        {
+          "calls": 4,
+          "company": "Meta",
+          "mean_latency_ms": 20865.5,
+          "model_id": "llama-3.2-3b",
+          "ok_rate": 1.0,
+          "role": "bull",
+          "total_minutes": 1.3910333333333333
+        },
+        {
+          "calls": 1,
+          "company": "Alibaba",
+          "mean_latency_ms": 240154.0,
+          "model_id": "qwen3-4b-instruct",
+          "ok_rate": 1.0,
+          "role": "judge",
+          "total_minutes": 4.002566666666667
+        },
+        {
+          "calls": 4,
+          "company": "IBM",
+          "mean_latency_ms": 65735.25,
+          "model_id": "granite-4.0-h-micro",
+          "ok_rate": 1.0,
+          "role": "triage",
+          "total_minutes": 4.38235
+        }
+      ],
+      "runs": [
+        {
+          "calls": 13,
+          "degraded": [
+            "nothing to decide: no open slots or no candidates"
+          ],
+          "errors": 0,
+          "minutes_budget": 240.0,
+          "minutes_used": 12.402727528413136,
+          "run_id": "42526772466",
+          "started_at": 1794174366.5589273,
+          "status": "degraded"
+        }
+      ],
+      "stage_history": [
+        {
+          "fail_rate": 0.0,
+          "max_ms": 442581.0,
+          "mean_ms": 442581.0,
+          "name": "desk.prepare",
+          "p95_ms": 442581.0,
+          "runs": 1
+        },
+        {
+          "fail_rate": 0.0,
+          "max_ms": 240155.0,
+          "mean_ms": 240155.0,
+          "name": "desk.judge",
+          "p95_ms": 240155.0,
+          "runs": 1
+        },
+        {
+          "fail_rate": 0.0,
+          "max_ms": 37437.0,
+          "mean_ms": 37437.0,
+          "name": "scan",
+          "p95_ms": 37437.0,
+          "runs": 1
+        },
+        {
+          "fail_rate": 0.0,
+          "max_ms": 22679.0,
+          "mean_ms": 22679.0,
+          "name": "intel",
+          "p95_ms": 22679.0,
+          "runs": 1
+        },
+        {
+          "fail_rate": 0.0,
+          "max_ms": 177.0,
+          "mean_ms": 177.0,
+          "name": "cycles",
+          "p95_ms": 177.0,
+          "runs": 1
+        },
+        {
+          "fail_rate": 0.0,
+          "max_ms": 51.0,
+          "mean_ms": 51.0,
+          "name": "cycle:baseline",
+          "p95_ms": 51.0,
+          "runs": 1
+        },
+        {
+          "fail_rate": 0.0,
+          "max_ms": 42.0,
+          "mean_ms": 42.0,
+          "name": "cycle:control",
+          "p95_ms": 42.0,
+          "runs": 1
+        },
+        {
+          "fail_rate": 0.0,
+          "max_ms": 40.0,
+          "mean_ms": 40.0,
+          "name": "cycle:depth2-committee",
+          "p95_ms": 40.0,
+          "runs": 1
+        },
+        {
+          "fail_rate": 0.0,
+          "max_ms": 38.0,
+          "mean_ms": 38.0,
+          "name": "cycle:depth1-single-shot",
+          "p95_ms": 38.0,
+          "runs": 1
+        },
+        {
+          "fail_rate": 0.0,
+          "max_ms": 2.0,
+          "mean_ms": 2.0,
+          "name": "lab",
+          "p95_ms": 2.0,
+          "runs": 1
+        },
+        {
+          "fail_rate": 0.0,
+          "max_ms": 0.0,
+          "mean_ms": 0.0,
+          "name": "desk.doctor",
+          "p95_ms": 0.0,
+          "runs": 1
+        },
+        {
+          "fail_rate": 0.0,
+          "max_ms": 0.0,
+          "mean_ms": 0.0,
+          "name": "desk.single_shot",
+          "p95_ms": 0.0,
+          "runs": 1
+        },
+        {
+          "fail_rate": 0.0,
+          "max_ms": 0.0,
+          "mean_ms": 0.0,
+          "name": "post_mortem",
+          "p95_ms": 0.0,
+          "runs": 1
+        }
+      ],
+      "stages": [
+        {
+          "ms": 37437,
+          "name": "scan",
+          "note": "",
+          "ok": true
+        },
+        {
+          "ms": 22679,
+          "name": "intel",
+          "note": "",
+          "ok": true
+        },
+        {
+          "ms": 442581,
+          "name": "desk.prepare",
+          "note": "",
+          "ok": true
+        },
+        {
+          "ms": 240155,
+          "name": "desk.judge",
+          "note": "",
+          "ok": true
+        },
+        {
+          "ms": 0,
+          "name": "desk.single_shot",
+          "note": "",
+          "ok": true
+        },
+        {
+          "ms": 0,
+          "name": "desk.doctor",
+          "note": "",
+          "ok": true
+        },
+        {
+          "ms": 177,
+          "name": "cycles",
+          "note": "",
+          "ok": true
+        },
+        {
+          "ms": 51,
+          "name": "cycle:baseline",
+          "note": "",
+          "ok": true
+        },
+        {
+          "ms": 42,
+          "name": "cycle:control",
+          "note": "",
+          "ok": true
+        },
+        {
+          "ms": 38,
+          "name": "cycle:depth1-single-shot",
+          "note": "",
+          "ok": true
+        },
+        {
+          "ms": 40,
+          "name": "cycle:depth2-committee",
+          "note": "",
+          "ok": true
+        },
+        {
+          "ms": 0,
+          "name": "post_mortem",
+          "note": "",
+          "ok": true
+        },
+        {
+          "ms": 2,
+          "name": "lab",
+          "note": "",
+          "ok": true
+        }
+      ],
+      "totals": {
+        "calls": 13,
+        "errors": 0,
+        "minutes_total": 12.402727528413136,
+        "runs": 1
+      }
+    }
   }
 }

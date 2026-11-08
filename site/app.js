@@ -74,7 +74,7 @@ let journalFilter = "activity";
 let journalLimit = 25;
 
 /* ---------- tabs ---------- */
-const TABS = ["overview", "desk", "holdings", "trades", "journal", "lab", "about"];
+const TABS = ["overview", "desk", "holdings", "trades", "journal", "lab", "ops", "about"];
 function showTab(name, push = true) {
   if (!TABS.includes(name)) name = "overview";
   for (const id of TABS) $(id).hidden = id !== name;
@@ -559,9 +559,158 @@ function renderDesk(s) {
   }
 }
 
+/* ---------- roster and ops ---------- */
+const ROLE_NAMES = {
+  triage: "Triage", research: "Research agents", bull: "Bull case", bear: "Bear case", judge: "The judge",
+  doctor: "Position doctor", post_mortem: "Post-mortem", proposer: "Strategy proposer", single_shot: "Single-shot analyst",
+};
+const roleName = (r) => ROLE_NAMES[r] ?? r;
+
+function dur(ms) {
+  if (ms === null || ms === undefined) return "n/a";
+  if (ms < 1000) return `${Math.round(ms)} ms`;
+  if (ms < 59500) return `${(ms / 1000).toFixed(1)} s`;
+  const total = Math.round(ms / 1000);
+  return `${Math.floor(total / 60)} min ${String(total % 60).padStart(2, "0")} s`;
+}
+const rate = (v) => (v === null || v === undefined ? "n/a" : `${(v * 100).toFixed(v >= 0.995 || v === 0 ? 0 : 1)}%`);
+const fixed = (v, n = 1) => (v === null || v === undefined ? "n/a" : Number(v).toFixed(n));
+
+function renderRoster(s) {
+  const roster = s.strategy?.roster ?? [];
+  $("desk-roster").hidden = !roster.length;
+  const list = $("desk-roster-list"); list.replaceChildren();
+  for (const r of roster) {
+    list.append(h("li", {},
+      h("span", {class: "label"}, roleName(r.role)),
+      h("strong", {}, r.name),
+      h("span", {class: "mono-note"}, `${r.company} · ${r.license} · ${r.size_mb >= 1000 ? `${(r.size_mb / 1000).toFixed(1)} GB` : `${r.size_mb} MB`}`)));
+  }
+}
+
+function numCell(value, cls = "") { return h("td", {class: `num ${cls}`.trim()}, value); }
+
+function renderOps(s) {
+  const t = s.strategy?.telemetry;
+  const ok = !!t?.current;
+  $("ops-empty").hidden = ok;
+  $("ops-content").hidden = !ok;
+  if (!ok) return;
+  const c = t.current;
+
+  const status = (c.status ?? "ok").toUpperCase();
+  const used = c.minutes_used ?? 0, budget = c.minutes_budget || 0;
+  const stat = $("ops-status"); stat.replaceChildren(
+    h("div", {class: "head"},
+      h("div", {}, h("span", {class: "label"}, "Latest run"),
+        h("strong", {class: "regime-label"}, h("span", {class: c.status === "failed" ? "mark ink" : "mark"}, status))),
+      h("span", {class: "mono-note"}, c.started_at ? `started ${ago(c.started_at)}` : "")),
+    h("div", {class: "budget"},
+      h("div", {class: "row"}, h("span", {}, `${fixed(used, 1)} of ${fixed(budget, 0)} minutes of budget`), h("span", {class: "muted"}, budget ? `${Math.round((used / budget) * 100)}% used` : "")),
+      h("div", {class: "bar-track", role: "progressbar", "aria-label": "Time budget used", "aria-valuemin": "0", "aria-valuemax": String(budget), "aria-valuenow": String(Math.round(used))},
+        h("div", {class: "fill", style: `width:${budget ? Math.min(100, (used / budget) * 100) : 0}%`}))),
+    h("dl", {class: "regime-stats"},
+      h("div", {}, h("dt", {}, "Trigger"), h("dd", {}, c.trigger ?? "n/a")),
+      h("div", {}, h("dt", {}, "Machine"), h("dd", {class: "small-dd"}, [c.cpu, c.cores ? `${c.cores} cores` : null, c.ram_mb ? `${Math.round(c.ram_mb / 1024)} GB RAM` : null].filter(Boolean).join(" · ") || "n/a")),
+      h("div", {}, h("dt", {}, "Code version"), h("dd", {}, c.git_sha ?? "n/a")),
+      h("div", {}, h("dt", {}, "Model calls"), h("dd", {}, String(t.runs?.[0]?.calls ?? "n/a")))));
+
+  // Where the time went: the current run's stages.
+  const stages = t.stages ?? [];
+  const peak = Math.max(1, ...stages.map((x) => x.ms ?? 0));
+  const topTotal = stages.filter((x) => !x.name.startsWith("cycle:") && x.name !== "cycles").reduce((a, x) => a + (x.ms ?? 0), 0) + (stages.find((x) => x.name === "cycles")?.ms ?? 0);
+  text("ops-stage-total", stages.length ? `${dur(topTotal)} across ${stages.length} stages` : "");
+  const wf = $("ops-waterfall"); wf.replaceChildren();
+  if (!stages.length) wf.append(h("p", {class: "empty"}, "No stage timings were recorded for this run."));
+  for (const x of stages) {
+    const nested = x.name.startsWith("cycle:");
+    wf.append(h("div", {class: `wf-row${nested ? " nested" : ""}`},
+      h("span", {class: "wf-name"}, nested ? x.name.slice(6) : x.name),
+      h("span", {class: "wf-track"}, h("span", {class: `wf-bar${x.ok === false ? " hatch" : ""}`, style: `width:${Math.max(0.6, ((x.ms ?? 0) / peak) * 100)}%`, title: x.note || ""})),
+      h("span", {class: "wf-ms"}, dur(x.ms)),
+      x.ok === false ? h("span", {class: "badge sell"}, "failed") : null));
+  }
+
+  // Bottlenecks over many runs.
+  const hist = t.stage_history ?? [];
+  const rows = $("ops-stage-rows"); rows.replaceChildren();
+  const real = hist.filter((x) => !x.name.startsWith("cycle:"));
+  const top = real[0];
+  const topSum = real.filter((x) => x.name !== "cycles").reduce((a, x) => a + (x.mean_ms ?? 0), 0) || 1;
+  text("ops-bottleneck", top
+    ? `${top.name} is the slowest stage: ${dur(top.mean_ms)} on average, about ${Math.round(((top.mean_ms ?? 0) / topSum) * 100)}% of a typical run, and ${dur(top.p95_ms)} on a bad day.`
+    : "Not enough runs yet to name a bottleneck.");
+  const widest = Math.max(1, ...hist.map((x) => x.mean_ms ?? 0));
+  for (const x of hist) {
+    rows.append(h("tr", {class: (x.fail_rate ?? 0) > 0 ? "flag" : ""},
+      h("td", {}, h("code", {}, x.name)), numCell(dur(x.mean_ms)), numCell(dur(x.p95_ms)), numCell(dur(x.max_ms)),
+      numCell(rate(x.fail_rate ?? 0), (x.fail_rate ?? 0) > 0 ? "bad" : ""),
+      h("td", {}, h("span", {class: "mini-track"}, h("span", {class: "mini-bar", style: `width:${Math.max(1, ((x.mean_ms ?? 0) / widest) * 100)}%`})))));
+  }
+  if (!hist.length) rows.append(h("tr", {}, h("td", {colspan: "6", class: "empty"}, "History builds up over the next few runs.")));
+
+  // Run history strip.
+  const runs = [...(t.runs ?? [])].reverse();
+  const strip = $("ops-runs"); strip.replaceChildren();
+  const top_ = Math.max(1, ...runs.map((r) => Math.max(r.minutes_used ?? 0, r.minutes_budget ?? 0)));
+  const budgetNow = runs.find((r) => r.minutes_budget)?.minutes_budget;
+  if (budgetNow) strip.append(h("span", {class: "budget-line", style: `bottom:${(budgetNow / top_) * 100}%`}));
+  for (const r of runs) {
+    const when = r.started_at ? new Date(r.started_at * 1000).toLocaleString(undefined, {dateStyle: "medium", timeStyle: "short"}) : r.run_id;
+    const note = `${when}\n${r.status}: ${fixed(r.minutes_used, 1)} min, ${r.calls ?? 0} calls, ${r.errors ?? 0} errors${(r.degraded ?? []).length ? `\n${r.degraded.join("; ")}` : ""}`;
+    strip.append(h("span", {class: `run-col ${r.status}`, style: `height:${Math.max(2, ((r.minutes_used ?? 0) / top_) * 100)}%`, title: note, tabindex: "0", "aria-label": note.replace(/\n/g, ", ")}));
+  }
+  if (!runs.length) strip.append(h("p", {class: "empty"}, "No runs recorded yet."));
+
+  // By role.
+  const rr = $("ops-role-rows"); rr.replaceChildren();
+  for (const r of t.roles ?? []) {
+    rr.append(h("tr", {class: (r.ok_rate ?? 1) < 1 ? "flag" : ""},
+      h("td", {}, h("strong", {}, roleName(r.role))), h("td", {}, h("code", {}, r.model_id)), h("td", {}, r.company),
+      numCell(String(r.calls ?? 0)), numCell(rate(r.ok_rate), (r.ok_rate ?? 1) < 1 ? "bad" : ""), numCell(dur(r.mean_latency_ms)), numCell(`${fixed(r.total_minutes, 1)} min`)));
+  }
+  if (!(t.roles ?? []).length) rr.append(h("tr", {}, h("td", {colspan: "7", class: "empty"}, "No model calls recorded yet.")));
+
+  // Models with determinism.
+  const det = Object.fromEntries((t.determinism ?? []).map((d) => [d.model_id, d]));
+  const mr = $("ops-model-rows"); mr.replaceChildren();
+  for (const m of t.models ?? []) {
+    const d = det[m.model_id];
+    const badge = d?.stable === true ? h("span", {class: "badge buy", title: d.canary_hash_latest}, "Stable")
+      : d?.stable === false ? h("span", {class: "badge sell", title: `${d.canary_hash_previous} → ${d.canary_hash_latest}`}, "Drift")
+        : h("span", {class: "badge", title: d?.canary_hash_latest ?? ""}, "Unchecked");
+    mr.append(h("tr", {class: (m.errors ?? 0) > 0 || d?.stable === false ? "flag" : ""},
+      h("td", {}, h("strong", {}, m.model_id), h("br"), h("span", {class: "mono-note"}, (m.roles ?? []).map(roleName).join(", "))), h("td", {}, m.company),
+      numCell(String(m.calls ?? 0)), numCell(rate(m.ok_rate), (m.ok_rate ?? 1) < 1 ? "bad" : ""), numCell(dur(m.mean_latency_ms)), numCell(dur(m.p95_latency_ms)),
+      numCell(fixed(m.mean_gen_tps)), numCell(fixed(m.mean_prompt_tps, 0)), numCell(String(m.errors ?? 0), (m.errors ?? 0) > 0 ? "bad" : ""), h("td", {}, badge)));
+  }
+  if (!(t.models ?? []).length) mr.append(h("tr", {}, h("td", {colspan: "10", class: "empty"}, "No model calls recorded yet.")));
+
+  // Data sources.
+  const fr = $("ops-fetch-rows"); fr.replaceChildren();
+  for (const f of t.fetches ?? []) {
+    fr.append(h("tr", {class: (f.ok_rate ?? 1) < 1 ? "flag" : ""},
+      h("td", {}, h("code", {}, f.source)), numCell(String(f.requests ?? 0)), numCell(rate(f.ok_rate), (f.ok_rate ?? 1) < 1 ? "bad" : ""), numCell(dur(f.mean_ms)), numCell(dur(f.p95_ms))));
+  }
+  if (!(t.fetches ?? []).length) fr.append(h("tr", {}, h("td", {colspan: "5", class: "empty"}, "No data requests recorded yet.")));
+
+  // Events, with problems first.
+  const priority = {error: 0, degraded: 1, determinism: 2};
+  const events = [...(t.events ?? [])].sort((a, b) => (priority[a.kind] ?? 9) - (priority[b.kind] ?? 9) || (b.at ?? 0) - (a.at ?? 0));
+  const problems = events.filter((e) => e.kind === "error" || e.kind === "degraded").length;
+  text("ops-event-count", `${problems} problem${problems === 1 ? "" : "s"} · ${events.length} events`);
+  const ev = $("ops-events"); ev.replaceChildren();
+  const kindClass = {error: "sell", degraded: "buy", determinism: "info"};
+  for (const e of events) {
+    ev.append(h("li", {}, h("span", {class: `badge ${kindClass[e.kind] ?? ""}`}, e.kind),
+      h("time", {}, `${e.subject || "run"} · ${e.at ? ago(e.at) : ""}`), h("p", {}, e.detail)));
+  }
+  if (!events.length) ev.append(h("li", {}, h("span", {}), h("p", {class: "muted"}, "No events recorded. That is the good case.")));
+}
+
 function render(s) {
   state = s;
-  renderLab(s); renderLadder(s); renderDesk(s);
+  renderLab(s); renderLadder(s); renderDesk(s); renderRoster(s); renderOps(s);
   renderStatus(s); renderOverview(s); renderHoldings(s); renderTrades(s); renderJournal(); renderAbout(s);
 }
 

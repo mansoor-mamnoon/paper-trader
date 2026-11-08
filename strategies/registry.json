@@ -120,9 +120,9 @@
   "lessons": [],
   "lessons_cursor": 0,
   "analyst": {
-    "at": 1794169007.9834177,
+    "at": 1794174404.067928,
     "source": "quant",
-    "model": "qwen3-4b-instruct-2507",
+    "model": "9 open-weights models from 9 companies",
     "market_view": "",
     "error": null
   }
