@@ -8,7 +8,8 @@ use anyhow::{Result, anyhow, bail};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
-pub const MAX_POSITIONS: usize = 3;
+/// Five equal slots of 20% each, so a full book is 100% invested.
+pub const MAX_POSITIONS: usize = 5;
 pub const POSITION_CAP: f64 = 0.20;
 pub const MAX_PLAYBOOK_CHARS: usize = 4000;
 

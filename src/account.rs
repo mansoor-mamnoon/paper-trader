@@ -446,7 +446,7 @@ pub fn cycle_with(
     let mut ordered: Vec<scorecard::PickRow> = Vec::new();
     if !state.halted && missing.is_empty() {
         // (symbol, conviction, thesis) in the order buys are attempted.
-        let ranked: Vec<(String, f64, String, f64)> = if let Some(review) = review {
+        let ranked: Vec<(String, f64, String)> = if let Some(review) = review {
             for avoided in &review.avoid {
                 decision(
                     &db,
@@ -464,14 +464,7 @@ pub fn cycle_with(
                     eligible.contains_key(p.symbol.as_str())
                         && !review.avoid.iter().any(|a| a.symbol == p.symbol)
                 })
-                .map(|p| {
-                    (
-                        p.symbol.clone(),
-                        p.conviction,
-                        p.thesis.clone(),
-                        p.size_fraction,
-                    )
-                })
+                .map(|p| (p.symbol.clone(), p.conviction, p.thesis.clone()))
                 .collect()
         } else {
             let mut by_momentum: Vec<(f64, &str)> = eligible
@@ -481,10 +474,10 @@ pub fn cycle_with(
             by_momentum.sort_by(|a, b| b.partial_cmp(a).unwrap());
             by_momentum
                 .into_iter()
-                .map(|(_, s)| (s.to_string(), 0.0, String::new(), 1.0))
+                .map(|(_, s)| (s.to_string(), 0.0, String::new()))
                 .collect()
         };
-        for (rank, (symbol, conviction, thesis, size)) in ranked.into_iter().enumerate() {
+        for (rank, (symbol, conviction, thesis)) in ranked.into_iter().enumerate() {
             if slots == 0 {
                 break;
             }
@@ -495,7 +488,8 @@ pub fn cycle_with(
                 continue;
             }
             let risk_off = review.and_then(|r| r.regime.as_deref()) == Some("risk_off");
-            let size_fraction = if risk_off { size.min(0.5) } else { size };
+            // Slots are equal. A risk-off call is the only thing that shrinks a position.
+            let size_fraction = if risk_off { 0.5 } else { 1.0 };
             let reason = if thesis.is_empty() {
                 "Positive liquid daily trend; position capped at 20% of equity".to_string()
             } else {
@@ -882,6 +876,42 @@ mod tests {
         assert!((position.entry - price).abs() < 1e-9);
         assert!((position.stop - price * 0.96).abs() < 1e-9);
         assert!(state.cash < 1000.0 - price);
+    }
+
+    #[test]
+    fn five_slots_of_twenty_percent_invest_the_whole_account() {
+        let path = temp_db("full");
+        let names = ["AAA", "BBB", "CCC", "DDD", "EEE", "FFF"];
+        let series = bars(60, 50.0, 1.0, None);
+        let at = series.last().unwrap().at + DAY * 0.5;
+        let quotes = |extra: Option<Bar>| -> Vec<(&str, Vec<Bar>)> {
+            names
+                .iter()
+                .map(|n| {
+                    let mut b = series.clone();
+                    b.extend(extra.clone());
+                    (*n, b)
+                })
+                .collect()
+        };
+        cycle(&path, &observation(at, quotes(None)), "stocks-daily").unwrap();
+        assert_eq!(snapshot(&path).pending.len(), MAX_POSITIONS);
+        let next = Bar {
+            at: T0 + DAY * 60.0,
+            open: 120.0,
+            close: 121.0,
+            volume: 1_000_000.0,
+        };
+        cycle(
+            &path,
+            &observation(T0 + DAY * 61.5, quotes(Some(next))),
+            "stocks-daily",
+        )
+        .unwrap();
+        let state = snapshot(&path);
+        assert_eq!(state.positions.len(), MAX_POSITIONS);
+        let invested = 1.0 - state.cash / equity(&state);
+        assert!(invested > 0.98, "only {invested:.3} invested");
     }
 
     #[test]
