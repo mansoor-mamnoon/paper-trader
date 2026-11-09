@@ -32,16 +32,14 @@ pub fn equity(state: &State) -> f64 {
             .sum::<f64>()
 }
 
-/// Update drawdown using only marks available at the execution or observation time.
+/// Track the peak and the drawdown from it using only marks available at the execution or
+/// observation time. The drawdown is reported, never used to stop trading: the account keeps
+/// trading until the experiment ends.
 pub fn update_risk(state: &mut State) -> (f64, f64) {
     let total = equity(state);
     state.peak = state.peak.max(total);
     let drawdown = 1.0 - total / state.peak;
     state.max_drawdown = state.max_drawdown.max(drawdown);
-    if drawdown >= 0.10 {
-        state.halted = true;
-        state.halt_reason = "10% drawdown halt (gaps can exceed limits)".into();
-    }
     (total, drawdown)
 }
 
@@ -347,7 +345,8 @@ pub fn cycle_with(
         }
         let close = quote.bars.last().unwrap().close;
         if state.halted || close <= position.stop || close >= position.target {
-            let reason = "Close crossed stop/target or account halted; later observed session open";
+            let reason =
+                "Close crossed stop/target or the experiment ended; later observed session open";
             state.pending.insert(
                 symbol.clone(),
                 Order {
@@ -974,13 +973,17 @@ mod tests {
     }
 
     #[test]
-    fn drawdown_halt_triggers_at_ten_percent() {
+    fn drawdown_is_reported_but_never_halts_trading() {
         let mut state = State {
-            cash: 890.0,
+            cash: 1000.0,
             ..State::default()
         };
+        update_risk(&mut state);
+        state.cash = 700.0;
         let (_, drawdown) = update_risk(&mut state);
-        assert!(drawdown >= 0.10 && state.halted);
+        assert!((drawdown - 0.30).abs() < 1e-9);
+        assert!(!state.halted);
+        assert!((state.max_drawdown - 0.30).abs() < 1e-9);
     }
 
     fn held_position(path: &str) -> (Vec<Bar>, f64) {

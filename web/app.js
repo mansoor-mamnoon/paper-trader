@@ -58,7 +58,7 @@ function describe(d) {
     case "DOCTOR_TIGHTEN": return `${d.symbol}: stop moved up to protect the gain. ${d.reason}`;
     case "DOCTOR_HOLD": return `${d.symbol}: thesis still intact, holding. ${d.reason}`;
     case "AVOID": return `${d.symbol} passed the screen but the analyst passed on it: ${d.reason}`;
-    case "SELL_SIGNAL": return `${d.symbol} hit its stop, its target, or the account halted. A sell is queued.`;
+    case "SELL_SIGNAL": return `${d.symbol} hit its stop or its target, or the experiment ended. A sell is queued.`;
     case "BUY_FILLED": return `Bought ${d.symbol} at ${e.price ? money(e.price) : "the next open"}, after fees and slippage.`;
     case "SELL_FILLED": return `Sold ${d.symbol} at ${e.price ? money(e.price) : "the next open"}, after fees and slippage.`;
     case "CANDIDATE": return e.momentum20d === undefined ? d.reason
@@ -177,12 +177,12 @@ function renderOverview(s) {
   const replay = a.mode === "stocks-replay";
 
   let lead = "", marked = "";
-  if (a.halted) { lead = "Halted: "; marked = a.halt_reason; }
+  if (a.halted) { lead = "Finished: "; marked = a.halt_reason; }
   else if (!s.history.length) { marked = "Waiting for the first scan"; }
   else if (Math.abs(diff) < 0.5) { lead = "Level with "; marked = `SPY at ${money(a.equity)}`; }
   else { lead = diff > 0 ? "Ahead of " : "Behind "; marked = `SPY by ${money(Math.abs(diff))}`; }
   $("headline").replaceChildren(lead, h("span", {class: "mark"}, marked));
-  text("script-note", a.halted ? "stopped to protect the account" : !s.history.length ? "no trades yet, just watching" :
+  text("script-note", a.halted ? "the 60 days are over" : !s.history.length ? "no trades yet, just watching" :
     Math.abs(diff) < 0.5 ? "dead even with the market" : diff > 0 ? "beating the market, so far" : "not winning yet");
   text("subline", held
     ? `Holding ${held} stock${held > 1 ? "s" : ""}${queued ? ` with ${queued} order${queued > 1 ? "s" : ""} waiting for the next session.` : "."}`
@@ -258,7 +258,7 @@ function renderStatus(s) {
   const stale = a.mode !== "stocks-replay" && a.last_at && age > 4 * 86400;
   let kind = "ok", words = "Live daily account";
   if (a.mode === "stocks-replay") { kind = "warn"; words = "Replay scenario, not live results"; }
-  else if (a.halted) { kind = "bad"; words = "Halted, no new buys"; }
+  else if (a.halted) { kind = "bad"; words = "Experiment ended, no new buys"; }
   else if (stale) { kind = "bad"; words = "Snapshot is out of date"; }
   else if (s.health.status === "error") { kind = "bad"; words = "Last scan failed"; }
   else if (s.health.status === "degraded") { kind = "warn"; words = "Live, some prices missing"; }

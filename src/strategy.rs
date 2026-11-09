@@ -1,6 +1,6 @@
 //! The editable part of the system: a bounded, versioned strategy.
 //!
-//! Hard limits (position count, position size, drawdown halt, costs) live in code and
+//! Hard limits (position count, position size, costs, the 60-day end) live in code and
 //! are not part of a strategy. A strategy only moves values inside the bounds below,
 //! and any proposal outside them is rejected by [`Strategy::validate`].
 
