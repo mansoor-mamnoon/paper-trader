@@ -35,7 +35,7 @@ The question is whether this beats buying SPY after fees and slippage over 60 da
 
 | Setting | Value |
 |---|---|
-| Starting capital | $1,000, long only, whole shares |
+| Starting capital | $1,000, long only, fractional shares, fully invested across five slots |
 | Universe | US exchange-listed symbols from the Nasdaq directory, ETFs included |
 | Schedule | Weekdays at 22:37 UTC, after the US close, with two backups and a watchdog |
 | Costs | 0.10% fee per side and 0.20% slippage against each fill |
@@ -55,12 +55,12 @@ One prompt that asks a small model to rank a dozen headlines wastes most of what
 2. **Triage.** A model scores the survivors from 0 to 10 for catalyst quality, eight at a time, and the best few become finalists.
 3. **Research agents.** Each finalist gets its own research loop. The agent picks its next tool: read the start of an SEC filing, pull older headlines, or inspect the last 15 sessions. It stops when it knows enough or after four steps, and it cannot repeat a call.
 4. **Bull and bear.** Two arguments per finalist, one told to make the case for buying and one told to find the flaw.
-5. **The judge.** The portfolio manager writes its reasoning first, then picks, sizes each position from 25% to 100% of the cap, and calls the market regime from breadth and trend. A risk-off call allows one new position. Choosing nothing is a valid answer.
+5. **The judge.** The portfolio manager writes its reasoning first, then picks stocks for the open slots (every slot is the same size) and calls the market regime from breadth and trend. A risk-off call allows one new position at half size. Choosing nothing is a valid answer.
 6. **Position doctor.** Every day it re-reads each holding against the news since entry and answers hold, exit, or tighten the stop. It can raise a stop and never lower one.
 7. **Memory.** When a trade closes, a post-mortem writes a one-sentence lesson. The latest lessons go into the judge's prompt.
 8. **Scorecard.** Every pick, veto and near-miss is scored against SPY after 1, 3, 5 and 10 trading days. That gives hundreds of samples where three trades give none, plus a calibration curve of conviction against outcome. The judge reads its own track record.
 
-Replies are constrained to JSON schemas with length limits, so a small model cannot return malformed or runaway answers. Text from news and filings is treated as untrusted data. Position size, the three-position cap, costs, the 10% loss halt and the direction of stop changes are written in code, and nothing a model says can change them. Every stage has a wall-clock budget and falls back to the stage before it when it fails or runs out of time.
+Replies are constrained to JSON schemas with length limits, so a small model cannot return malformed or runaway answers. Text from news and filings is treated as untrusted data. Position size, the five-slot cap, costs, the 60-day end and the direction of stop changes are written in code, and nothing a model says can change them. Every stage has a wall-clock budget and falls back to the stage before it when it fails or runs out of time.
 
 <div align="center">
 <img src="docs/desk.png" alt="The Desk tab: market regime, the funnel from 219 scanned stocks to the picks, and a research trace with a bull and bear case" width="760">
@@ -120,7 +120,7 @@ The screen is the starting point and the strategy lab can change its values with
 - 20-day return above 2%
 - no earnings report inside the blackout window (off by default)
 
-Up to 25 survivors reach triage. Three positions at most, each capped at 20% of equity. A close at or below the stop (-4% by default) or at or above the target (+8%) queues a sell for the next session. A buy never fills at the price that triggered it: it queues and fills at a later open with fees and slippage. A 10% drawdown permanently stops new entries, and the experiment ends after 60 days.
+Up to 25 survivors reach triage. Five positions at most, each capped at 20% of equity, so a full book is 100% invested and shares are fractional. The judge picks which stocks; it does not size them (a risk-off call halves a position and allows one new entry). A close at or below the stop (-4% by default) or at or above the target (+8%) queues a sell for the next session. A buy never fills at the price that triggered it: it queues and fills at a later open with fees and slippage. There is no loss halt: the drawdown is reported on the dashboard but the account keeps trading, and the experiment ends after 60 days.
 
 ### Strategy lab
 

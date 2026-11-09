@@ -461,7 +461,7 @@ function finalistCard(f, d, s) {
   const picked = (judge.picks ?? []).find((p) => p.symbol === f.symbol);
   const vetoed = (judge.avoid ?? []).find((p) => p.symbol === f.symbol);
   const verdict = picked
-    ? h("span", {class: "badge buy"}, `PICKED · conviction ${Number(picked.conviction).toFixed(2)} · size ${Math.round((picked.size_fraction ?? 1) * 100)}%`)
+    ? h("span", {class: "badge buy"}, `PICKED · conviction ${Number(picked.conviction).toFixed(2)}`)
     : vetoed ? h("span", {class: "badge sell"}, "VETOED")
       : h("span", {class: "badge"}, judge.reasoning ? "PASSED OVER" : "NOT DECIDED");
   const steps = (f.research?.steps ?? []);
@@ -533,7 +533,7 @@ function renderDesk(s) {
   if (judge.reasoning) {
     jb.append(h("blockquote", {class: "quote"}, judge.reasoning));
     for (const p of judge.picks ?? []) {
-      jb.append(h("div", {class: "pick-row"}, h("strong", {}, p.symbol), h("span", {class: "badge buy"}, `conviction ${Number(p.conviction).toFixed(2)} · size ${Math.round((p.size_fraction ?? 1) * 100)}%`),
+      jb.append(h("div", {class: "pick-row"}, h("strong", {}, p.symbol), h("span", {class: "badge buy"}, `conviction ${Number(p.conviction).toFixed(2)}`),
         h("p", {}, p.thesis), h("p", {class: "small muted"}, `Key risk: ${p.key_risk || "none given"}. Wrong if: ${p.invalidation || "none given"}.`)));
     }
     if (!(judge.picks ?? []).length) jb.append(h("p", {class: "muted"}, "The judge chose no stock today. Choosing nothing is allowed."));

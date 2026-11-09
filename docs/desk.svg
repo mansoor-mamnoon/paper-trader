@@ -34,7 +34,7 @@ text{font-family:'Helvetica Neue',Arial,sans-serif;fill:#0f1115}
 
 <rect class="sh" x="910" y="76" width="254" height="172" rx="10"/><rect class="y" x="904" y="70" width="254" height="172" rx="10"/>
 <text class="n" x="916" y="92">05</text><text class="t" x="916" y="116">The judge</text>
-<text class="s" x="916" y="140">reasons in writing first,</text><text class="s" x="916" y="158">then picks, sizes (25-100%),</text><text class="s" x="916" y="176">calls the regime. risk_off</text><text class="s" x="916" y="194">allows one position.</text><text class="s" x="916" y="212">Hard limits stay in code.</text>
+<text class="s" x="916" y="140">reasons in writing first,</text><text class="s" x="916" y="158">then picks for open slots,</text><text class="s" x="916" y="176">calls the regime. risk_off</text><text class="s" x="916" y="194">allows one position.</text><text class="s" x="916" y="212">Hard limits stay in code.</text>
 
 <g class="a"><path d="M204 145h26M404 145h26M672 145h26M872 145h26"/><path d="M222 138l8 7-8 7M422 138l8 7-8 7M690 138l8 7-8 7M890 138l8 7-8 7"/></g>
 
