@@ -36,4 +36,5 @@ jobs:
           jq -c '.strategy.desk | {depth, minutes_left, degraded, finalists: [.finalists[].symbol], judge_regime: .judge.regime}' "$state"
           jq -c '.strategy.telemetry.stages' "$state"
           jq -c '.strategy.telemetry.determinism' "$state"
+          jq -c '{queued: (.pending | keys), positions: (.positions | length)}' "$state"
           jq -e '.strategy.analyst.source == "llm"' "$state" > /dev/null

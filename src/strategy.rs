@@ -60,8 +60,10 @@ pub struct Strategy {
 fn default_depth() -> u8 {
     3
 }
+/// Every shortlisted stock the desk may research is a finalist: the upper bound.
+pub const DEFAULT_FINALISTS: usize = 8;
 fn default_finalists() -> usize {
-    4
+    DEFAULT_FINALISTS
 }
 fn yes() -> bool {
     true

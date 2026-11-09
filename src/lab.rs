@@ -80,9 +80,26 @@ pub struct Registry {
     pub lessons_cursor: i64,
     #[serde(default)]
     pub analyst: AnalystStatus,
+    /// Bumped when a stored registry needs a one-time migration.
+    #[serde(default)]
+    pub schema: u32,
 }
 
+/// Current registry schema. 1: every strategy researches up to `DEFAULT_FINALISTS` finalists.
+const SCHEMA: u32 = 1;
+
 impl Registry {
+    /// One-time upgrades of a registry written by an older version.
+    fn migrate(&mut self) {
+        if self.schema < 1 {
+            self.champion.finalists = crate::strategy::DEFAULT_FINALISTS;
+            for shadow in &mut self.shadows {
+                shadow.strategy.finalists = crate::strategy::DEFAULT_FINALISTS;
+            }
+        }
+        self.schema = SCHEMA;
+    }
+
     fn path(dir: &Path) -> PathBuf {
         dir.join("registry.json")
     }
@@ -91,9 +108,10 @@ impl Registry {
     pub fn load(dir: &Path) -> Result<Self> {
         match std::fs::read_to_string(Self::path(dir)) {
             Ok(text) => {
-                let registry: Registry = serde_json::from_str(&text)
+                let mut registry: Registry = serde_json::from_str(&text)
                     .map_err(|e| anyhow::anyhow!("registry.json is corrupt: {e}"))?;
                 registry.champion.validate()?;
+                registry.migrate();
                 Ok(registry)
             }
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(Registry {
@@ -107,6 +125,7 @@ impl Registry {
                 lessons: Vec::new(),
                 lessons_cursor: 0,
                 analyst: AnalystStatus::default(),
+                schema: SCHEMA,
             }),
             Err(error) => Err(error.into()),
         }
@@ -557,6 +576,22 @@ pub fn summary(dir: &Path, registry: &Registry, champion_db: &str, now: f64) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn an_old_registry_is_widened_to_the_new_finalist_count() {
+        let dir = std::env::temp_dir().join(format!("pt-reg-{}", std::process::id()));
+        let mut old = Registry::load(&dir).unwrap();
+        old.champion.finalists = 4;
+        old.schema = 0;
+        old.save(&dir).unwrap();
+        let loaded = Registry::load(&dir).unwrap();
+        assert_eq!(
+            loaded.champion.finalists,
+            crate::strategy::DEFAULT_FINALISTS
+        );
+        assert_eq!(loaded.schema, SCHEMA);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     fn stats(r: f64, dd: f64, fills: i64) -> Stats {
         Stats {
