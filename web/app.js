@@ -2,6 +2,7 @@
 
 const USD = new Intl.NumberFormat("en-US", {style: "currency", currency: "USD"});
 const money = (v) => USD.format(v);
+const qty = (v) => new Intl.NumberFormat("en-US", {maximumFractionDigits: 4}).format(v);
 const signedMoney = (v) => (v > 0 ? "+" : v < 0 ? "−" : "") + USD.format(Math.abs(v));
 const pct = (v) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(2) + "%";
 const $ = (id) => document.getElementById(id);
@@ -288,7 +289,7 @@ function renderHoldings(s) {
       h("div", {class: "range", role: "img", "aria-label": `Entry sits ${at.toFixed(0)}% of the way from stop to target`}, h("i", {style: `left:${at}%`})),
       h("div", {class: "range-labels"}, h("span", {}, `Stop ${money(p.stop)}`), h("span", {}, `Target ${money(p.target)}`)),
       h("dl", {},
-        h("dt", {}, "Shares"), h("dd", {}, String(p.quantity)),
+        h("dt", {}, "Shares"), h("dd", {}, qty(p.quantity)),
         h("dt", {}, "Entry price"), h("dd", {}, money(p.entry)),
         h("dt", {}, "Value now"), h("dd", {}, money(p.market_value)),
         h("dt", {}, "Bought"), h("dd", {}, when(p.opened_at)))));
@@ -305,7 +306,7 @@ function renderTrades(s) {
       h("td", {}, when(f.at)),
       h("td", {}, h("span", {class: `badge ${f.side === "BUY" ? "buy" : "sell"}`}, f.side === "BUY" ? "Bought" : "Sold")),
       h("td", {}, h("strong", {}, f.symbol)),
-      h("td", {class: "num"}, String(f.quantity)),
+      h("td", {class: "num"}, qty(f.quantity)),
       h("td", {class: "num"}, money(f.price)),
       h("td", {class: "num"}, money(f.fee)),
       h("td", {class: `num ${f.side === "SELL" ? sign(f.realized_pnl) : ""}`}, result)));

@@ -1,4 +1,4 @@
-//! Isolated stock paper ledger: whole shares, delayed daily fills and explicit evidence.
+//! Isolated stock paper ledger: fractional shares, delayed daily fills and explicit evidence.
 
 use crate::analyst::{Brief, Candidate, Review};
 use crate::ledger::{self, decision, insert_fill};
@@ -13,6 +13,8 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const FEE: f64 = 0.001;
 pub const SLIP: f64 = 0.002;
 pub const DAY: f64 = 86400.0;
+/// Smallest order, in dollars. Shares are fractional, so this only stops dust trades.
+pub const MIN_ORDER: f64 = 1.0;
 
 pub fn reserve(path: &str, mode: &str) -> Result<()> {
     ledger::reserve(
@@ -124,18 +126,17 @@ fn fill(
     let pnl;
     if side == "BUY" {
         let capital = equity(state);
-        let shares = (state
+        let budget = state
             .cash
-            .min(capital * POSITION_CAP * order.size_fraction.clamp(0.25, 1.0))
-            / (price * (1.0 + FEE)))
-            .floor();
-        if state.halted || state.positions.len() >= MAX_POSITIONS || shares < 1.0 {
+            .min(capital * POSITION_CAP * order.size_fraction.clamp(0.25, 1.0));
+        let shares = budget / (price * (1.0 + FEE));
+        if state.halted || state.positions.len() >= MAX_POSITIONS || budget < MIN_ORDER {
             decision(
                 db,
                 at,
                 symbol,
                 "REJECT",
-                "Halted, three-position limit, or whole share unaffordable",
+                "Experiment ended, position limit reached, or less than $1 of cash available",
                 json!({}),
             )?;
             return Ok(());
@@ -496,7 +497,7 @@ pub fn cycle_with(
             let risk_off = review.and_then(|r| r.regime.as_deref()) == Some("risk_off");
             let size_fraction = if risk_off { size.min(0.5) } else { size };
             let reason = if thesis.is_empty() {
-                "Positive liquid daily trend; whole shares capped at 20% of equity".to_string()
+                "Positive liquid daily trend; position capped at 20% of equity".to_string()
             } else {
                 format!("Analyst conviction {conviction:.2}: {thesis}")
             };
@@ -871,7 +872,13 @@ mod tests {
         let state = snapshot(&path);
         let position = &state.positions["UP"];
         let price = 120.0 * (1.0 + SLIP);
-        assert_eq!(position.quantity, 1.0);
+        // Fractional shares: the whole 20% budget is invested, not a rounded-down share count.
+        assert!(
+            (position.cost - 200.0).abs() < 1e-6,
+            "cost {}",
+            position.cost
+        );
+        assert!(position.quantity.fract() > 0.0);
         assert!((position.entry - price).abs() < 1e-9);
         assert!((position.stop - price * 0.96).abs() < 1e-9);
         assert!(state.cash < 1000.0 - price);
