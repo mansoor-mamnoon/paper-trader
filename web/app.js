@@ -60,6 +60,9 @@ function describe(d) {
     case "DOCTOR_HOLD": return `${d.symbol}: thesis still intact, holding. ${d.reason}`;
     case "AVOID": return `${d.symbol} passed the screen but the analyst passed on it: ${d.reason}`;
     case "SELL_SIGNAL": return `${d.symbol} hit its stop or its target, or the experiment ended. A sell is queued.`;
+    case "CANCELLED": return `${d.symbol}: queued buy cancelled before it filled. ${(d.reason || "").replace(/^Hard gate before the fill: /, "")}`;
+    case "CASH_LOCK": return `Circuit breaker: ${d.reason}`;
+    case "INDUSTRY_CAP": return `${d.symbol} was picked but not bought. ${(d.reason || "").replace(/^Hard gate: /, "")}`;
     case "BUY_FILLED": return `Bought ${d.symbol} at ${e.price ? money(e.price) : "the next open"}, after fees and slippage.`;
     case "SELL_FILLED": return `Sold ${d.symbol} at ${e.price ? money(e.price) : "the next open"}, after fees and slippage.`;
     case "CANDIDATE": return e.momentum20d === undefined ? d.reason
@@ -185,7 +188,11 @@ function renderOverview(s) {
   $("headline").replaceChildren(lead, h("span", {class: "mark"}, marked));
   text("script-note", a.halted ? "the 60 days are over" : !s.history.length ? "no trades yet, just watching" :
     Math.abs(diff) < 0.5 ? "dead even with the market" : diff > 0 ? "beating the market, so far" : "not winning yet");
-  text("subline", held
+  const lockUntil = s.rules?.hard_gates?.cash_lock_until ?? 0;
+  const locked = lockUntil * 1000 > Date.now();
+  text("subline", locked
+    ? `Cash lock: equity fell 10% from its five-session high, so nothing new opens until ${new Date(lockUntil * 1000).toLocaleString()}. Holdings keep their stops and targets.`
+    : held
     ? `Holding ${held} stock${held > 1 ? "s" : ""}${queued ? ` with ${queued} order${queued > 1 ? "s" : ""} waiting for the next session.` : "."}`
     : queued ? `Holding cash. ${queued} order${queued > 1 ? "s are" : " is"} queued and will fill at the next session's open.`
       : "Holding cash. No stock has qualified yet, so nothing is queued.");
@@ -341,8 +348,9 @@ function renderAbout(s) {
 }
 
 const PARAM_LABELS = {
-  min_price: ["Minimum price", (v) => money(v)],
-  min_dollar_volume: ["Minimum daily trading", (v) => `$${(v / 1e6).toFixed(1)}M`],
+  // The hard gates set a floor under these, so the page shows the value that applies.
+  min_price: ["Minimum price", (v) => money(Math.max(v, 5))],
+  min_dollar_volume: ["Minimum daily trading (30 sessions)", (v) => `$${(Math.max(v, 5e6) / 1e6).toFixed(1)}M`],
   min_momentum: ["Minimum 20-day gain", (v) => `${(v * 100).toFixed(1)}%`],
   require_trend: ["Requires 20/50-day uptrend", (v) => (v ? "Yes" : "No")],
   stop_pct: ["Stop", (v) => `−${(v * 100).toFixed(1)}%`],
