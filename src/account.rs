@@ -289,7 +289,9 @@ pub fn cycle_with(
         let Some(quote) = usable.get(symbol.as_str()) else {
             continue;
         };
-        if let Some(bar) = quote.bars.iter().rfind(|b| b.at > order.at) {
+        // The first session after the signal, so a missed run does not move the fill to a
+        // later open than the one the order was queued for.
+        if let Some(bar) = quote.bars.iter().find(|b| b.at > order.at) {
             executions.push((bar.at, symbol, order, bar.clone()));
         }
     }
@@ -876,6 +878,38 @@ mod tests {
         assert!((position.entry - price).abs() < 1e-9);
         assert!((position.stop - price * 0.96).abs() < 1e-9);
         assert!(state.cash < 1000.0 - price);
+    }
+
+    #[test]
+    fn missed_run_still_fills_at_the_first_open_after_the_signal() {
+        let path = temp_db("fill-late");
+        let series = bars(60, 50.0, 1.0, None);
+        let at = series.last().unwrap().at + DAY * 0.5;
+        cycle(
+            &path,
+            &observation(at, vec![("UP", series.clone())]),
+            "stocks-daily",
+        )
+        .unwrap();
+        // The next run arrives two sessions later: it must fill at 120, not at 125.
+        let mut longer = series;
+        for (i, open) in [(60.0, 120.0), (61.0, 125.0)] {
+            longer.push(Bar {
+                at: T0 + DAY * i,
+                open,
+                close: open + 1.0,
+                volume: 1_000_000.0,
+            });
+        }
+        cycle(
+            &path,
+            &observation(T0 + DAY * 62.5, vec![("UP", longer)]),
+            "stocks-daily",
+        )
+        .unwrap();
+        let state = snapshot(&path);
+        let entry = state.positions["UP"].entry;
+        assert!((entry - 120.0 * (1.0 + SLIP)).abs() < 1e-9, "entry {entry}");
     }
 
     #[test]
