@@ -36,7 +36,7 @@ The question is whether this beats buying SPY after fees and slippage over 60 da
 | Setting | Value |
 |---|---|
 | Starting capital | $1,000, long only, fractional shares, fully invested across five slots |
-| Universe | US exchange-listed symbols from the Nasdaq directory, ETFs included |
+| Universe | US exchange-listed symbols from the Nasdaq directory, ETFs included, that pass the hard gates ($5, $5M a day, no event within 7 days) |
 | Schedule | Each weekday session once it settles at 16:30 ET, started by an outside trigger every 30 minutes, with three GitHub cron backups and a watchdog |
 | Costs | 0.10% fee per side and 0.20% slippage against each fill |
 | Benchmark | SPY, price only |
@@ -51,16 +51,16 @@ One prompt that asks a small model to rank a dozen headlines wastes most of what
 <img src="docs/desk.svg" alt="The desk: screen, triage, research agents with tools, bull and bear debate, judge, then the position doctor, memory, scorecard and strategy lab feed back in" width="100%">
 </div>
 
-1. **Screen.** About 13,000 tickers go in, and the stocks in a liquid uptrend come out.
+1. **Screen.** About 13,000 tickers go in. The hard gates remove anything under $5, under $5M a day of trading, or within a week of earnings, an FDA decision or a restructuring, and the stocks left in an uptrend come out.
 2. **Triage.** A model scores the survivors from 0 to 10 for catalyst quality, eight at a time, and the best few become finalists.
 3. **Research agents.** Each finalist gets its own research loop. The agent picks its next tool: read the start of an SEC filing, pull older headlines, or inspect the last 15 sessions. It stops when it knows enough or after four steps, and it cannot repeat a call.
 4. **Bull and bear.** Two arguments per finalist, one told to make the case for buying and one told to find the flaw.
-5. **The judge.** The portfolio manager writes its reasoning first, then picks stocks for the open slots (every slot is the same size) and calls the market regime from breadth and trend. A risk-off call allows one new position at half size. Choosing nothing is a valid answer.
+5. **The judge.** The portfolio manager writes its reasoning first, then picks stocks for the open slots and calls the market regime from breadth and trend. A formula sizes each slot (volatility and the industry cap), not the judge. A risk-off call allows one new position at half size. Choosing nothing is a valid answer.
 6. **Position doctor.** Every day it re-reads each holding against the news since entry and answers hold, exit, or tighten the stop. It can raise a stop and never lower one.
 7. **Memory.** When a trade closes, a post-mortem writes a one-sentence lesson. The latest lessons go into the judge's prompt.
 8. **Scorecard.** Every pick, veto and near-miss is scored against SPY after 1, 3, 5 and 10 trading days. That gives hundreds of samples where three trades give none, plus a calibration curve of conviction against outcome. The judge reads its own track record.
 
-Replies are constrained to JSON schemas with length limits, so a small model cannot return malformed or runaway answers. Text from news and filings is treated as untrusted data. Position size, the five-slot cap, costs, the 60-day end and the direction of stop changes are written in code, and nothing a model says can change them. Every stage has a wall-clock budget and falls back to the stage before it when it fails or runs out of time.
+Replies are constrained to JSON schemas with length limits, so a small model cannot return malformed or runaway answers. Text from news and filings is treated as untrusted data. The hard gates, position size, the five-slot cap, the industry cap, the circuit breaker, costs, the 60-day end and the direction of stop changes are written in code, and nothing a model says can change them. Every stage has a wall-clock budget and falls back to the stage before it when it fails or runs out of time.
 
 <div align="center">
 <img src="docs/desk.png" alt="The Desk tab: market regime, the funnel from 219 scanned stocks to the picks, and a research trace with a bull and bear case" width="760">
@@ -112,15 +112,33 @@ The dashboard compares them by portfolio return and by scorecard. If a lower run
 
 ## Strategy
 
-The screen is the starting point and the strategy lab can change its values within fixed bounds. The defaults:
+Two layers decide what is bought. Hard gates come first and are fixed in code (`src/gates.rs`): no model can loosen them, and a strategy from the lab can only make them stricter. The strategy's own screen comes second and the lab may tune it within bounds.
 
-- price of at least $5
-- 20-day average dollar volume of at least $1M
+### Hard gates
+
+| # | Gate | Rule |
+|---|---|---|
+| 1 | Price | Last close of at least $5. |
+| | Liquidity | Average daily traded value (close × volume) of at least $5M over 30 sessions. |
+| | Events | No buy within 7 calendar days either side of an earnings report (the Nasdaq calendar, looking a week back and two weeks ahead), an FDA decision or a restructuring. FDA and restructuring events are read from SEC filings (8-K items 1.03 bankruptcy, 2.05 exit costs, 3.01 delisting, 3.03 and 5.03 the usual route of a reverse split; forms S-4, DEFM14A, PREM14A, 425, SC TO-T, SC 13E3, 15-12B, 15-12G, 25-NSE) and from headline phrases (FDA, PDUFA, advisory committee, complete response letter, reverse split, share consolidation, bankruptcy, chapter 11, restructuring, delisting, going private, merger, to be acquired). An undated headline counts, so the gate errs toward blocking. |
+| 2 | Volatility sizing | A slot is 20% of equity up to a 14-day daily volatility (σ of close-to-close returns) of 8%. Above that it shrinks to 20% × 8% / σ, so every volatile position carries the same daily dollar risk. The bars have no intraday high and low, so σ stands in for ATR. |
+| | Caps | 20% of equity per position, five positions, long only, no leverage, fractional shares. |
+| | Industry | At most 30% of equity in one SEC industry (the SIC code from EDGAR), counting held positions at their marks and queued buys at their size. A buy is trimmed to fit, or recorded as `INDUSTRY_CAP` when there is no room. A stock with no SIC code (funds, some foreign issuers) counts as its own industry. |
+| 3 | Fills | A buy signalled after a session settles (16:30 ET) fills at the next session's open, never at the signal's close. Effective price = open × (1 ± 0.20% slippage), plus a 0.10% fee per side. If a run is missed, the order still fills at the first open after its signal. |
+| | Re-check | A queued buy is checked against the price, liquidity and event gates again before it fills, on sessions before the fill's open, and is `CANCELLED` with the reason if it fails. |
+| 4 | Exits | A stop at −4% and a target at +8% from the entry fill, checked on daily closes; a crossing queues a sell for the next open, and a gap through the stop is taken at that open. The position doctor may raise a stop toward the price and never lower it. |
+| 5 | Circuit breaker | When equity is at least 10% below its high over the last five sessions, every queued buy is cancelled and nothing new opens for 48 hours (`CASH_LOCK`). Held positions keep following their stops and targets. |
+
+### The strategy's screen
+
+The defaults, which the lab may change within fixed bounds:
+
 - close above the 20-day average, with the 20-day average above the 50-day average
 - 20-day return above 2%
-- no earnings report inside the blackout window (off by default)
+- price and liquidity floors of its own, which only apply when they are stricter than the hard gates
+- no earnings report inside the strategy's own blackout window (off by default; the hard gate's 7 days always apply)
 
-Up to 25 survivors reach triage. Five positions at most, each capped at 20% of equity, so a full book is 100% invested and shares are fractional. The judge picks which stocks; it does not size them (a risk-off call halves a position and allows one new entry). A close at or below the stop (-4% by default) or at or above the target (+8%) queues a sell for the next session. A buy never fills at the price that triggered it: it queues and fills at the next session's open with fees and slippage, and the following evening's run records the fill. A session counts as completed from 16:30 New York time, so each evening run sees that day's bar; if a run is missed, the order still fills at the first open after its signal. There is no loss halt: the drawdown is reported on the dashboard but the account keeps trading, and the experiment ends after 60 days.
+Up to 25 survivors reach triage. The judge picks which stocks; it never sizes them, and a risk-off call halves a slot and allows one new entry. A session counts as completed from 16:30 New York time, so each evening run sees that day's bar and the following evening's run records the fill. Apart from the circuit breaker there is no loss halt: the drawdown is reported on the dashboard, and the experiment ends after 60 days.
 
 ### Strategy lab
 
@@ -254,6 +272,7 @@ src/
   telemetry.rs  runs, stages, model calls, data fetches and events
   progress.rs   live progress lines and the once-a-minute heartbeat
   scorecard.rs  forward returns of every pick, veto and near-miss
+  gates.rs      the hard gates: floors, events, volatility sizing, industry cap, circuit breaker
   account.rs    screen, queued orders, sizing, fills, risk limits
   analyst.rs    model clients and the single-shot analyst
   edgar.rs      SEC filings and filing text
@@ -272,16 +291,17 @@ docs/           README images
 .github/        scheduled run, watchdog, model smoke test and CI
 ```
 
-The crate is a library plus a thin binary on edition 2024 with 92 unit tests, and it passes `cargo clippy -- -D warnings` with the pedantic group enabled. Backend code is Rust only, apart from the small shell and Worker scripts that start runs.
+The crate is a library plus a thin binary on edition 2024 with 108 unit tests, and it passes `cargo clippy -- -D warnings` with the pedantic group enabled. Backend code is Rust only, apart from the small shell and Worker scripts that start runs.
 
 ## Limits
 
 - Sixty days is too short to separate skill from luck, so a good or bad result says little about the rules. The scorecard exists to get more samples, not to remove this limit.
 - Models of 2 to 5 billion parameters are weak readers of financial news. The depth ladder measures whether they add anything.
 - Determinism holds on one machine. Across runners with different CPUs, floating-point differences can change a token, which the CPU field and the canary hash are there to expose.
-- SEC filings are off until you set `PAPER_TRADER_SEC_CONTACT` (a repository variable named `SEC_CONTACT` in Actions) to a real email address. The SEC's servers refuse requests that do not identify their owner, and the project does not invent a contact for you. Without it the desk works from headlines and says so in the transcript.
+- SEC filings are off until you set `PAPER_TRADER_SEC_CONTACT` (a repository variable named `SEC_CONTACT` in Actions) to a real email address. The SEC's servers refuse requests that do not identify their owner, and the project does not invent a contact for you. Without it the desk works from headlines and says so in the transcript. Without it the event gate also loses its filing checks (it still reads earnings dates and headlines), and the industry cap cannot see industries, so every stock counts as its own.
 - Prices come from a free Yahoo endpoint with no guarantees. Missing quotes are logged and the symbol is skipped.
 - Stops and targets are checked on daily closes, so a gap can lose more than the stop level.
+- The event gate only knows what the earnings calendar, EDGAR and the headline feed report. An FDA date that appears in none of them, or a restructuring announced in words the phrase list does not contain, gets through.
 - Execution is simplified. Liquidity, queue priority, outages and market impact are not modeled.
 - GitHub schedules can run late or fail. The outside trigger, the backups and the watchdog make a missed day unlikely, and the last good snapshot stays online until the next run succeeds. The Mac trigger needs the Mac to wake at some point that evening; the Cloudflare one needs nothing.
 
