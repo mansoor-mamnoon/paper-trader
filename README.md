@@ -37,7 +37,7 @@ The question is whether this beats buying SPY after fees and slippage over 60 da
 |---|---|
 | Starting capital | $1,000, long only, fractional shares, fully invested across five slots |
 | Universe | US exchange-listed symbols from the Nasdaq directory, ETFs included |
-| Schedule | Weekdays at 22:37 UTC, after the US close, with two backups and a watchdog |
+| Schedule | Each weekday session once it settles at 16:30 ET, started by an outside trigger every 30 minutes, with three GitHub cron backups and a watchdog |
 | Costs | 0.10% fee per side and 0.20% slippage against each fill |
 | Benchmark | SPY, price only |
 | Models | Nine open-weights models, one per decision role, 4-bit, on llama.cpp |
@@ -141,8 +141,19 @@ Every run writes to one SQLite file, `telemetry.sqlite`, and the dashboard's **O
 | Level | What it shows |
 |---|---|
 | Run | Status (ok, degraded, failed), minutes used against the budget, trigger, CPU, cores and RAM, and a history of the last 30 runs. |
-| Stage | A waterfall of where the time went (scan, intel, filings, each desk block, each strategy's cycle, post-mortems, the lab), and a bottleneck table of mean, p95 and worst time per stage over 30 runs. |
+| Stage | A waterfall of where the time went (scan, intel, filings, each desk block with triage, research, bull and bear inside the prepare block, each strategy's cycle, post-mortems, the lab), and a bottleneck table of mean, p95 and worst time per stage over 30 runs. |
 | Call | Per model and per role: calls, success rate, latency, tokens per second for prompt and generation, errors, and the determinism check. Data sources get the same treatment: requests, failure rate and latency for Nasdaq, Yahoo, SEC EDGAR, the earnings calendar and Hugging Face. |
+
+While a run works, its Actions step log shows live progress: each stage, model download (in tenths), model load and model call as it happens, the finalists and each research step, the judge's picks, and a heartbeat every minute that names what is still open and for how long. Lines look like this:
+
+```
+[04:26:10Z +7m33s] start desk.research
+[04:27:14Z +8m37s] research call on gemma-4-e4b took 31.0 s, 214 tokens at 12.2/s
+[04:27:14Z +8m37s] research GIBO step 1: read_filing(0) - Strong momentum and AI news; check the latest 6-K
+[04:28:10Z +9m33s] still working: desk.prepare (9m32s) > desk.research (2m00s) > research call on gemma-4-e4b (25s)
+```
+
+A heartbeat that keeps counting on one model call means a slow model; a log with no heartbeat at all means the process stopped.
 
 Raw tables download as `runs.csv`, `stages.csv`, `llm_calls.csv`, `events.csv` and `fetches.csv`. Each Actions run also writes the same report to its job summary, so a run can be judged from the Actions page without opening the site. Prompts and outputs are stored as hashes plus the first 300 characters of any error, which keeps the file small enough to commit daily.
 
@@ -158,11 +169,22 @@ The question was whether a free GitHub account can run this every day. For a pub
 | Schedule precision | Cron runs can start late when GitHub is busy, and a run can be dropped without an error. |
 | Inactivity | GitHub disables scheduled workflows in a public repository after 60 days without activity. |
 
-The two weak points are the last two, so the repository handles both. The account job is scheduled three times a day, and it skips itself when the account already ran in the last 16 hours, so the backups cost nothing when the first run worked. A separate watchdog checks every weekday morning that a run happened after the previous US session and starts one if it did not. Every run and the watchdog re-enable the schedules, which resets the inactivity clock. A webhook (`repository_dispatch` with event type `run-account`) can also start a run from outside.
+The two weak points are the last two, so the repository handles both. On 9 November GitHub dropped both of the evening's scheduled runs without a trace and started the third 54 minutes late, so the schedule is now a backup and not the main trigger. Starting a run through GitHub's API (`workflow_dispatch`) is immediate, so an outside clock does that instead (next section). The account job is still scheduled three times a day, and it skips itself when the account already ran after the latest session settled at 16:30 ET, so every extra trigger costs nothing. Counting from the session and not from a fixed number of hours means a run that starts late one night cannot make the next evening's run skip. A separate watchdog checks every weekday morning that a run happened after the previous US session and starts one if it did not. Every run and the watchdog re-enable the schedules, which resets the inactivity clock. A webhook (`repository_dispatch` with event type `run-account`) can also start a run from outside.
+
+### Starting the run from outside GitHub
+
+Two free triggers apply the same rule every 30 minutes: if no run has started, or finished successfully, since the latest weekday session settled at 16:30 ET, start one. Each gives up after three failed runs for one session, so a broken day cannot loop all night. Use either or both; a duplicate only finds the account current and stops.
+
+| Trigger | Runs on | Setup |
+|---|---|---|
+| `scripts/trigger.sh` with launchd | Your Mac. launchd runs a missed interval when the Mac wakes, so a laptop asleep at the close still starts the run when it opens. | Log in with `gh auth login`, then `scripts/install-trigger.sh`. Log: `~/Library/Logs/paper-trader-trigger.log`. Remove with `scripts/install-trigger.sh uninstall`. |
+| `trigger/worker.js` on Cloudflare Workers | Cloudflare's cron, free plan. Does not depend on any computer being on. | Create a fine-grained GitHub token with *Actions: read and write* on this repository. In `trigger/`, run `npx wrangler deploy`, then `npx wrangler secret put GITHUB_TOKEN`. Logs: `npx wrangler tail`. |
+
+The rule is tested in `trigger/worker.test.mjs` (run it with `node`).
 
 I also looked at other free routes: an always-free cloud VM, free Hugging Face Spaces, Kaggle scheduled notebooks, and free hosted inference. Each needs an account, a card or a token set up by hand, sleeps when idle, or is hosted rather than local. None beats a runner that already sits next to the repository, so everything stays on Actions. Sources: GitHub's pages on [runner hardware](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) and on [disabling and enabling workflows](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/disable-and-enable-workflows).
 
-On a real runner the full desk, with all nine models, nine swaps and four strategies, took 28 minutes with nothing skipped, against 7 minutes on an Apple M2 Pro. The runner had 88 GB of disk free, so pruning each model file after use is a safety margin and not a need. If the model server fails to start, the account still trades by momentum ranking and the dashboard says so. The `Model smoke test` workflow runs the whole desk on a scratch account to check timing, disk and determinism on a real runner without touching the live ledger.
+On a real runner the full desk, with all nine models, nine swaps and four strategies, took 28 minutes with nothing skipped, against 7 minutes on an Apple M2 Pro. The 9 November run took 58 minutes, 49 of them preparing the finalists, and 40 of those were Gemma's research calls. Gemma 4 thinks before it answers, and the server strips that text, so it only costs time: about 80% of its research tokens were thinking nobody reads (0.78 visible characters per token, against about 4 for every other model). Its thinking is now capped at 128 tokens (`pool::reasoning_budget`). On test prompts that made the same research choices as unlimited thinking at about half the tokens, and the answers stayed deterministic. Turning thinking off was four times faster but repeated tools and ended research early, so it is not used. The Ops tab now times triage, research, bull and bear separately inside the prepare stage, so the next bottleneck shows by name. The runner had 88 GB of disk free, so pruning each model file after use is a safety margin and not a need. If the model server fails to start, the account still trades by momentum ranking and the dashboard says so. The `Model smoke test` workflow runs the whole desk on a scratch account to check timing, disk and determinism on a real runner without touching the live ledger.
 
 ## Dashboard
 
@@ -230,6 +252,7 @@ src/
   models.rs     the nine pinned models and which role each plays
   pool.rs       downloads, verifies, swaps and canary-checks model servers
   telemetry.rs  runs, stages, model calls, data fetches and events
+  progress.rs   live progress lines and the once-a-minute heartbeat
   scorecard.rs  forward returns of every pick, veto and near-miss
   account.rs    screen, queued orders, sizing, fills, risk limits
   analyst.rs    model clients and the single-shot analyst
@@ -242,13 +265,14 @@ src/
   ledger.rs     SQLite schema, state and reports
   export.rs     JSON and CSV snapshot
 web/            the dashboard (plain HTML, CSS and JavaScript)
-scripts/        llm.sh installs llama.cpp
+scripts/        llm.sh installs llama.cpp; trigger.sh and install-trigger.sh start runs from a Mac
+trigger/        a Cloudflare Worker cron that starts runs from the cloud
 examples/       pool_check and edgar_live diagnostics
 docs/           README images
 .github/        scheduled run, watchdog, model smoke test and CI
 ```
 
-The crate is a library plus a thin binary on edition 2024 with 80 unit tests, and it passes `cargo clippy -- -D warnings` with the pedantic group enabled. Backend code is Rust only.
+The crate is a library plus a thin binary on edition 2024 with 92 unit tests, and it passes `cargo clippy -- -D warnings` with the pedantic group enabled. Backend code is Rust only, apart from the small shell and Worker scripts that start runs.
 
 ## Limits
 
@@ -259,7 +283,7 @@ The crate is a library plus a thin binary on edition 2024 with 80 unit tests, an
 - Prices come from a free Yahoo endpoint with no guarantees. Missing quotes are logged and the symbol is skipped.
 - Stops and targets are checked on daily closes, so a gap can lose more than the stop level.
 - Execution is simplified. Liquidity, queue priority, outages and market impact are not modeled.
-- GitHub schedules can run late or fail. The backups and the watchdog make a missed day unlikely, and the last good snapshot stays online until the next run succeeds.
+- GitHub schedules can run late or fail. The outside trigger, the backups and the watchdog make a missed day unlikely, and the last good snapshot stays online until the next run succeeds. The Mac trigger needs the Mac to wake at some point that evening; the Cloudflare one needs nothing.
 
 This is a simulation and not financial advice.
 
