@@ -620,14 +620,19 @@ function renderOps(s) {
   // Where the time went: the current run's stages.
   const stages = t.stages ?? [];
   const peak = Math.max(1, ...stages.map((x) => x.ms ?? 0));
-  const topTotal = stages.filter((x) => !x.name.startsWith("cycle:") && x.name !== "cycles").reduce((a, x) => a + (x.ms ?? 0), 0) + (stages.find((x) => x.name === "cycles")?.ms ?? 0);
+  // Sub-stages run inside a parent (cycles, desk.prepare), so they are shown indented and
+  // left out of the total.
+  const PARENT_OF = {"desk.triage": "desk.prepare", "desk.research": "desk.prepare", "desk.bull": "desk.prepare", "desk.bear": "desk.prepare"};
+  const isSub = (name) => name.startsWith("cycle:") || name in PARENT_OF;
+  const subLabel = (name) => name.startsWith("cycle:") ? name.slice(6) : name.replace(/^desk\./, "");
+  const topTotal = stages.filter((x) => !isSub(x.name)).reduce((a, x) => a + (x.ms ?? 0), 0);
   text("ops-stage-total", stages.length ? `${dur(topTotal)} across ${stages.length} stages` : "");
   const wf = $("ops-waterfall"); wf.replaceChildren();
   if (!stages.length) wf.append(h("p", {class: "empty"}, "No stage timings were recorded for this run."));
   for (const x of stages) {
-    const nested = x.name.startsWith("cycle:");
+    const nested = isSub(x.name);
     wf.append(h("div", {class: `wf-row${nested ? " nested" : ""}`},
-      h("span", {class: "wf-name"}, nested ? x.name.slice(6) : x.name),
+      h("span", {class: "wf-name"}, nested ? subLabel(x.name) : x.name),
       h("span", {class: "wf-track"}, h("span", {class: `wf-bar${x.ok === false ? " hatch" : ""}`, style: `width:${Math.max(0.6, ((x.ms ?? 0) / peak) * 100)}%`, title: x.note || ""})),
       h("span", {class: "wf-ms"}, dur(x.ms)),
       x.ok === false ? h("span", {class: "badge sell"}, "failed") : null));
@@ -636,11 +641,13 @@ function renderOps(s) {
   // Bottlenecks over many runs.
   const hist = t.stage_history ?? [];
   const rows = $("ops-stage-rows"); rows.replaceChildren();
-  const real = hist.filter((x) => !x.name.startsWith("cycle:"));
+  const real = hist.filter((x) => !isSub(x.name));
   const top = real[0];
   const topSum = real.filter((x) => x.name !== "cycles").reduce((a, x) => a + (x.mean_ms ?? 0), 0) || 1;
+  const inside = top && hist.filter((x) => PARENT_OF[x.name] === top.name).sort((a, b) => (b.mean_ms ?? 0) - (a.mean_ms ?? 0))[0];
   text("ops-bottleneck", top
-    ? `${top.name} is the slowest stage: ${dur(top.mean_ms)} on average, about ${Math.round(((top.mean_ms ?? 0) / topSum) * 100)}% of a typical run, and ${dur(top.p95_ms)} on a bad day.`
+    ? `${top.name} is the slowest stage: ${dur(top.mean_ms)} on average, about ${Math.round(((top.mean_ms ?? 0) / topSum) * 100)}% of a typical run, and ${dur(top.p95_ms)} on a bad day.` +
+      (inside ? ` Inside it, ${subLabel(inside.name)} takes the most: ${dur(inside.mean_ms)} on average.` : "")
     : "Not enough runs yet to name a bottleneck.");
   const widest = Math.max(1, ...hist.map((x) => x.mean_ms ?? 0));
   for (const x of hist) {
