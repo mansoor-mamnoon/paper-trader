@@ -12,6 +12,7 @@ pub mod data;
 pub mod desk;
 pub mod edgar;
 pub mod export;
+pub mod gates;
 pub mod http;
 pub mod intel;
 pub mod lab;
