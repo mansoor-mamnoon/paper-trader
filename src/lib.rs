@@ -19,6 +19,7 @@ pub mod ledger;
 pub mod model;
 pub mod models;
 pub mod pool;
+pub mod progress;
 pub mod scorecard;
 pub mod strategy;
 pub mod telemetry;

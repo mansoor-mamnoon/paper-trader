@@ -6,7 +6,7 @@ use paper_trader::analyst::llm_from_env;
 use paper_trader::edgar::Edgar;
 use paper_trader::pool::{OneModel, Pool, Router};
 use paper_trader::telemetry::{RunMeta, RunOutcome, Telemetry};
-use paper_trader::{crypto, daily, export, ledger};
+use paper_trader::{crypto, daily, export, ledger, progress};
 use serde_json::json;
 use std::path::PathBuf;
 
@@ -144,6 +144,11 @@ fn main() -> Result<()> {
             return Ok(());
         }
     }
+    progress::enable(std::time::Duration::from_secs(60));
+    progress::log(&format!(
+        "stock run starting: desk budget {} min, batch {} tickers",
+        options.desk_minutes, options.batch_size
+    ));
     let single = llm_from_env();
     let one = single.as_deref().map(OneModel);
     let pool = std::env::var("PAPER_TRADER_LLAMA_SERVER")

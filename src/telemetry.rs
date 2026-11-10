@@ -82,6 +82,7 @@ pub struct SpanGuard<'a> {
     started_at: f64,
     clock: Instant,
     outcome: Option<(bool, String)>,
+    _live: crate::progress::Activity,
 }
 
 impl SpanGuard<'_> {
@@ -100,6 +101,12 @@ impl Drop for SpanGuard<'_> {
     fn drop(&mut self) {
         let (ok, note) = self.outcome.take().unwrap_or((true, String::new()));
         let ms = i64::try_from(self.clock.elapsed().as_millis()).unwrap_or(i64::MAX);
+        let took = crate::progress::human(self.clock.elapsed());
+        if ok {
+            crate::progress::log(&format!("done {} in {took}", self.name));
+        } else {
+            crate::progress::log(&format!("FAILED {} after {took}: {note}", self.name));
+        }
         let conn = self.telemetry.lock();
         let _ = conn.execute(
             "INSERT INTO stages(run_id,name,started_at,ms,ok,note) VALUES(?,?,?,?,?,?)",
@@ -177,6 +184,25 @@ fn human_ms(ms: f64) -> String {
     } else {
         format!("{ms:.0} ms")
     }
+}
+
+/// One progress line for a finished model call.
+fn call_line(c: &CallRecord) -> String {
+    let took = human_ms(c.latency_ms as f64);
+    if !c.ok {
+        return format!(
+            "{} call on {} FAILED after {took}: {}",
+            c.role,
+            c.model_id,
+            c.error.as_deref().unwrap_or("unknown error")
+        );
+    }
+    let tokens = match (c.completion_tokens, c.gen_tps) {
+        (Some(n), Some(tps)) => format!(", {n} tokens at {tps:.1}/s"),
+        (Some(n), None) => format!(", {n} tokens"),
+        _ => String::new(),
+    };
+    format!("{} call on {} took {took}{tokens}", c.role, c.model_id)
 }
 
 fn csv_cell(value: Value) -> String {
@@ -267,6 +293,9 @@ impl Telemetry {
 
     /// Record one model call. Never fails the caller.
     pub fn call(&self, c: &CallRecord) {
+        if c.stage != "canary" {
+            crate::progress::log(&call_line(c));
+        }
         self.insert_call(&self.run_id, ledger::now(), c);
     }
 
@@ -278,12 +307,17 @@ impl Telemetry {
             started_at: ledger::now(),
             clock: Instant::now(),
             outcome: None,
+            _live: crate::progress::begin(name),
         }
     }
 
     /// Record a notable event. `kind` is `error`, `degraded`, `determinism`, `model_load`,
     /// `http` or `info`.
     pub fn event(&self, kind: &str, subject: &str, detail: &str) {
+        // Model downloads, loads and canaries print live from the pool; only problems repeat.
+        if matches!(kind, "error" | "degraded") {
+            crate::progress::log(&format!("{kind} {subject}: {detail}"));
+        }
         let conn = self.lock();
         let _ = conn.execute(
             "INSERT INTO events(run_id,at,kind,subject,detail) VALUES(?,?,?,?,?)",
@@ -805,6 +839,17 @@ mod tests {
         assert_eq!(short_hash("hello"), short_hash("hello"));
         assert_ne!(short_hash("hello"), short_hash("hellp"));
         assert_eq!(short_hash("hello").len(), 16);
+    }
+
+    #[test]
+    fn call_lines_name_the_role_model_time_and_speed() {
+        let line = call_line(&call("research", "research", "gemma", 64_300, true));
+        assert_eq!(
+            line,
+            "research call on gemma took 64.3 s, 20 tokens at 8.0/s"
+        );
+        let line = call_line(&call("bull", "bull", "llama", 500, false));
+        assert_eq!(line, "bull call on llama FAILED after 500 ms: boom");
     }
 
     #[test]

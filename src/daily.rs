@@ -240,10 +240,13 @@ impl Router for Metered<'_> {
         user: &str,
         schema: Option<&Value>,
     ) -> Result<Completion> {
-        let started = Instant::now();
-        let result = self.inner.complete(role, system, user, schema);
-        self.flush();
         let (model_id, company) = self.inner.describe(role);
+        let started = Instant::now();
+        let result = {
+            let _live = crate::progress::track(&format!("{} call on {model_id}", role.name()));
+            self.inner.complete(role, system, user, schema)
+        };
+        self.flush();
         let latency_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
         let (output, ok, error) = match &result {
             Ok(c) => (c.text.as_str(), true, None),
