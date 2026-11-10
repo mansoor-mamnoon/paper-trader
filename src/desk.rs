@@ -1140,6 +1140,32 @@ mod tests {
     }
 
     #[test]
+    fn prepare_times_each_part_of_the_desk_as_its_own_stage() {
+        let llm = Scripted::default();
+        let obs = observation();
+        let budget = Budget::new(30.0);
+        let router = OneModel(&llm);
+        let meta = crate::telemetry::RunMeta::default();
+        let telemetry = crate::telemetry::Telemetry::open_memory("t", &meta, 0.0).unwrap();
+        let mut desk = Desk::new(&router, None, &obs, &budget).with_telemetry(&telemetry);
+        let strategy = Strategy {
+            finalists: 3,
+            ..Strategy::default()
+        };
+        desk.prepare(&strategy, &brief());
+        let names: Vec<String> = telemetry.summary_json()["stages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|s| s["name"].as_str().unwrap().to_string())
+            .collect();
+        assert_eq!(
+            names,
+            ["desk.triage", "desk.research", "desk.bull", "desk.bear"]
+        );
+    }
+
+    #[test]
     fn committee_depth_skips_research_tools() {
         let llm = Scripted::default();
         let obs = observation();
