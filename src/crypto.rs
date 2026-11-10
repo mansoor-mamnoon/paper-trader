@@ -342,6 +342,7 @@ fn queue(state: &mut State, symbol: &str, at: f64, side: &str) {
             at,
             reason: String::new(),
             size_fraction: 1.0,
+            industry: String::new(),
         },
     );
 }

@@ -121,6 +121,9 @@ pub struct Position {
     pub price_at: Option<f64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mark: Option<f64>,
+    /// SEC industry at entry, for the industry cap. Empty when unknown.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub industry: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -129,9 +132,13 @@ pub struct Order {
     pub at: f64,
     #[serde(default)]
     pub reason: String,
-    /// Share of the position cap this buy may use, 0.25 to 1.
+    /// Share of the position cap this buy may use, 0 to 1: the regime and the volatility
+    /// and industry gates set it, never a model.
     #[serde(default = "full_size")]
     pub size_fraction: f64,
+    /// SEC industry of a buy, for the industry cap. Empty when unknown.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub industry: String,
 }
 
 fn full_size() -> f64 {

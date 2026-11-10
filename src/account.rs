@@ -46,6 +46,27 @@ pub fn update_risk(state: &mut State) -> (f64, f64) {
     (total, drawdown)
 }
 
+/// Dollars held or queued in `industry`: held positions at their marks, queued buys at the
+/// size they were queued for. Unknown industries are never pooled together.
+fn industry_exposure(state: &State, industry: &str, capital: f64) -> f64 {
+    if industry.is_empty() {
+        return 0.0;
+    }
+    let held: f64 = state
+        .positions
+        .values()
+        .filter(|p| p.industry == industry)
+        .map(|p| p.market_value)
+        .sum();
+    let queued: f64 = state
+        .pending
+        .values()
+        .filter(|o| o.side == "BUY" && o.industry == industry)
+        .map(|o| capital * POSITION_CAP * o.size_fraction)
+        .sum();
+    held + queued
+}
+
 /// Adjust held quantities for splits and credit cash distributions once.
 fn corporate_actions(
     db: &Connection,
@@ -129,7 +150,7 @@ fn fill(
         let capital = equity(state);
         let budget = state
             .cash
-            .min(capital * POSITION_CAP * order.size_fraction.clamp(0.25, 1.0));
+            .min(capital * POSITION_CAP * order.size_fraction.clamp(0.0, 1.0));
         let shares = budget / (price * (1.0 + FEE));
         if state.halted || state.positions.len() >= MAX_POSITIONS || budget < MIN_ORDER {
             decision(
@@ -161,6 +182,7 @@ fn fill(
                 unrealized_pnl: 0.0,
                 price_at: None,
                 mark: None,
+                industry: order.industry.clone(),
             },
         );
         pnl = 0.0;
@@ -358,6 +380,7 @@ pub fn cycle_with(
                     at,
                     reason: reason.into(),
                     size_fraction: 1.0,
+                    industry: String::new(),
                 },
             );
             decision(&db, at, &symbol, "SELL_SIGNAL", reason, json!({}))?;
@@ -383,6 +406,7 @@ pub fn cycle_with(
                             at,
                             reason: reason.clone(),
                             size_fraction: 1.0,
+                            industry: String::new(),
                         },
                     );
                     decision(&db, at, &call.symbol, "DOCTOR_EXIT", &reason, evidence)?;
@@ -491,10 +515,53 @@ pub fn cycle_with(
                 continue;
             }
             let risk_off = review.and_then(|r| r.regime.as_deref()) == Some("risk_off");
-            // Slots are equal. A risk-off call is the only thing that shrinks a position.
-            let size_fraction = if risk_off { 0.5 } else { 1.0 };
+            // Sizing is formula only: a risk-off call halves the slot, high volatility
+            // shrinks it, and the industry cap trims it. No model sizes a position.
+            let regime = if risk_off { 0.5 } else { 1.0 };
+            let sigma = usable
+                .get(symbol.as_str())
+                .and_then(|q| gates::daily_volatility(&q.bars, gates::VOL_DAYS));
+            let vol_scale = gates::volatility_scale(sigma);
+            let industry = observation
+                .intel
+                .industries
+                .get(&symbol)
+                .cloned()
+                .unwrap_or_default();
+            let capital = equity(&state);
+            let slot = capital * POSITION_CAP;
+            let exposure = industry_exposure(&state, &industry, capital);
+            let room = if industry.is_empty() {
+                1.0
+            } else {
+                gates::industry_room(exposure, capital, slot)
+            };
+            let size_fraction = (regime * vol_scale).min(room);
+            let sizing = json!({
+                "regime": regime, "sigma_14d": sigma, "volatility_scale": vol_scale,
+                "industry": industry, "industry_exposure": exposure, "industry_room": room,
+                "size_fraction": size_fraction,
+            });
+            if size_fraction * slot < MIN_ORDER {
+                decision(
+                    &db,
+                    at,
+                    &symbol,
+                    "SKIP",
+                    &format!(
+                        "Hard gate: {industry} already holds {:.0}% of equity, the {:.0}% industry cap",
+                        exposure / capital.max(1.0) * 100.0,
+                        gates::INDUSTRY_CAP * 100.0
+                    ),
+                    sizing,
+                )?;
+                continue;
+            }
             let reason = if thesis.is_empty() {
-                "Positive liquid daily trend; position capped at 20% of equity".to_string()
+                format!(
+                    "Positive liquid daily trend; {:.0}% of a 20% slot",
+                    size_fraction * 100.0
+                )
             } else {
                 format!("Analyst conviction {conviction:.2}: {thesis}")
             };
@@ -505,6 +572,7 @@ pub fn cycle_with(
                 "thesis": thesis,
                 "earnings_date": candidate.earnings_date,
                 "headlines": candidate.headlines.iter().map(|h| h.title.clone()).collect::<Vec<_>>(),
+                "sizing": sizing,
             });
             state.pending.insert(
                 symbol.clone(),
@@ -513,6 +581,7 @@ pub fn cycle_with(
                     at,
                     reason: reason.clone(),
                     size_fraction,
+                    industry,
                 },
             );
             decision(&db, at, &symbol, "BUY_SIGNAL", &reason, evidence)?;
@@ -922,6 +991,65 @@ mod tests {
         );
         assert!(!row("SPLIT").eligible);
         assert!(row("SPLIT").reason.contains("reverse stock split"));
+    }
+
+    #[test]
+    fn volatile_stocks_get_a_smaller_slot() {
+        let path = temp_db("vol");
+        // A steady climb, then 15 sessions swinging +20% / -10%: sigma of 15%.
+        let mut series = bars(45, 50.0, 1.0, None);
+        for i in 0..15 {
+            let last = series.last().unwrap().close;
+            let close = if i % 2 == 0 { last * 1.2 } else { last * 0.9 };
+            series.push(Bar {
+                at: T0 + DAY * f64::from(45 + i),
+                open: close,
+                close,
+                volume: 1_000_000.0,
+            });
+        }
+        let at = series.last().unwrap().at + DAY * 0.5;
+        cycle(
+            &path,
+            &observation(at, vec![("WILD", series.clone())]),
+            "stocks-daily",
+        )
+        .unwrap();
+        let order = &snapshot(&path).pending["WILD"];
+        let sigma = gates::daily_volatility(&series, gates::VOL_DAYS).unwrap();
+        assert!(sigma > gates::VOL_REFERENCE);
+        assert!((order.size_fraction - gates::VOL_REFERENCE / sigma).abs() < 1e-9);
+    }
+
+    #[test]
+    fn one_industry_never_takes_more_than_thirty_percent() {
+        let path = temp_db("industry");
+        let at = bars(60, 50.0, 1.0, None).last().unwrap().at + DAY * 0.5;
+        // Momentum ranks A, then B, then C; all three are in one industry, D in another.
+        let mut obs = observation(
+            at,
+            vec![
+                ("A", bars(60, 50.0, 1.5, None)),
+                ("B", bars(60, 50.0, 1.2, None)),
+                ("C", bars(60, 50.0, 1.0, None)),
+                ("D", bars(60, 50.0, 0.8, None)),
+            ],
+        );
+        for s in ["A", "B", "C"] {
+            obs.intel
+                .industries
+                .insert(s.into(), "7372 Services-Prepackaged Software".into());
+        }
+        obs.intel
+            .industries
+            .insert("D".into(), "2834 Pharmaceutical Preparations".into());
+        cycle(&path, &obs, "stocks-daily").unwrap();
+        let state = snapshot(&path);
+        assert!((state.pending["A"].size_fraction - 1.0).abs() < 1e-9);
+        // $200 already queued in software: $100 of room left under the $300 cap.
+        assert!((state.pending["B"].size_fraction - 0.5).abs() < 1e-9);
+        assert!(!state.pending.contains_key("C"), "software is full");
+        assert!((state.pending["D"].size_fraction - 1.0).abs() < 1e-9);
     }
 
     #[test]
