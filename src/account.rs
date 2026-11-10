@@ -46,6 +46,33 @@ pub fn update_risk(state: &mut State) -> (f64, f64) {
     (total, drawdown)
 }
 
+/// Why a queued buy may no longer fill, if a hard gate now blocks it. Price and traded value
+/// use only sessions before the fill's open, so the check cannot see the fill bar; events use
+/// this run's news and filings.
+fn fill_gate(
+    symbol: &str,
+    quote: &Quote,
+    open_at: f64,
+    observation: &Observation,
+    strategy: &Strategy,
+    at: f64,
+) -> Option<String> {
+    let before: Vec<crate::model::Bar> = quote
+        .bars
+        .iter()
+        .filter(|b| b.at < open_at)
+        .cloned()
+        .collect();
+    let close = before.last().map_or(0.0, |b| b.close);
+    gates::liquidity(
+        close,
+        gates::adtv(&before, gates::ADTV_DAYS),
+        strategy.min_price,
+        strategy.min_dollar_volume,
+    )
+    .or_else(|| gates::event(symbol, &observation.intel, utc_date(at)))
+}
+
 /// Dollars held or queued in `industry`: held positions at their marks, queued buys at the
 /// size they were queued for. Unknown industries are never pooled together.
 fn industry_exposure(state: &State, industry: &str, capital: f64) -> f64 {
@@ -343,6 +370,26 @@ pub fn cycle_with(
                 "EXPIRED",
                 "Order stale or held prices unavailable",
                 json!({}),
+            )?;
+            continue;
+        }
+        if order.side == "BUY"
+            && let Some(gate) = fill_gate(
+                &symbol,
+                usable[symbol.as_str()],
+                bar.at,
+                observation,
+                strategy,
+                at,
+            )
+        {
+            decision(
+                &db,
+                at,
+                &symbol,
+                "CANCELLED",
+                &format!("Hard gate before the fill: {gate}"),
+                json!({"signal_at": order.at, "bar_at": bar.at}),
             )?;
             continue;
         }
@@ -991,6 +1038,47 @@ mod tests {
         );
         assert!(!row("SPLIT").eligible);
         assert!(row("SPLIT").reason.contains("reverse stock split"));
+    }
+
+    #[test]
+    fn a_queued_buy_that_now_fails_a_hard_gate_is_cancelled_not_filled() {
+        let path = temp_db("fill-gate");
+        let series = bars(60, 50.0, 1.0, None);
+        let at = series.last().unwrap().at + DAY * 0.5;
+        cycle(
+            &path,
+            &observation(at, vec![("UP", series.clone())]),
+            "stocks-daily",
+        )
+        .unwrap();
+        assert!(snapshot(&path).pending.contains_key("UP"));
+        let mut longer = series;
+        longer.push(Bar {
+            at: T0 + DAY * 60.0,
+            open: 120.0,
+            close: 121.0,
+            volume: 1_000_000.0,
+        });
+        let mut obs = observation(T0 + DAY * 61.5, vec![("UP", longer)]);
+        obs.intel.news.insert(
+            "UP".into(),
+            vec![crate::model::Headline {
+                title: "UpCo files for Chapter 11 protection".into(),
+                published: String::new(),
+            }],
+        );
+        cycle(&path, &obs, "stocks-daily").unwrap();
+        let state = snapshot(&path);
+        assert!(state.positions.is_empty() && state.pending.is_empty());
+        let db = ledger::connect(&path).unwrap();
+        let reason: String = db
+            .query_row(
+                "SELECT reason FROM decisions WHERE symbol='UP' AND action='CANCELLED'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert!(reason.contains("chapter 11"), "{reason}");
     }
 
     #[test]
