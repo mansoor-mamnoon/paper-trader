@@ -519,6 +519,12 @@ impl<'a> Desk<'a> {
                 steps.push(json!({"thought": thought, "action": "finish"}));
                 break;
             }
+            crate::progress::log(&format!(
+                "research {} step {}: {action}({arg}) - {}",
+                c.symbol,
+                step + 1,
+                clip(&thought, 120)
+            ));
             let observation = self.run_tool(&c.symbol, &action, arg, &mut seen_news);
             steps.push(json!({"thought": thought, "action": action, "arg": arg, "observation": clip(&observation, 600)}));
             log.push(format!("[{action} {arg}] {}", clip(&observation, 1800)));
@@ -530,6 +536,13 @@ impl<'a> Desk<'a> {
             self.ask(Role::Research, FINDINGS, &user, &schema_findings())
                 .unwrap_or_else(|_| json!({"summary": "", "key_facts": [], "red_flags": []}))
         };
+        crate::progress::log(&format!(
+            "research {} done after {} steps, {} red flags: {}",
+            c.symbol,
+            steps.len(),
+            findings["red_flags"].as_array().map_or(0, Vec::len),
+            clip(findings["summary"].as_str().unwrap_or(""), 160)
+        ));
         let result = json!({"steps": steps, "findings": findings});
         self.research.insert(c.symbol.clone(), result.clone());
         result
@@ -634,6 +647,19 @@ impl<'a> Desk<'a> {
             .take(strategy.finalists)
             .cloned()
             .collect();
+        crate::progress::log(&format!(
+            "{} candidates, {} open slots; finalists: {}",
+            brief.candidates.len(),
+            brief.open_slots,
+            finalists
+                .iter()
+                .map(|c| match self.triage.get(&c.symbol) {
+                    Some((score, _)) => format!("{} ({score:.0}/10)", c.symbol),
+                    None => c.symbol.clone(),
+                })
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
         let empty =
             json!({"steps": [], "findings": {"summary": "", "key_facts": [], "red_flags": []}});
         let research: Vec<Value> = finalists
@@ -742,6 +768,21 @@ impl<'a> Desk<'a> {
             }
             transcript.judge["capped_by_risk_off"] = json!(true);
         }
+        crate::progress::log(&format!(
+            "judge ({}, regime {}): {}",
+            review.source,
+            review.regime.as_deref().unwrap_or("none"),
+            if review.picks.is_empty() {
+                "no buys".to_string()
+            } else {
+                review
+                    .picks
+                    .iter()
+                    .map(|p| format!("{} conviction {:.2}", p.symbol, p.conviction))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            }
+        ));
         transcript.degraded = notes;
         transcript.minutes_left = self.budget.minutes_left();
         (review, transcript)
