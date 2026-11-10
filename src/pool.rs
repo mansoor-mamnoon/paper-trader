@@ -162,9 +162,19 @@ impl Pool {
         std::fs::create_dir_all(&self.dir)?;
         let started = Instant::now();
         let mut last_error = anyhow!("no attempt made");
+        let _live = crate::progress::begin(&format!(
+            "download {} ({} MB)",
+            spec.id,
+            spec.bytes / 1_000_000
+        ));
         for attempt in 1..=3 {
             match download(spec, &path) {
                 Ok(()) => {
+                    crate::progress::log(&format!(
+                        "downloaded {} in {}, sha256 verified",
+                        spec.id,
+                        crate::progress::human(started.elapsed())
+                    ));
                     self.note(
                         "download",
                         spec.id,
@@ -177,6 +187,10 @@ impl Pool {
                     return Ok(path);
                 }
                 Err(error) => {
+                    crate::progress::log(&format!(
+                        "download attempt {attempt} of {} failed: {error}",
+                        spec.id
+                    ));
                     self.note(
                         "error",
                         spec.id,
@@ -194,6 +208,7 @@ impl Pool {
     fn start(&self, spec: &'static ModelSpec) -> Result<()> {
         self.stop();
         let path = self.fetch_model(spec)?;
+        let _live = crate::progress::begin(&format!("load {} ({})", spec.id, spec.company));
         let started = Instant::now();
         let log = File::create(self.dir.join("server.log"))?;
         let threads = std::thread::available_parallelism().map_or(4, std::num::NonZero::get);
@@ -238,6 +253,11 @@ impl Pool {
             std::thread::sleep(Duration::from_millis(1500));
         }
         let llm = OpenAiLlm::local(&base, spec.id);
+        crate::progress::log(&format!(
+            "{} ready in {}",
+            spec.id,
+            crate::progress::human(started.elapsed())
+        ));
         self.note(
             "model_load",
             spec.id,
@@ -315,6 +335,7 @@ fn download(spec: &ModelSpec, dest: &Path) -> Result<()> {
     let mut hasher = Sha256::new();
     let mut buffer = vec![0_u8; 1 << 20];
     let mut total = 0_u64;
+    let mut reported = 0_u64;
     loop {
         let n = reader.read(&mut buffer)?;
         if n == 0 {
@@ -323,6 +344,11 @@ fn download(spec: &ModelSpec, dest: &Path) -> Result<()> {
         hasher.update(&buffer[..n]);
         file.write_all(&buffer[..n])?;
         total += n as u64;
+        let tenth = total * 10 / spec.bytes.max(1);
+        if tenth > reported && tenth < 10 {
+            reported = tenth;
+            crate::progress::log(&format!("download {} {}0%", spec.id, tenth));
+        }
     }
     file.flush()?;
     let got = hex(&hasher.finalize());
