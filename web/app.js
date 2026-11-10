@@ -299,7 +299,7 @@ function renderHoldings(s) {
 function renderTrades(s) {
   const body = $("fills"); body.replaceChildren();
   $("fills-empty").hidden = s.fills.length > 0;
-  text("fills-empty", "No trades yet. An order fills at a later session's open, so the first trade comes after the first signal.");
+  text("fills-empty", "No trades yet. An order fills at the next session's open, and that evening's run records it.");
   for (const f of s.fills) {
     const result = f.side === "SELL" ? signedMoney(f.realized_pnl) : "";
     body.append(h("tr", {},

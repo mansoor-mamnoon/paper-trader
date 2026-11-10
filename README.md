@@ -120,7 +120,7 @@ The screen is the starting point and the strategy lab can change its values with
 - 20-day return above 2%
 - no earnings report inside the blackout window (off by default)
 
-Up to 25 survivors reach triage. Five positions at most, each capped at 20% of equity, so a full book is 100% invested and shares are fractional. The judge picks which stocks; it does not size them (a risk-off call halves a position and allows one new entry). A close at or below the stop (-4% by default) or at or above the target (+8%) queues a sell for the next session. A buy never fills at the price that triggered it: it queues and fills at a later open with fees and slippage. There is no loss halt: the drawdown is reported on the dashboard but the account keeps trading, and the experiment ends after 60 days.
+Up to 25 survivors reach triage. Five positions at most, each capped at 20% of equity, so a full book is 100% invested and shares are fractional. The judge picks which stocks; it does not size them (a risk-off call halves a position and allows one new entry). A close at or below the stop (-4% by default) or at or above the target (+8%) queues a sell for the next session. A buy never fills at the price that triggered it: it queues and fills at the next session's open with fees and slippage, and the following evening's run records the fill. A session counts as completed from 16:30 New York time, so each evening run sees that day's bar; if a run is missed, the order still fills at the first open after its signal. There is no loss halt: the drawdown is reported on the dashboard but the account keeps trading, and the experiment ends after 60 days.
 
 ### Strategy lab
 
