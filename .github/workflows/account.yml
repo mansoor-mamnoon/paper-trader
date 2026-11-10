@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       force:
-        description: Run even if the account already ran in the last 16 hours
+        description: Run even if the account already processed the latest session
         type: boolean
         default: false
   # An external webhook can also start a run:
@@ -13,8 +13,9 @@ on:
     types: [run-account]
   schedule:
     # GitHub can delay or silently drop a scheduled run when it is busy, so the same job is
-    # scheduled three times a day. The run skips itself if the account already ran in the
-    # last 16 hours, so the extra triggers cost nothing when the first one worked.
+    # scheduled three times a day, and scripts/trigger.sh (launchd) or trigger/worker.js
+    # (Cloudflare cron) can start it from outside. The run skips itself when the account
+    # already processed the latest session (16:30 ET), so extra triggers cost nothing.
     # 22:37 UTC is 17:37 New York in winter and 18:37 in summer, after the US session.
     - cron: '37 22 * * 1-5'
     - cron: '47 0 * * 2-6'
@@ -64,7 +65,7 @@ jobs:
           # SEC EDGAR requires a real contact in the user agent. Set a repository variable
           # named SEC_CONTACT to an email address to turn SEC filings on.
           PAPER_TRADER_SEC_CONTACT: ${{ vars.SEC_CONTACT }}
-          PAPER_TRADER_SKIP_WITHIN_HOURS: ${{ inputs.force && '0' || '16' }}
+          PAPER_TRADER_SKIP_IF_CURRENT: ${{ inputs.force && '0' || '1' }}
         run: ./target/release/paper-trader stocks --db account/account.sqlite --output account/site
       - name: Apply static dashboard
         run: cp web/* account/site/

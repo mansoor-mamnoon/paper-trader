@@ -91,6 +91,25 @@ pub fn first_open_day(now: DateTime<Utc>) -> chrono::NaiveDate {
     }
 }
 
+/// When the most recent weekday session settled (16:30 ET) at or before `now`. A run that
+/// already happened after this instant has seen every completed session there is.
+/// Holidays count as sessions here; an extra run on one only finds no new bar.
+pub fn last_settled(now: DateTime<Utc>) -> DateTime<Utc> {
+    use chrono::{Datelike, TimeZone, Weekday};
+    let mut day = now.with_timezone(&New_York).date_naive();
+    loop {
+        let weekday = !matches!(day.weekday(), Weekday::Sat | Weekday::Sun);
+        let settled = day
+            .and_hms_opt(SESSION_SETTLED.0, SESSION_SETTLED.1, 0)
+            .and_then(|t| New_York.from_local_datetime(&t).earliest())
+            .map(|t| t.with_timezone(&Utc));
+        if let Some(settled) = settled.filter(|t| weekday && *t <= now) {
+            return settled;
+        }
+        day = day.pred_opt().unwrap_or(day);
+    }
+}
+
 /// Turn a Yahoo chart payload into completed daily bars and corporate actions. Bars dated
 /// on or after `open_day` (see [`first_open_day`]) are still trading and are dropped.
 pub fn parse_history(payload: &Value, open_day: chrono::NaiveDate) -> Result<Quote> {
@@ -311,6 +330,30 @@ mod tests {
         // Summer (EDT, UTC-4): 16:30 ET is 20:30 UTC.
         assert_eq!(first_open_day(utc("2026-07-01T20:29:00Z")), day(2026, 7, 1));
         assert_eq!(first_open_day(utc("2026-07-01T20:30:00Z")), day(2026, 7, 2));
+    }
+
+    #[test]
+    fn last_settled_is_the_latest_weekday_half_past_four() {
+        // Monday evening: Monday's session.
+        assert_eq!(
+            last_settled(utc("2026-11-09T22:37:00Z")),
+            utc("2026-11-09T21:30:00Z")
+        );
+        // Tuesday 03:00 ET, before Tuesday settles: still Monday's.
+        assert_eq!(
+            last_settled(utc("2026-11-10T08:00:00Z")),
+            utc("2026-11-09T21:30:00Z")
+        );
+        // Sunday: Friday's.
+        assert_eq!(
+            last_settled(utc("2026-11-08T18:00:00Z")),
+            utc("2026-11-06T21:30:00Z")
+        );
+        // Exactly at the cutoff counts; summer time is 20:30 UTC.
+        assert_eq!(
+            last_settled(utc("2026-07-01T20:30:00Z")),
+            utc("2026-07-01T20:30:00Z")
+        );
     }
 
     #[test]

@@ -127,19 +127,19 @@ fn main() -> Result<()> {
             .and_then(|v| v.parse().ok())
             .unwrap_or(120.0),
     };
-    // Skip quietly when a redundant trigger fires after the day has already been done.
-    if args.replay.is_none() {
-        let hours: f64 = std::env::var("PAPER_TRADER_SKIP_WITHIN_HOURS")
-            .ok()
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(0.0);
+    // Skip quietly when a redundant trigger fires after the latest session was already
+    // processed. Counting from the session and not from hours means a late run one day
+    // cannot make the next day's run skip.
+    if args.replay.is_none() && std::env::var("PAPER_TRADER_SKIP_IF_CURRENT").as_deref() == Ok("1")
+    {
         let last_at = ledger::connect(&args.db)
             .and_then(|db| ledger::load(&db))
             .map_or(0.0, |s| s.last_at);
-        if hours > 0.0 && ledger::now() - last_at < hours * 3600.0 {
+        let settled = paper_trader::data::last_settled(chrono::Utc::now());
+        if last_at >= settled.timestamp() as f64 {
             println!(
-                "The account already ran {:.1} hours ago, so this trigger does nothing.",
-                (ledger::now() - last_at) / 3600.0
+                "The account already ran after the session that settled at {}, so this trigger does nothing.",
+                settled.format("%Y-%m-%d %H:%M UTC")
             );
             return Ok(());
         }

@@ -217,7 +217,7 @@ Without `PAPER_TRADER_LLAMA_SERVER` the account trades by momentum ranking. A si
 | `--strategies DIR` | Where the registry, shadow ledgers and telemetry live. Defaults to next to `--db`. |
 | `PAPER_TRADER_DESK_MINUTES` | Wall-clock budget for all model calls in a run. Default 120. |
 | `PAPER_TRADER_PRUNE_MODELS` | Delete each model file after the pool moves on, to bound disk use. |
-| `PAPER_TRADER_SKIP_WITHIN_HOURS` | Do nothing if the account already ran this recently. |
+| `PAPER_TRADER_SKIP_IF_CURRENT` | `1`: do nothing if the account already ran after the latest session settled (16:30 ET on the last weekday). |
 | `PAPER_TRADER_SEC_CONTACT` | An email address for SEC requests. SEC filings stay off without one. |
 
 To host your own copy, fork the repo and create an `account` branch containing an initialised `account.sqlite` and an `INITIALIZED` file. Enable GitHub Pages with the Actions source and the workflows take over.
