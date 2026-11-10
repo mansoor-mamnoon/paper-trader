@@ -125,6 +125,7 @@ pub struct Desk<'a> {
     bull: Cached<String>,
     bear: Cached<String>,
     doctor: Cached<DoctorCall>,
+    telemetry: Option<&'a crate::telemetry::Telemetry>,
 }
 
 impl std::fmt::Debug for Desk<'_> {
@@ -320,7 +321,19 @@ impl<'a> Desk<'a> {
             bull: Cached::new(),
             bear: Cached::new(),
             doctor: Cached::new(),
+            telemetry: None,
         }
+    }
+
+    /// Time triage, research and each side of the debate as their own telemetry stages.
+    #[must_use]
+    pub fn with_telemetry(mut self, telemetry: &'a crate::telemetry::Telemetry) -> Self {
+        self.telemetry = Some(telemetry);
+        self
+    }
+
+    fn span(&self, name: &str) -> Option<crate::telemetry::SpanGuard<'a>> {
+        self.telemetry.map(|t| t.span(name))
     }
 
     fn ask(&self, role: Role, system: &str, user: &str, schema: &Value) -> Result<Value> {
@@ -620,6 +633,7 @@ impl<'a> Desk<'a> {
             };
         }
         if brief.candidates.len() > strategy.finalists {
+            let _span = self.span("desk.triage");
             self.triage(&brief.candidates, &mut notes);
         }
         let mut ranked: Vec<&Candidate> = brief.candidates.iter().collect();
@@ -662,6 +676,7 @@ impl<'a> Desk<'a> {
         ));
         let empty =
             json!({"steps": [], "findings": {"summary": "", "key_facts": [], "red_flags": []}});
+        let span = self.span("desk.research");
         let research: Vec<Value> = finalists
             .iter()
             .map(|c| {
@@ -672,16 +687,21 @@ impl<'a> Desk<'a> {
                 }
             })
             .collect();
+        drop(span);
+        let span = self.span("desk.bull");
         let bulls: Vec<Option<String>> = finalists
             .iter()
             .zip(&research)
             .map(|(c, r)| self.argue(true, c, r, &mut notes))
             .collect();
+        drop(span);
+        let span = self.span("desk.bear");
         let bears: Vec<Option<String>> = finalists
             .iter()
             .zip(&research)
             .map(|(c, r)| self.argue(false, c, r, &mut notes))
             .collect();
+        drop(span);
         let mut packets = Vec::new();
         for (i, c) in finalists.iter().enumerate() {
             let text = dossier(c, self.filings(&c.symbol), self.observation);

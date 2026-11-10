@@ -381,7 +381,8 @@ pub fn run(
     let budget = Budget::new(options.desk_minutes);
     let metered = llm.map(|inner| Metered { inner, telemetry });
     let router: Option<&dyn Router> = metered.as_ref().map(|m| m as &dyn Router);
-    let mut desk_state = router.map(|r| Desk::new(r, edgar, &observation, &budget));
+    let mut desk_state =
+        router.map(|r| Desk::new(r, edgar, &observation, &budget).with_telemetry(telemetry));
     let mut champion_transcript = Transcript::default();
     let mut notes: Vec<String> = Vec::new();
 
