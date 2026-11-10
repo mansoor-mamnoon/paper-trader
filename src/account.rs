@@ -125,6 +125,28 @@ fn fill_gate(
     .or_else(|| gates::event(symbol, &observation.intel, utc_date(at)))
 }
 
+/// The hard gate a queued buy fails, judged on the bars before the open it fills at, or on
+/// every bar when that open has not printed yet. A buy that fails it is cancelled rather
+/// than left holding a slot.
+fn queued_gate(
+    symbol: &str,
+    order: &Order,
+    observation: &Observation,
+    strategy: &Strategy,
+    at: f64,
+) -> Option<String> {
+    if order.side != "BUY" {
+        return None;
+    }
+    let quote = observation.quotes.get(symbol)?;
+    let open_at = quote
+        .bars
+        .iter()
+        .find(|b| b.at > order.at)
+        .map_or(f64::INFINITY, |b| b.at);
+    fill_gate(symbol, quote, open_at, observation, strategy, at)
+}
+
 /// Dollars held or queued in `industry`: held positions at their marks, queued buys at the
 /// size they were queued for. Unknown industries are never pooled together.
 fn industry_exposure(state: &State, industry: &str, capital: f64) -> f64 {
@@ -395,6 +417,16 @@ pub fn cycle_with(
         // later open than the one the order was queued for.
         if let Some(bar) = quote.bars.iter().find(|b| b.at > order.at) {
             executions.push((bar.at, symbol, order, bar.clone()));
+        } else if let Some(gate) = queued_gate(&symbol, &order, observation, strategy, at) {
+            state.pending.remove(&symbol);
+            decision(
+                &db,
+                at,
+                &symbol,
+                "CANCELLED",
+                &format!("Hard gate while queued: {gate}"),
+                json!({"signal_at": order.at}),
+            )?;
         }
     }
     executions.sort_by(|a, b| (a.0, &a.1).partial_cmp(&(b.0, &b.1)).unwrap());
@@ -934,7 +966,13 @@ pub fn brief(strategy: &Strategy, observation: &Observation, state: &State) -> B
         .collect();
     candidates.sort_by(|a, b| b.momentum_20d.partial_cmp(&a.momentum_20d).unwrap());
     candidates.truncate(strategy.shortlist_size);
-    let queued_buys = state.pending.values().filter(|o| o.side == "BUY").count();
+    // The desk is briefed before this cycle's fills, so a queued buy that the hard gates are
+    // about to cancel must not hold a slot.
+    let queued_buys = state
+        .pending
+        .iter()
+        .filter(|(s, o)| o.side == "BUY" && queued_gate(s, o, observation, strategy, at).is_none())
+        .count();
     Brief {
         date: utc_date(at).to_string(),
         equity: equity(state),
@@ -1133,6 +1171,44 @@ mod tests {
             )
             .unwrap();
         assert!(reason.contains("chapter 11"), "{reason}");
+    }
+
+    #[test]
+    fn a_queued_buy_failing_a_gate_frees_its_slot_before_its_open_prints() {
+        let path = temp_db("queued-gate");
+        let series = bars(60, 50.0, 1.0, None);
+        let at = series.last().unwrap().at + DAY * 0.5;
+        cycle(
+            &path,
+            &observation(at, vec![("UP", series.clone())]),
+            "stocks-daily",
+        )
+        .unwrap();
+        let state = snapshot(&path);
+        assert!(state.pending.contains_key("UP"));
+        // Same bars, no new open yet, but an event headline has appeared since the signal.
+        let mut obs = observation(at + 3600.0, vec![("UP", series)]);
+        obs.intel.news.insert(
+            "UP".into(),
+            vec![crate::model::Headline {
+                title: "UpCo announces 1-for-10 reverse stock split".into(),
+                published: String::new(),
+            }],
+        );
+        let strategy = Strategy::default();
+        assert_eq!(brief(&strategy, &obs, &state).open_slots, MAX_POSITIONS);
+        cycle(&path, &obs, "stocks-daily").unwrap();
+        let state = snapshot(&path);
+        assert!(state.pending.is_empty() && state.positions.is_empty());
+        let db = ledger::connect(&path).unwrap();
+        let reason: String = db
+            .query_row(
+                "SELECT reason FROM decisions WHERE symbol='UP' AND action='CANCELLED'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert!(reason.starts_with("Hard gate while queued"), "{reason}");
     }
 
     #[test]
