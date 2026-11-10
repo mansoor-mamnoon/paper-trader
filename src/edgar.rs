@@ -22,9 +22,10 @@ pub fn user_agent(contact: &str) -> String {
 }
 
 const TICKER_URL: &str = "https://www.sec.gov/files/company_tickers.json";
-const FORMS: [&str; 11] = [
+const FORMS: [&str; 20] = [
     "8-K", "10-Q", "10-K", "4", "SC 13D", "SC 13G", "SC 13D/A", "SC 13G/A", "S-3", "424B5",
-    "DEF 14A",
+    "DEF 14A", // Restructuring, merger and delisting forms, which the event gate reads:
+    "S-4", "DEFM14A", "PREM14A", "425", "SC TO-T", "SC 13E3", "15-12B", "15-12G", "25-NSE",
 ];
 
 /// Ticker to CIK lookup, loaded once per run.
@@ -48,6 +49,22 @@ pub fn parse_ticker_map(json: &str) -> BTreeMap<String, u64> {
             ))
         })
         .collect()
+}
+
+/// The company's SIC industry from a submissions feed, as `"7372 Services-Prepackaged
+/// Software"`. None when the feed has no SIC code (funds and some foreign issuers).
+pub fn parse_industry(json: &str) -> Option<String> {
+    let value = serde_json::from_str::<Value>(json).ok()?;
+    let code = value["sic"]
+        .as_str()
+        .map(str::trim)
+        .filter(|c| !c.is_empty())?;
+    let name = value["sicDescription"].as_str().unwrap_or("").trim();
+    Some(if name.is_empty() {
+        code.to_string()
+    } else {
+        format!("{code} {name}")
+    })
 }
 
 /// Parse a submissions feed into the filings worth reading, newest first.
@@ -113,18 +130,29 @@ impl Edgar {
 
     /// Filings dated on or after `since`, newest first. Empty on any error.
     pub fn recent_filings(&self, symbol: &str, since: NaiveDate, limit: usize) -> Vec<Filing> {
+        self.recent(symbol, since, limit).0
+    }
+
+    /// Recent filings and the company's SEC industry, from one submissions request.
+    pub fn recent(
+        &self,
+        symbol: &str,
+        since: NaiveDate,
+        limit: usize,
+    ) -> (Vec<Filing>, Option<String>) {
         let Some(cik) = self.cik(symbol) else {
-            return Vec::new();
+            return (Vec::new(), None);
         };
         let url = format!("https://data.sec.gov/submissions/CIK{cik:010}.json");
         let Ok(body) = http::get(&url, &self.agent, Duration::from_secs(20)) else {
-            return Vec::new();
+            return (Vec::new(), None);
         };
-        parse_submissions(&body, usize::MAX)
+        let filings = parse_submissions(&body, usize::MAX)
             .into_iter()
             .filter(|f| f.date.parse::<NaiveDate>().is_ok_and(|d| d >= since))
             .take(limit)
-            .collect()
+            .collect();
+        (filings, parse_industry(&body))
     }
 
     /// The readable text of one filing's primary document, cut to `max_chars`.
@@ -142,23 +170,28 @@ impl Edgar {
     }
 }
 
-/// Recent filings for many symbols, politely: four workers, a pause after each request.
+/// Recent filings and industries for many symbols, politely: four workers, a pause after
+/// each request.
 pub fn gather_filings(
     edgar: &Edgar,
     symbols: &[String],
     today: NaiveDate,
     days: i64,
     per_symbol: usize,
-) -> BTreeMap<String, Vec<Filing>> {
+) -> (BTreeMap<String, Vec<Filing>>, BTreeMap<String, String>) {
     let since = today - Days::days(days);
     let queue = Mutex::new(symbols.iter().cloned().collect::<VecDeque<_>>());
     let found = Mutex::new(BTreeMap::new());
+    let industries = Mutex::new(BTreeMap::new());
     std::thread::scope(|scope| {
         for _ in 0..4 {
             scope.spawn(|| {
                 while let Some(symbol) = queue.lock().unwrap().pop_front() {
-                    let filings = edgar.recent_filings(&symbol, since, per_symbol);
+                    let (filings, industry) = edgar.recent(&symbol, since, per_symbol);
                     std::thread::sleep(Duration::from_millis(120));
+                    if let Some(industry) = industry {
+                        industries.lock().unwrap().insert(symbol.clone(), industry);
+                    }
                     if !filings.is_empty() {
                         found.lock().unwrap().insert(symbol, filings);
                     }
@@ -166,7 +199,10 @@ pub fn gather_filings(
             });
         }
     });
-    found.into_inner().unwrap()
+    (
+        found.into_inner().unwrap(),
+        industries.into_inner().unwrap(),
+    )
 }
 
 fn truncate(text: &str, max_chars: usize) -> String {
@@ -278,6 +314,18 @@ mod tests {
         assert_eq!(map.get("MSFT"), Some(&789_019));
         assert_eq!(map.len(), 2);
         assert_eq!(parse_ticker_map("not json").len(), 0);
+    }
+
+    #[test]
+    fn industry_comes_from_the_sic_code_and_description() {
+        let json =
+            r#"{"sic":"7372","sicDescription":"Services-Prepackaged Software","filings":{}}"#;
+        assert_eq!(
+            parse_industry(json).as_deref(),
+            Some("7372 Services-Prepackaged Software")
+        );
+        assert_eq!(parse_industry(r#"{"sic":"","sicDescription":""}"#), None);
+        assert_eq!(parse_industry(SUBMISSIONS), None);
     }
 
     const SUBMISSIONS: &str = r#"{"filings":{"recent":{

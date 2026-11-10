@@ -85,9 +85,10 @@ pub fn fetch_news(symbol: &str) -> Vec<Headline> {
         .unwrap_or_default()
 }
 
-/// Collect earnings dates (next two weeks) and headlines for `symbols`.
+/// Collect earnings dates (the last week and the next two) and headlines for `symbols`.
 pub fn gather(symbols: &[String], today: NaiveDate) -> Result<Intel> {
     let earnings = fetch_earnings(today, 14);
+    let reported = fetch_earnings(today - Days::days(7), 6);
     let queue = Mutex::new(symbols.iter().cloned().collect::<VecDeque<_>>());
     let news = Mutex::new(BTreeMap::new());
     std::thread::scope(|scope| {
@@ -104,8 +105,9 @@ pub fn gather(symbols: &[String], today: NaiveDate) -> Result<Intel> {
     });
     Ok(Intel {
         earnings,
+        reported,
         news: news.into_inner().unwrap(),
-        filings: std::collections::BTreeMap::new(),
+        ..Intel::default()
     })
 }
 

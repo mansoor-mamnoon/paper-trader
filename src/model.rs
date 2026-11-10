@@ -70,6 +70,12 @@ pub struct Intel {
     /// Recent SEC filings per symbol, newest first.
     #[serde(default)]
     pub filings: BTreeMap<String, Vec<Filing>>,
+    /// Symbol to its most recent report date in the last seven days, `YYYY-MM-DD`.
+    #[serde(default)]
+    pub reported: BTreeMap<String, String>,
+    /// Symbol to its SEC industry, `"7372 Services-Prepackaged Software"`.
+    #[serde(default)]
+    pub industries: BTreeMap<String, String>,
 }
 
 /// One daily scan of the stock universe.

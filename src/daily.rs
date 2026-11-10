@@ -358,6 +358,8 @@ pub fn run(
                     .map(|c| c.symbol),
             );
             wanted.extend(state.positions.keys().cloned());
+            // Queued buys are re-checked against the event gate before they fill.
+            wanted.extend(state.pending.keys().cloned());
         }
         let today = chrono::DateTime::from_timestamp(observed.at as i64, 0)
             .unwrap_or_default()
@@ -370,7 +372,8 @@ pub fn run(
         record_fetches(telemetry);
         if let Some(edgar) = edgar {
             let _span = telemetry.span("edgar");
-            observed.intel.filings = edgar::gather_filings(edgar, &wanted, today, 45, 6);
+            (observed.intel.filings, observed.intel.industries) =
+                edgar::gather_filings(edgar, &wanted, today, 45, 6);
             record_fetches(telemetry);
         }
         observed
