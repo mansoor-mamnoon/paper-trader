@@ -208,7 +208,7 @@ impl Pool {
     fn start(&self, spec: &'static ModelSpec) -> Result<()> {
         self.stop();
         let path = self.fetch_model(spec)?;
-        let _live = crate::progress::begin(&format!("load {} ({})", spec.id, spec.company));
+        let live = crate::progress::begin(&format!("load {} ({})", spec.id, spec.company));
         let started = Instant::now();
         let log = File::create(self.dir.join("server.log"))?;
         let threads = std::thread::available_parallelism().map_or(4, std::num::NonZero::get);
@@ -272,6 +272,8 @@ impl Pool {
             llm,
             path,
         });
+        drop(live);
+        let _check = crate::progress::track(&format!("determinism check on {}", spec.id));
         self.canary(spec);
         Ok(())
     }
