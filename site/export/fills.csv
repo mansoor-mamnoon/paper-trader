@@ -1,1 +1,2 @@
 id,at,signal_at,symbol,side,quantity,price,notional,fee,realized_pnl,reason
+1,1794234600.0,1794077065.9352598,AAOZ,BUY,6.177243015699111,32.34455877685547,199.80019980019983,0.19980019980019983,0.0,Positive liquid daily trend; whole shares capped at 20% of equity

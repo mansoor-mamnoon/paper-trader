@@ -60,6 +60,9 @@ function describe(d) {
     case "DOCTOR_HOLD": return `${d.symbol}: thesis still intact, holding. ${d.reason}`;
     case "AVOID": return `${d.symbol} passed the screen but the analyst passed on it: ${d.reason}`;
     case "SELL_SIGNAL": return `${d.symbol} hit its stop or its target, or the experiment ended. A sell is queued.`;
+    case "CANCELLED": return `${d.symbol}: queued buy cancelled before it filled. ${(d.reason || "").replace(/^Hard gate before the fill: /, "")}`;
+    case "CASH_LOCK": return `Circuit breaker: ${d.reason}`;
+    case "INDUSTRY_CAP": return `${d.symbol} was picked but not bought. ${(d.reason || "").replace(/^Hard gate: /, "")}`;
     case "BUY_FILLED": return `Bought ${d.symbol} at ${e.price ? money(e.price) : "the next open"}, after fees and slippage.`;
     case "SELL_FILLED": return `Sold ${d.symbol} at ${e.price ? money(e.price) : "the next open"}, after fees and slippage.`;
     case "CANDIDATE": return e.momentum20d === undefined ? d.reason
@@ -185,7 +188,11 @@ function renderOverview(s) {
   $("headline").replaceChildren(lead, h("span", {class: "mark"}, marked));
   text("script-note", a.halted ? "the 60 days are over" : !s.history.length ? "no trades yet, just watching" :
     Math.abs(diff) < 0.5 ? "dead even with the market" : diff > 0 ? "beating the market, so far" : "not winning yet");
-  text("subline", held
+  const lockUntil = s.rules?.hard_gates?.cash_lock_until ?? 0;
+  const locked = lockUntil * 1000 > Date.now();
+  text("subline", locked
+    ? `Cash lock: equity fell 10% from its five-session high, so nothing new opens until ${new Date(lockUntil * 1000).toLocaleString()}. Holdings keep their stops and targets.`
+    : held
     ? `Holding ${held} stock${held > 1 ? "s" : ""}${queued ? ` with ${queued} order${queued > 1 ? "s" : ""} waiting for the next session.` : "."}`
     : queued ? `Holding cash. ${queued} order${queued > 1 ? "s are" : " is"} queued and will fill at the next session's open.`
       : "Holding cash. No stock has qualified yet, so nothing is queued.");
@@ -299,7 +306,7 @@ function renderHoldings(s) {
 function renderTrades(s) {
   const body = $("fills"); body.replaceChildren();
   $("fills-empty").hidden = s.fills.length > 0;
-  text("fills-empty", "No trades yet. An order fills at a later session's open, so the first trade comes after the first signal.");
+  text("fills-empty", "No trades yet. An order fills at the next session's open, and that evening's run records it.");
   for (const f of s.fills) {
     const result = f.side === "SELL" ? signedMoney(f.realized_pnl) : "";
     body.append(h("tr", {},
@@ -341,8 +348,9 @@ function renderAbout(s) {
 }
 
 const PARAM_LABELS = {
-  min_price: ["Minimum price", (v) => money(v)],
-  min_dollar_volume: ["Minimum daily trading", (v) => `$${(v / 1e6).toFixed(1)}M`],
+  // The hard gates set a floor under these, so the page shows the value that applies.
+  min_price: ["Minimum price", (v) => money(Math.max(v, 5))],
+  min_dollar_volume: ["Minimum daily trading (30 sessions)", (v) => `$${(Math.max(v, 5e6) / 1e6).toFixed(1)}M`],
   min_momentum: ["Minimum 20-day gain", (v) => `${(v * 100).toFixed(1)}%`],
   require_trend: ["Requires 20/50-day uptrend", (v) => (v ? "Yes" : "No")],
   stop_pct: ["Stop", (v) => `−${(v * 100).toFixed(1)}%`],
@@ -620,14 +628,19 @@ function renderOps(s) {
   // Where the time went: the current run's stages.
   const stages = t.stages ?? [];
   const peak = Math.max(1, ...stages.map((x) => x.ms ?? 0));
-  const topTotal = stages.filter((x) => !x.name.startsWith("cycle:") && x.name !== "cycles").reduce((a, x) => a + (x.ms ?? 0), 0) + (stages.find((x) => x.name === "cycles")?.ms ?? 0);
+  // Sub-stages run inside a parent (cycles, desk.prepare), so they are shown indented and
+  // left out of the total.
+  const PARENT_OF = {"desk.triage": "desk.prepare", "desk.research": "desk.prepare", "desk.bull": "desk.prepare", "desk.bear": "desk.prepare"};
+  const isSub = (name) => name.startsWith("cycle:") || name in PARENT_OF;
+  const subLabel = (name) => name.startsWith("cycle:") ? name.slice(6) : name.replace(/^desk\./, "");
+  const topTotal = stages.filter((x) => !isSub(x.name)).reduce((a, x) => a + (x.ms ?? 0), 0);
   text("ops-stage-total", stages.length ? `${dur(topTotal)} across ${stages.length} stages` : "");
   const wf = $("ops-waterfall"); wf.replaceChildren();
   if (!stages.length) wf.append(h("p", {class: "empty"}, "No stage timings were recorded for this run."));
   for (const x of stages) {
-    const nested = x.name.startsWith("cycle:");
+    const nested = isSub(x.name);
     wf.append(h("div", {class: `wf-row${nested ? " nested" : ""}`},
-      h("span", {class: "wf-name"}, nested ? x.name.slice(6) : x.name),
+      h("span", {class: "wf-name"}, nested ? subLabel(x.name) : x.name),
       h("span", {class: "wf-track"}, h("span", {class: `wf-bar${x.ok === false ? " hatch" : ""}`, style: `width:${Math.max(0.6, ((x.ms ?? 0) / peak) * 100)}%`, title: x.note || ""})),
       h("span", {class: "wf-ms"}, dur(x.ms)),
       x.ok === false ? h("span", {class: "badge sell"}, "failed") : null));
@@ -636,11 +649,13 @@ function renderOps(s) {
   // Bottlenecks over many runs.
   const hist = t.stage_history ?? [];
   const rows = $("ops-stage-rows"); rows.replaceChildren();
-  const real = hist.filter((x) => !x.name.startsWith("cycle:"));
+  const real = hist.filter((x) => !isSub(x.name));
   const top = real[0];
   const topSum = real.filter((x) => x.name !== "cycles").reduce((a, x) => a + (x.mean_ms ?? 0), 0) || 1;
+  const inside = top && hist.filter((x) => PARENT_OF[x.name] === top.name).sort((a, b) => (b.mean_ms ?? 0) - (a.mean_ms ?? 0))[0];
   text("ops-bottleneck", top
-    ? `${top.name} is the slowest stage: ${dur(top.mean_ms)} on average, about ${Math.round(((top.mean_ms ?? 0) / topSum) * 100)}% of a typical run, and ${dur(top.p95_ms)} on a bad day.`
+    ? `${top.name} is the slowest stage: ${dur(top.mean_ms)} on average, about ${Math.round(((top.mean_ms ?? 0) / topSum) * 100)}% of a typical run, and ${dur(top.p95_ms)} on a bad day.` +
+      (inside ? ` Inside it, ${subLabel(inside.name)} takes the most: ${dur(inside.mean_ms)} on average.` : "")
     : "Not enough runs yet to name a bottleneck.");
   const widest = Math.max(1, ...hist.map((x) => x.mean_ms ?? 0));
   for (const x of hist) {
