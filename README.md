@@ -291,7 +291,7 @@ docs/           README images
 .github/        scheduled run, watchdog, model smoke test and CI
 ```
 
-The crate is a library plus a thin binary on edition 2024 with 108 unit tests, and it passes `cargo clippy -- -D warnings` with the pedantic group enabled. Backend code is Rust only, apart from the small shell and Worker scripts that start runs.
+The crate is a library plus a thin binary on edition 2024 with 109 unit tests, and it passes `cargo clippy -- -D warnings` with the pedantic group enabled. Backend code is Rust only, apart from the small shell and Worker scripts that start runs.
 
 ## Limits
 
