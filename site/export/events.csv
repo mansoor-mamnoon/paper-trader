@@ -99,3 +99,36 @@ id,run_id,at,kind,subject,detail
 98,42777644617,1794299182.913284,download,ministral-3-3b,"2147 MB, sha256 verified, attempt 1 (47948 ms)"
 99,42777644617,1794299182.9181821,model_load,ministral-3-3b,Ministral 3 3B Instruct 2512 (Mistral AI) ready (3002 ms)
 100,42777644617,1794299182.9197865,determinism,ministral-3-3b,hash c2d5f58bfe758864 stable (4046 ms)
+101,42915394463,1794350305.257347,download,granite-4.0-h-micro,"1942 MB, sha256 verified, attempt 1 (199939 ms)"
+102,42915394463,1794350305.26123,model_load,granite-4.0-h-micro,Granite 4.0 H Micro (IBM) ready (1502 ms)
+103,42915394463,1794350305.2648995,determinism,granite-4.0-h-micro,hash dc192c7624001ab2 stable (5554 ms)
+104,42915394463,1794350554.932153,download,gemma-4-e4b,"4977 MB, sha256 verified, attempt 1 (46546 ms)"
+105,42915394463,1794350554.9340177,model_load,gemma-4-e4b,Gemma 4 E4B (Google) ready (3004 ms)
+106,42915394463,1794350554.937267,determinism,gemma-4-e4b,hash c2d5f58bfe758864 stable (48548 ms)
+107,42915394463,1794352071.7931237,download,llama-3.2-3b,"2019 MB, sha256 verified, attempt 1 (16325 ms)"
+108,42915394463,1794352071.7957494,model_load,llama-3.2-3b,Llama 3.2 3B Instruct (Meta) ready (3044 ms)
+109,42915394463,1794352071.79885,determinism,llama-3.2-3b,hash 293d2b271af8ea44 stable (4678 ms)
+110,42915394463,1794352211.9401393,download,phi-4-mini,"2491 MB, sha256 verified, attempt 1 (11690 ms)"
+111,42915394463,1794352211.9419658,model_load,phi-4-mini,Phi-4 mini Instruct (Microsoft) ready (4510 ms)
+112,42915394463,1794352211.9447606,determinism,phi-4-mini,hash bd099a30714f1b21 stable (6953 ms)
+113,42915394463,1794352394.2468603,download,granite-4.0-h-micro,"1942 MB, sha256 verified, attempt 1 (17299 ms)"
+114,42915394463,1794352394.2500558,model_load,granite-4.0-h-micro,Granite 4.0 H Micro (IBM) ready (1504 ms)
+115,42915394463,1794352394.2535741,determinism,granite-4.0-h-micro,hash dc192c7624001ab2 stable (5539 ms)
+116,42915394463,1794352424.833,download,llama-3.2-3b,"2019 MB, sha256 verified, attempt 1 (9097 ms)"
+117,42915394463,1794352424.8377614,model_load,llama-3.2-3b,Llama 3.2 3B Instruct (Meta) ready (4503 ms)
+118,42915394463,1794352424.841242,determinism,llama-3.2-3b,hash 293d2b271af8ea44 stable (4801 ms)
+119,42915394463,1794352453.2188225,download,phi-4-mini,"2491 MB, sha256 verified, attempt 1 (11545 ms)"
+120,42915394463,1794352453.2216527,model_load,phi-4-mini,Phi-4 mini Instruct (Microsoft) ready (3002 ms)
+121,42915394463,1794352453.2251976,determinism,phi-4-mini,hash bd099a30714f1b21 stable (7281 ms)
+122,42915394463,1794352952.0367281,download,qwen3-4b-instruct,"2497 MB, sha256 verified, attempt 1 (14728 ms)"
+123,42915394463,1794352952.038785,model_load,qwen3-4b-instruct,Qwen3 4B Instruct 2507 (Alibaba) ready (4505 ms)
+124,42915394463,1794352952.042209,determinism,qwen3-4b-instruct,hash 293d2b271af8ea44 stable (5328 ms)
+125,42915394463,1794353551.1872127,download,lfm2.5-2.6b,"1674 MB, sha256 verified, attempt 1 (5179 ms)"
+126,42915394463,1794353551.189926,model_load,lfm2.5-2.6b,LFM2.5 2.6B (Liquid AI) ready (1504 ms)
+127,42915394463,1794353551.192977,determinism,lfm2.5-2.6b,hash dc192c7624001ab2 stable (24933 ms)
+128,42915394463,1794353608.7031143,download,ministral-3-3b,"2147 MB, sha256 verified, attempt 1 (31271 ms)"
+129,42915394463,1794353608.7062573,model_load,ministral-3-3b,Ministral 3 3B Instruct 2512 (Mistral AI) ready (3020 ms)
+130,42915394463,1794353608.7098417,determinism,ministral-3-3b,hash c2d5f58bfe758864 stable (7844 ms)
+131,42915394463,1794353644.080812,download,smollm3-3b,"1915 MB, sha256 verified, attempt 1 (16683 ms)"
+132,42915394463,1794353644.084014,model_load,smollm3-3b,SmolLM3 3B (Hugging Face) ready (3010 ms)
+133,42915394463,1794353644.087395,determinism,smollm3-3b,hash dc192c7624001ab2 stable (6701 ms)

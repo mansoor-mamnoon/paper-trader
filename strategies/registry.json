@@ -117,13 +117,20 @@
   "last_promoted_at": 0.0,
   "next_id": 1,
   "control_added": true,
-  "lessons": [],
-  "lessons_cursor": 0,
+  "lessons": [
+    {
+      "at": 1794349987.3361058,
+      "symbol": "AAOZ",
+      "pnl_pct": 3.087446880173217,
+      "lesson": "Set stop-loss orders to manage risk when experimenting with trading strategies to avoid unexpected losses."
+    }
+  ],
+  "lessons_cursor": 2,
   "analyst": {
-    "at": 1794296911.070483,
+    "at": 1794349987.3361058,
     "source": "llm",
     "model": "9 open-weights models from 9 companies",
-    "market_view": "The market regime is risk_off (median 20-day return -0.36%, S&P 500 down -3.27%), with broad weakness and thin breadth. This regime allows only one new position. We must prioritize clarity, conviction, and a clear, recent catalyst over momentum alone.",
+    "market_view": "The market regime is risk_off, as evidenced by the negative 20-day S&P 500 return (-3.61%) and only 49.4% of stocks above 50-day average. In this environment, high-volatility, momentum-driven stocks are especially vulnerable to sharp reversals. The system allows only one new position.",
     "error": null
   },
   "schema": 1
