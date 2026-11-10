@@ -1,6 +1,7 @@
 //! Static dashboard snapshot: JSON state plus full CSV logs.
 
 use crate::data::SOURCE;
+use crate::gates;
 use crate::ledger::{self, report};
 use anyhow::Result;
 use rusqlite::types::ValueRef;
@@ -61,6 +62,17 @@ pub fn export(path: &str, output: &str, strategy: Option<&Value>) -> Result<Valu
     rules.insert("fee".into(), json!(crate::account::FEE));
     rules.insert("slippage".into(), json!(crate::account::SLIP));
     rules.insert("cycle_seconds".into(), json!(86400));
+    rules.insert("drawdown_halt".into(), json!(gates::DRAWDOWN_HALT));
+    rules.insert(
+        "hard_gates".into(),
+        json!({
+            "min_price": gates::MIN_PRICE, "min_adtv": gates::MIN_ADTV, "adtv_days": gates::ADTV_DAYS,
+            "event_days": gates::EVENT_DAYS, "vol_days": gates::VOL_DAYS,
+            "vol_reference": gates::VOL_REFERENCE, "industry_cap": gates::INDUSTRY_CAP,
+            "drawdown_halt": gates::DRAWDOWN_HALT, "drawdown_sessions": gates::DRAWDOWN_SESSIONS,
+            "cash_lock_hours": gates::CASH_LOCK_HOURS, "cash_lock_until": state.cash_lock_until,
+        }),
+    );
     report["health"]["age_seconds"] = json!((ledger::now() - state.last_at).max(0.0));
     let body = serde_json::to_string_pretty(&report)?;
     for name in ["state", "state.json"] {

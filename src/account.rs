@@ -648,7 +648,7 @@ pub fn cycle_with(
                     &db,
                     at,
                     &symbol,
-                    "SKIP",
+                    "INDUSTRY_CAP",
                     &format!(
                         "Hard gate: {industry} already holds {:.0}% of equity, the {:.0}% industry cap",
                         exposure / capital.max(1.0) * 100.0,
