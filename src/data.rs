@@ -73,8 +73,27 @@ fn number(item: &Value, key: &str) -> Option<f64> {
     item.get(key).and_then(Value::as_f64)
 }
 
-/// Turn a Yahoo chart payload into completed daily bars and corporate actions.
-pub fn parse_history(payload: &Value, today: chrono::NaiveDate) -> Result<Quote> {
+/// New York wall-clock time after which the day's regular session counts as completed.
+/// The close is 16:00 (13:00 on early-close days); the extra half hour lets the daily
+/// bar settle on the delayed feed.
+pub const SESSION_SETTLED: (u32, u32) = (16, 30);
+
+/// The first New York date whose session is not yet completed at `now`: today before
+/// 16:30 ET, tomorrow from 16:30 ET on. An evening run therefore sees that day's bar.
+pub fn first_open_day(now: DateTime<Utc>) -> chrono::NaiveDate {
+    use chrono::Timelike;
+    let local = now.with_timezone(&New_York);
+    let today = local.date_naive();
+    if (local.hour(), local.minute()) >= SESSION_SETTLED {
+        today.succ_opt().unwrap_or(today)
+    } else {
+        today
+    }
+}
+
+/// Turn a Yahoo chart payload into completed daily bars and corporate actions. Bars dated
+/// on or after `open_day` (see [`first_open_day`]) are still trading and are dropped.
+pub fn parse_history(payload: &Value, open_day: chrono::NaiveDate) -> Result<Quote> {
     let chart = &payload["chart"];
     let result = chart["result"].get(0).filter(|_| chart["error"].is_null());
     let result = result.ok_or_else(|| anyhow!("No daily price history"))?;
@@ -90,7 +109,7 @@ pub fn parse_history(payload: &Value, today: chrono::NaiveDate) -> Result<Quote>
             .ok_or_else(|| anyhow!("Bad timestamp"))?
             .with_timezone(&New_York)
             .date_naive();
-        if day >= today {
+        if day >= open_day {
             continue;
         }
         let pick = |k: &str| prices[k].get(i).and_then(Value::as_f64);
@@ -149,7 +168,7 @@ pub fn history(symbol: &str) -> Result<Quote> {
         "https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?range=3mo&interval=1d&events=div%2Csplits"
     );
     let payload: Value = serde_json::from_str(&fetch(&url)?)?;
-    parse_history(&payload, Utc::now().with_timezone(&New_York).date_naive())
+    parse_history(&payload, first_open_day(Utc::now()))
 }
 
 /// Scan a rotating slice of the directory, always including account symbols and SPY.
@@ -257,6 +276,60 @@ mod tests {
         let quote = parse_history(&payload, today).unwrap();
         assert_eq!(quote.bars.len(), 58);
         assert_eq!(quote.actions[0].kind, "splits");
+    }
+
+    fn utc(s: &str) -> DateTime<Utc> {
+        DateTime::parse_from_rfc3339(s).unwrap().with_timezone(&Utc)
+    }
+
+    #[test]
+    fn session_counts_as_completed_from_half_past_four_new_york() {
+        let day = |y, m, d| chrono::NaiveDate::from_ymd_opt(y, m, d).unwrap();
+        // Winter (EST, UTC-5): 16:29 ET is still Monday's session, 16:30 ET is not.
+        assert_eq!(
+            first_open_day(utc("2026-11-09T21:29:00Z")),
+            day(2026, 11, 9)
+        );
+        assert_eq!(
+            first_open_day(utc("2026-11-09T21:30:00Z")),
+            day(2026, 11, 10)
+        );
+        // The scheduled triggers (17:37, 19:47 and 22:23 ET) all see Monday's bar.
+        assert_eq!(
+            first_open_day(utc("2026-11-09T22:37:00Z")),
+            day(2026, 11, 10)
+        );
+        assert_eq!(
+            first_open_day(utc("2026-11-10T03:23:00Z")),
+            day(2026, 11, 10)
+        );
+        // After midnight ET nothing changes: the new day is not completed yet.
+        assert_eq!(
+            first_open_day(utc("2026-11-10T05:30:00Z")),
+            day(2026, 11, 10)
+        );
+        // Summer (EDT, UTC-4): 16:30 ET is 20:30 UTC.
+        assert_eq!(first_open_day(utc("2026-07-01T20:29:00Z")), day(2026, 7, 1));
+        assert_eq!(first_open_day(utc("2026-07-01T20:30:00Z")), day(2026, 7, 2));
+    }
+
+    #[test]
+    fn evening_run_keeps_the_just_closed_session() {
+        // Daily bars stamped at the 09:30 ET open, Monday 2026-11-09 last.
+        let monday_open = utc("2026-11-09T14:30:00Z").timestamp() as f64;
+        let n = 60;
+        let stamps: Vec<f64> = (0..n)
+            .map(|i| monday_open - 86400.0 * (n - 1 - i) as f64)
+            .collect();
+        let payload = json!({"chart": {"error": null, "result": [{
+            "meta": {"currency": "USD"},
+            "timestamp": stamps,
+            "indicators": {"quote": [{"open": vec![10.0; n], "close": vec![10.0; n], "volume": vec![5.0; n]}]}
+        }]}});
+        let evening = parse_history(&payload, first_open_day(utc("2026-11-09T22:37:00Z"))).unwrap();
+        assert_eq!(evening.bars.last().unwrap().at, monday_open);
+        let midday = parse_history(&payload, first_open_day(utc("2026-11-09T17:00:00Z"))).unwrap();
+        assert!(midday.bars.last().unwrap().at < monday_open);
     }
 
     #[test]
