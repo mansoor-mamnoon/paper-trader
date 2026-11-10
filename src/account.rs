@@ -46,6 +46,58 @@ pub fn update_risk(state: &mut State) -> (f64, f64) {
     (total, drawdown)
 }
 
+/// The drawdown circuit breaker. When equity is at least 10% below its high over the last
+/// five sessions, cancel every queued buy and open nothing for 48 hours. Held positions keep
+/// following their stops and targets. A lock is only re-armed after the last one lapses.
+fn cash_lock(db: &Connection, state: &mut State, total: f64, at: f64) -> Result<()> {
+    if at < state.cash_lock_until {
+        return Ok(());
+    }
+    let now = chrono::DateTime::from_timestamp(at as i64, 0).unwrap_or_default();
+    let window = crate::data::settled_sessions_back(now, gates::DRAWDOWN_SESSIONS - 1);
+    let recent_high: f64 = db.query_row(
+        "SELECT COALESCE(MAX(equity), 0) FROM equity WHERE at >= ?",
+        [window.timestamp() as f64],
+        |r| r.get(0),
+    )?;
+    let Some(fall) = gates::drawdown_breach(recent_high, total) else {
+        return Ok(());
+    };
+    state.cash_lock_until = at + gates::CASH_LOCK_HOURS * 3600.0;
+    let buys: Vec<String> = state
+        .pending
+        .iter()
+        .filter(|(_, o)| o.side == "BUY")
+        .map(|(s, _)| s.clone())
+        .collect();
+    for symbol in &buys {
+        state.pending.remove(symbol);
+        decision(
+            db,
+            at,
+            symbol,
+            "CANCELLED",
+            "Cash lock: the drawdown circuit breaker cancelled every queued buy",
+            json!({}),
+        )?;
+    }
+    decision(
+        db,
+        at,
+        "ACCOUNT",
+        "CASH_LOCK",
+        &format!(
+            "Equity ${total:.2} is {:.1}% below its five-session high of ${:.2}: no new buys for {} hours",
+            fall * 100.0,
+            recent_high.max(total),
+            gates::CASH_LOCK_HOURS
+        ),
+        json!({"recent_high": recent_high, "equity": total, "fall": fall,
+               "until": state.cash_lock_until, "cancelled": buys}),
+    )?;
+    Ok(())
+}
+
 /// Why a queued buy may no longer fill, if a hard gate now blocks it. Price and traded value
 /// use only sessions before the fill's open, so the check cannot see the fill bar; events use
 /// this run's news and filings.
@@ -409,6 +461,8 @@ pub fn cycle_with(
         position.price_at = Some(last.at);
     }
     let (total, drawdown) = update_risk(&mut state);
+    cash_lock(&db, &mut state, total, at)?;
+    let locked = at < state.cash_lock_until;
     for (symbol, position) in state.positions.clone() {
         let Some(quote) = usable.get(symbol.as_str()) else {
             continue;
@@ -518,7 +572,7 @@ pub fn cycle_with(
         slots = slots.min(1);
     }
     let mut ordered: Vec<scorecard::PickRow> = Vec::new();
-    if !state.halted && missing.is_empty() {
+    if !state.halted && !locked && missing.is_empty() {
         // (symbol, conviction, thesis) in the order buys are attempted.
         let ranked: Vec<(String, f64, String)> = if let Some(review) = review {
             for avoided in &review.avoid {
@@ -885,7 +939,7 @@ pub fn brief(strategy: &Strategy, observation: &Observation, state: &State) -> B
         date: utc_date(at).to_string(),
         equity: equity(state),
         cash: state.cash,
-        open_slots: if state.halted {
+        open_slots: if state.halted || at < state.cash_lock_until {
             0
         } else {
             MAX_POSITIONS.saturating_sub(state.positions.len() + queued_buys)
@@ -1079,6 +1133,67 @@ mod tests {
             )
             .unwrap();
         assert!(reason.contains("chapter 11"), "{reason}");
+    }
+
+    #[test]
+    fn a_ten_percent_fall_in_five_sessions_locks_the_account_in_cash_for_48_hours() {
+        let path = temp_db("lock");
+        let db = ledger::connect(&path).unwrap();
+        // Tuesday 10 November 2026, about 18:00 ET; Monday evening's equity was $1,000.
+        let at = 1_794_351_600.0;
+        db.execute(
+            "INSERT INTO equity(at,equity,cash,benchmark,drawdown,planned_risk) VALUES(?,1000,1000,1000,0,0)",
+            [at - DAY],
+        )
+        .unwrap();
+        let mut state = State::default();
+        let order = |side: &str| Order {
+            side: side.into(),
+            at: at - DAY,
+            reason: String::new(),
+            size_fraction: 1.0,
+            industry: String::new(),
+        };
+        state.pending.insert("NEW".into(), order("BUY"));
+        state.pending.insert("OLD".into(), order("SELL"));
+        // 9.9% down: nothing happens.
+        cash_lock(&db, &mut state, 901.0, at).unwrap();
+        assert_eq!(state.cash_lock_until, 0.0);
+        // 10% down: queued buys are cancelled, sells stay, and buys stop for 48 hours.
+        cash_lock(&db, &mut state, 900.0, at).unwrap();
+        assert!((state.cash_lock_until - (at + 48.0 * 3600.0)).abs() < 1e-6);
+        assert!(!state.pending.contains_key("NEW"));
+        assert!(state.pending.contains_key("OLD"));
+        let obs = observation(at, vec![("UP", bars(60, 50.0, 1.0, None))]);
+        assert_eq!(brief(&Strategy::default(), &obs, &state).open_slots, 0);
+        let later = observation(at + 49.0 * 3600.0, vec![]);
+        assert_eq!(brief(&Strategy::default(), &later, &state).open_slots, 5);
+        // A fall older than the five-session window does not count.
+        let mut fresh = State::default();
+        cash_lock(&db, &mut fresh, 900.0, at + 8.0 * DAY).unwrap();
+        assert_eq!(fresh.cash_lock_until, 0.0);
+    }
+
+    #[test]
+    fn a_locked_account_queues_no_buys() {
+        let path = temp_db("locked");
+        let series = bars(60, 50.0, 1.0, None);
+        let at = series.last().unwrap().at + DAY * 0.5;
+        {
+            let db = ledger::connect(&path).unwrap();
+            let state = State {
+                cash_lock_until: at + DAY,
+                ..State::default()
+            };
+            ledger::save(&db, &state).unwrap();
+        }
+        cycle(
+            &path,
+            &observation(at, vec![("UP", series)]),
+            "stocks-daily",
+        )
+        .unwrap();
+        assert!(snapshot(&path).pending.is_empty());
     }
 
     #[test]

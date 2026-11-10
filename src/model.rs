@@ -176,6 +176,9 @@ pub struct State {
     pub universe: Vec<Value>,
     #[serde(default)]
     pub data_errors: BTreeMap<String, String>,
+    /// Until when the drawdown circuit breaker blocks new buys (epoch seconds); 0 when off.
+    #[serde(default)]
+    pub cash_lock_until: f64,
     #[serde(flatten)]
     pub extra: Map<String, Value>,
 }
@@ -205,6 +208,7 @@ impl Default for State {
             coverage: Map::new(),
             universe: Vec::new(),
             data_errors: BTreeMap::new(),
+            cash_lock_until: 0.0,
             extra: Map::new(),
         }
     }

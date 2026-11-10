@@ -110,6 +110,16 @@ pub fn last_settled(now: DateTime<Utc>) -> DateTime<Utc> {
     }
 }
 
+/// When the session `sessions` weekdays before the latest settled one settled: 0 gives
+/// [`last_settled`], 4 the start of a five-session window.
+pub fn settled_sessions_back(now: DateTime<Utc>, sessions: usize) -> DateTime<Utc> {
+    let mut at = last_settled(now);
+    for _ in 0..sessions {
+        at = last_settled(at - chrono::Duration::seconds(1));
+    }
+    at
+}
+
 /// Turn a Yahoo chart payload into completed daily bars and corporate actions. Bars dated
 /// on or after `open_day` (see [`first_open_day`]) are still trading and are dropped.
 pub fn parse_history(payload: &Value, open_day: chrono::NaiveDate) -> Result<Quote> {
@@ -353,6 +363,19 @@ mod tests {
         assert_eq!(
             last_settled(utc("2026-07-01T20:30:00Z")),
             utc("2026-07-01T20:30:00Z")
+        );
+    }
+
+    #[test]
+    fn five_session_window_skips_the_weekend() {
+        // Tuesday evening: Tue, Mon, Fri, Thu, Wed; the window opens Wednesday.
+        assert_eq!(
+            settled_sessions_back(utc("2026-11-10T23:00:00Z"), 4),
+            utc("2026-11-04T21:30:00Z")
+        );
+        assert_eq!(
+            settled_sessions_back(utc("2026-11-10T23:00:00Z"), 0),
+            last_settled(utc("2026-11-10T23:00:00Z"))
         );
     }
 
