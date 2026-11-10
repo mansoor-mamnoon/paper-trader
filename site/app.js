@@ -2,6 +2,7 @@
 
 const USD = new Intl.NumberFormat("en-US", {style: "currency", currency: "USD"});
 const money = (v) => USD.format(v);
+const qty = (v) => new Intl.NumberFormat("en-US", {maximumFractionDigits: 4}).format(v);
 const signedMoney = (v) => (v > 0 ? "+" : v < 0 ? "−" : "") + USD.format(Math.abs(v));
 const pct = (v) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(2) + "%";
 const $ = (id) => document.getElementById(id);
@@ -58,7 +59,7 @@ function describe(d) {
     case "DOCTOR_TIGHTEN": return `${d.symbol}: stop moved up to protect the gain. ${d.reason}`;
     case "DOCTOR_HOLD": return `${d.symbol}: thesis still intact, holding. ${d.reason}`;
     case "AVOID": return `${d.symbol} passed the screen but the analyst passed on it: ${d.reason}`;
-    case "SELL_SIGNAL": return `${d.symbol} hit its stop, its target, or the account halted. A sell is queued.`;
+    case "SELL_SIGNAL": return `${d.symbol} hit its stop or its target, or the experiment ended. A sell is queued.`;
     case "BUY_FILLED": return `Bought ${d.symbol} at ${e.price ? money(e.price) : "the next open"}, after fees and slippage.`;
     case "SELL_FILLED": return `Sold ${d.symbol} at ${e.price ? money(e.price) : "the next open"}, after fees and slippage.`;
     case "CANDIDATE": return e.momentum20d === undefined ? d.reason
@@ -177,12 +178,12 @@ function renderOverview(s) {
   const replay = a.mode === "stocks-replay";
 
   let lead = "", marked = "";
-  if (a.halted) { lead = "Halted: "; marked = a.halt_reason; }
+  if (a.halted) { lead = "Finished: "; marked = a.halt_reason; }
   else if (!s.history.length) { marked = "Waiting for the first scan"; }
   else if (Math.abs(diff) < 0.5) { lead = "Level with "; marked = `SPY at ${money(a.equity)}`; }
   else { lead = diff > 0 ? "Ahead of " : "Behind "; marked = `SPY by ${money(Math.abs(diff))}`; }
   $("headline").replaceChildren(lead, h("span", {class: "mark"}, marked));
-  text("script-note", a.halted ? "stopped to protect the account" : !s.history.length ? "no trades yet, just watching" :
+  text("script-note", a.halted ? "the 60 days are over" : !s.history.length ? "no trades yet, just watching" :
     Math.abs(diff) < 0.5 ? "dead even with the market" : diff > 0 ? "beating the market, so far" : "not winning yet");
   text("subline", held
     ? `Holding ${held} stock${held > 1 ? "s" : ""}${queued ? ` with ${queued} order${queued > 1 ? "s" : ""} waiting for the next session.` : "."}`
@@ -258,7 +259,7 @@ function renderStatus(s) {
   const stale = a.mode !== "stocks-replay" && a.last_at && age > 4 * 86400;
   let kind = "ok", words = "Live daily account";
   if (a.mode === "stocks-replay") { kind = "warn"; words = "Replay scenario, not live results"; }
-  else if (a.halted) { kind = "bad"; words = "Halted, no new buys"; }
+  else if (a.halted) { kind = "bad"; words = "Experiment ended, no new buys"; }
   else if (stale) { kind = "bad"; words = "Snapshot is out of date"; }
   else if (s.health.status === "error") { kind = "bad"; words = "Last scan failed"; }
   else if (s.health.status === "degraded") { kind = "warn"; words = "Live, some prices missing"; }
@@ -288,7 +289,7 @@ function renderHoldings(s) {
       h("div", {class: "range", role: "img", "aria-label": `Entry sits ${at.toFixed(0)}% of the way from stop to target`}, h("i", {style: `left:${at}%`})),
       h("div", {class: "range-labels"}, h("span", {}, `Stop ${money(p.stop)}`), h("span", {}, `Target ${money(p.target)}`)),
       h("dl", {},
-        h("dt", {}, "Shares"), h("dd", {}, String(p.quantity)),
+        h("dt", {}, "Shares"), h("dd", {}, qty(p.quantity)),
         h("dt", {}, "Entry price"), h("dd", {}, money(p.entry)),
         h("dt", {}, "Value now"), h("dd", {}, money(p.market_value)),
         h("dt", {}, "Bought"), h("dd", {}, when(p.opened_at)))));
@@ -305,7 +306,7 @@ function renderTrades(s) {
       h("td", {}, when(f.at)),
       h("td", {}, h("span", {class: `badge ${f.side === "BUY" ? "buy" : "sell"}`}, f.side === "BUY" ? "Bought" : "Sold")),
       h("td", {}, h("strong", {}, f.symbol)),
-      h("td", {class: "num"}, String(f.quantity)),
+      h("td", {class: "num"}, qty(f.quantity)),
       h("td", {class: "num"}, money(f.price)),
       h("td", {class: "num"}, money(f.fee)),
       h("td", {class: `num ${f.side === "SELL" ? sign(f.realized_pnl) : ""}`}, result)));
@@ -460,7 +461,7 @@ function finalistCard(f, d, s) {
   const picked = (judge.picks ?? []).find((p) => p.symbol === f.symbol);
   const vetoed = (judge.avoid ?? []).find((p) => p.symbol === f.symbol);
   const verdict = picked
-    ? h("span", {class: "badge buy"}, `PICKED · conviction ${Number(picked.conviction).toFixed(2)} · size ${Math.round((picked.size_fraction ?? 1) * 100)}%`)
+    ? h("span", {class: "badge buy"}, `PICKED · conviction ${Number(picked.conviction).toFixed(2)}`)
     : vetoed ? h("span", {class: "badge sell"}, "VETOED")
       : h("span", {class: "badge"}, judge.reasoning ? "PASSED OVER" : "NOT DECIDED");
   const steps = (f.research?.steps ?? []);
@@ -532,7 +533,7 @@ function renderDesk(s) {
   if (judge.reasoning) {
     jb.append(h("blockquote", {class: "quote"}, judge.reasoning));
     for (const p of judge.picks ?? []) {
-      jb.append(h("div", {class: "pick-row"}, h("strong", {}, p.symbol), h("span", {class: "badge buy"}, `conviction ${Number(p.conviction).toFixed(2)} · size ${Math.round((p.size_fraction ?? 1) * 100)}%`),
+      jb.append(h("div", {class: "pick-row"}, h("strong", {}, p.symbol), h("span", {class: "badge buy"}, `conviction ${Number(p.conviction).toFixed(2)}`),
         h("p", {}, p.thesis), h("p", {class: "small muted"}, `Key risk: ${p.key_risk || "none given"}. Wrong if: ${p.invalidation || "none given"}.`)));
     }
     if (!(judge.picks ?? []).length) jb.append(h("p", {class: "muted"}, "The judge chose no stock today. Choosing nothing is allowed."));
@@ -737,10 +738,8 @@ document.addEventListener("click", (e) => {
 });
 {
   const pa = window.ptAnalytics;
-  const names = { goatcounter: "GoatCounter", ga4: "Google Analytics, if you agree" };
   $("privacy").textContent = pa && pa.ignored ? "This browser is excluded from visit counts."
-    : !pa || !pa.providers.length ? "No visit tracking on this site."
-      : `Visits are counted anonymously with ${pa.providers.map((p) => names[p]).join(" and ")}.`;
+    : pa && pa.providers.length ? "Anonymous visit statistics." : "";
 }
 showTab(location.hash.slice(1), false);
 refresh();

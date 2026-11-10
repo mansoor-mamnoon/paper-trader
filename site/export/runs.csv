@@ -1,3 +1,4 @@
 run_id,started_at,ended_at,trigger,git_sha,cpu,cores,ram_mb,desk_minutes,status,minutes_used,minutes_budget,degraded,notes
 42526772466,1794174366.5589273,1794175110.722579,manual,bd4d07b,AMD EPYC 7763 64-Core Processor,4,15983,240.0,degraded,12.402727528413136,240.0,"[""nothing to decide: no open slots or no candidates""]",
 42529779491,1794176483.595526,1794176895.3395858,manual,f5f64a6,AMD EPYC 9V45 96-Core Processor,4,15983,240.0,ok,6.862400988737742,240.0,[],
+42754962424,1794284318.3266294,1794287805.3346214,schedule,52af34b,AMD EPYC 9V45 96-Core Processor,4,15983,240.0,ok,58.116799859205884,240.0,[],

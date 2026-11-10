@@ -1,6 +1,6 @@
 {
   "account": {
-    "at": 1794176509.1649928,
+    "at": 1794284361.225311,
     "benchmark": 999.9999999999999,
     "benchmark_return_pct": -1.1102230246251565e-14,
     "cash": 1000.0,
@@ -10,8 +10,8 @@
     "fees": 0.0,
     "halt_reason": "",
     "halted": false,
-    "id": 11,
-    "last_at": 1794176509.1649928,
+    "id": 12,
+    "last_at": 1794284361.225311,
     "max_drawdown": 0.0,
     "mode": "stocks-daily",
     "peak": 1000.0,
@@ -22,6 +22,14 @@
     "unrealized_pnl": 0.0
   },
   "activity": [
+    {
+      "action": "BUY_SIGNAL",
+      "at": 1794284361.225311,
+      "evidence": "{\"conviction\":0.9,\"earnings_date\":null,\"headlines\":[\"GIBO Holdings Outlines Strategic Direction for AI-Native Content Production Through AIOS Framework\",\"GIBO Holdings Limited Announces Ratio and Effective Date of Share Consolidation\",\"GIBO WATCH Introduces Breakthrough in AI Filmmaking: Solving Continuity and Context at Scale\",\"The Ultimate Editing Bay: GIBO Unveils Multi-Modal Workspaces Within GIBO Watch\",\"GIBO Announces Breakthrough in Proprietary AIGC Engine, Entering Next-Generation Intelligent Content Infrastructure Phase\",\"GIBO Announces Development of Initial 30MW + 14,000-GPU AI Data Center, Advancing Malaysia as a Leading Digital AI Hub in Asia-Pacific\",\"GIBO Signs Core Partnership Agreement with Ricloud, a NVIDIA Cloud Partner\"],\"source\":\"llm\",\"thesis\":\"GIBO announced a breakthrough in its proprietary AIGC engine and unveiled multi-modal AI workspaces, directly advancing its AI-native content infrastructure. This is a specific, recent, and structural catalyst that aligns with a growing AI content demand trend.\"}",
+      "id": 8924,
+      "reason": "Analyst conviction 0.90: GIBO announced a breakthrough in its proprietary AIGC engine and unveiled multi-modal AI workspaces, directly advancing its AI-native content infrastructure. This is a specific, recent, and structural catalyst that aligns with a growing AI content demand trend.",
+      "symbol": "GIBO"
+    },
     {
       "action": "BUY_SIGNAL",
       "at": 1794077065.9352598,
@@ -49,1076 +57,1074 @@
   ],
   "benchmark_label": "SPY price-only (dividends excluded)",
   "coverage": {
-    "attempted": 861,
-    "attempted_ever": 7204,
+    "attempted": 873,
+    "attempted_ever": 7997,
     "batch_size": 800,
-    "failed": 91,
+    "failed": 83,
     "method": "Rotating alphabetical scan; positions, pending orders and SPY every run",
-    "never_attempted": 6035,
-    "remaining": 12378,
+    "never_attempted": 5245,
+    "remaining": 12369,
     "rotation_cycles": 17,
-    "scan_start_index": 8000,
+    "scan_start_index": 8800,
     "scope": "US exchange-listed issues; not worldwide or OTC",
-    "succeeded": 770,
-    "universe_count": 13239,
-    "usable": 770
+    "succeeded": 790,
+    "universe_count": 13242,
+    "usable": 790
   },
   "data_errors": {
-    "NE.A": "http status: 404",
-    "NE.W": "http status: 404",
-    "NECK": "Fewer than 50 completed daily bars",
-    "NEE$N": "http status: 404",
-    "NEE$S": "http status: 404",
-    "NEE$T": "http status: 404",
-    "NEE$U": "http status: 404",
-    "NEE$V": "http status: 404",
-    "NEE$W": "http status: 404",
-    "NEOVW": "Fewer than 50 completed daily bars",
-    "NEXRW": "Fewer than 50 completed daily bars",
-    "NFEGP": "Fewer than 50 completed daily bars",
-    "NGL$B": "http status: 404",
-    "NGL$C": "http status: 404",
-    "NHIVW": "Fewer than 50 completed daily bars",
-    "NIOBW": "Fewer than 50 completed daily bars",
-    "NIVFW": "Fewer than 50 completed daily bars",
-    "NLY$F": "http status: 404",
-    "NLY$G": "http status: 404",
-    "NLY$J": "http status: 404",
-    "NMPAR": "Fewer than 50 completed daily bars",
-    "NMZ.R": "http status: 404",
-    "NOEMR": "Fewer than 50 completed daily bars",
-    "NOEMW": "Fewer than 50 completed daily bars",
-    "NPACW": "Fewer than 50 completed daily bars",
-    "NPWR.W": "http status: 404",
-    "NRAM": "Fewer than 50 completed daily bars",
-    "NREF$A": "http status: 404",
-    "NRR": "Fewer than 50 completed daily bars",
-    "NRSNW": "Fewer than 50 completed daily bars",
-    "NSAI": "Fewer than 50 completed daily bars",
-    "NSAIR": "Fewer than 50 completed daily bars",
-    "NSAIW": "Fewer than 50 completed daily bars",
-    "NSTR": "Fewer than 50 completed daily bars",
-    "NSTR.W": "http status: 404",
-    "NUAIW": "Fewer than 50 completed daily bars",
-    "NUCLW": "Fewer than 50 completed daily bars",
-    "NUIB": "Fewer than 50 completed daily bars",
-    "NVA.W": "http status: 404",
-    "NWAX.U": "http status: 404",
-    "NWAX.W": "http status: 404",
-    "NWCLW": "Fewer than 50 completed daily bars",
-    "NXATW": "Fewer than 50 completed daily bars",
-    "NXDR": "Fewer than 50 completed daily bars",
-    "NXDT$A": "http status: 404",
-    "NXGLW": "Fewer than 50 completed daily bars",
-    "NXTS": "Fewer than 50 completed daily bars",
-    "OABIW": "Fewer than 50 completed daily bars",
-    "OACCW": "Fewer than 50 completed daily bars",
-    "OAK$A": "http status: 404",
-    "OAK$B": "http status: 404",
-    "OAKL": "Fewer than 50 completed daily bars",
-    "OBAWW": "Fewer than 50 completed daily bars",
-    "OCAC.R": "http status: 404",
-    "OCAC.U": "http status: 404",
-    "OCAC.W": "http status: 404",
-    "OCLT": "Fewer than 50 completed daily bars",
-    "OCLTR": "Fewer than 50 completed daily bars",
-    "OCLTW": "Fewer than 50 completed daily bars",
-    "OCSAW": "Fewer than 50 completed daily bars",
-    "OCT": "Fewer than 50 completed daily bars",
-    "OCTI": "Fewer than 50 completed daily bars",
-    "OGGWZ": "Fewer than 50 completed daily bars",
-    "OHACR": "Fewer than 50 completed daily bars",
-    "OIG": "Fewer than 50 completed daily bars",
-    "OIMAW": "Non-USD security is not eligible",
-    "OIOWW": "Fewer than 50 completed daily bars",
-    "ONCHW": "Fewer than 50 completed daily bars",
-    "ONFOW": "Fewer than 50 completed daily bars",
-    "ONMDW": "Fewer than 50 completed daily bars",
-    "OPAY": "Fewer than 50 completed daily bars",
-    "OPP$A": "http status: 404",
-    "OPP$B": "http status: 404",
-    "OPP$C": "http status: 404",
-    "OPTO": "Fewer than 50 completed daily bars",
-    "OPTXW": "Fewer than 50 completed daily bars",
-    "ORCL$D": "http status: 404",
-    "ORIQW": "Fewer than 50 completed daily bars",
-    "OSPRW": "Fewer than 50 completed daily bars",
-    "OTAI.R": "http status: 404",
-    "OTAI.U": "http status: 404",
-    "OTAX": "Fewer than 50 completed daily bars",
-    "OVQ": "Fewer than 50 completed daily bars",
-    "OXBRW": "Fewer than 50 completed daily bars",
-    "OXY.W": "http status: 404",
-    "PAACW": "Fewer than 50 completed daily bars",
-    "PACHW": "Fewer than 50 completed daily bars",
-    "PAII.U": "http status: 404",
-    "PAII.W": "http status: 404",
-    "PALOW": "Fewer than 50 completed daily bars",
-    "PARAW": "Fewer than 50 completed daily bars"
+    "PARAW": "Fewer than 50 completed daily bars",
+    "PAXG": "Fewer than 50 completed daily bars",
+    "PAXGR": "Fewer than 50 completed daily bars",
+    "PAXGU": "Fewer than 50 completed daily bars",
+    "PBCS": "Fewer than 50 completed daily bars",
+    "PBI$B": "http status: 404",
+    "PBMWW": "Fewer than 50 completed daily bars",
+    "PBUB": "Fewer than 50 completed daily bars",
+    "PBWN": "Fewer than 50 completed daily bars",
+    "PCAPW": "Fewer than 50 completed daily bars",
+    "PCG$A": "http status: 404",
+    "PCG$B": "http status: 404",
+    "PCG$C": "http status: 404",
+    "PCG$D": "http status: 404",
+    "PCG$E": "http status: 404",
+    "PCG$G": "http status: 404",
+    "PCG$H": "http status: 404",
+    "PCG$I": "http status: 404",
+    "PCG$X": "http status: 404",
+    "PCPC": "Fewer than 50 completed daily bars",
+    "PCTTW": "Fewer than 50 completed daily bars",
+    "PEB$E": "http status: 404",
+    "PEB$F": "http status: 404",
+    "PEB$G": "http status: 404",
+    "PEB$H": "http status: 404",
+    "PECER": "Fewer than 50 completed daily bars",
+    "PECEW": "Fewer than 50 completed daily bars",
+    "PEPT": "Fewer than 50 completed daily bars",
+    "PEW.W": "http status: 404",
+    "PFRX": "Fewer than 50 completed daily bars",
+    "PGACR": "Fewer than 50 completed daily bars",
+    "PGYWW": "Fewer than 50 completed daily bars",
+    "PHXE$": "http status: 404",
+    "PIIIW": "Fewer than 50 completed daily bars",
+    "PINE$A": "http status: 404",
+    "PJIN": "Fewer than 50 completed daily bars",
+    "PJSM": "Fewer than 50 completed daily bars",
+    "PLCIR": "Fewer than 50 completed daily bars",
+    "PLMKW": "Fewer than 50 completed daily bars",
+    "PLUN.R": "http status: 404",
+    "PLUN.U": "http status: 404",
+    "PMT$A": "http status: 404",
+    "PMT$B": "http status: 404",
+    "PMT$C": "http status: 404",
+    "PMTRW": "Fewer than 50 completed daily bars",
+    "PNAQ": "Fewer than 50 completed daily bars",
+    "PNAQ.R": "http status: 404",
+    "PNAQ.U": "http status: 404",
+    "PNFP$A": "http status: 404",
+    "PNFP$B": "http status: 404",
+    "PNFP$C": "http status: 404",
+    "POLEW": "Fewer than 50 completed daily bars",
+    "POMG": "Fewer than 50 completed daily bars",
+    "PONOR": "Fewer than 50 completed daily bars",
+    "PORT.U": "http status: 404",
+    "PRENW": "Fewer than 50 completed daily bars",
+    "PRHIZ": "Fewer than 50 completed daily bars",
+    "PRIF$D": "http status: 404",
+    "PRIF$K": "http status: 404",
+    "PSA$F": "http status: 404",
+    "PSA$G": "http status: 404",
+    "PSA$H": "http status: 404",
+    "PSA$I": "http status: 404",
+    "PSA$J": "http status: 404",
+    "PSA$K": "http status: 404",
+    "PSA$L": "http status: 404",
+    "PSA$M": "http status: 404",
+    "PSA$N": "http status: 404",
+    "PSA$O": "http status: 404",
+    "PSA$P": "http status: 404",
+    "PSA$Q": "http status: 404",
+    "PSA$R": "http status: 404",
+    "PSA$S": "http status: 404",
+    "PSA$T": "http status: 404",
+    "PSA$U": "http status: 404",
+    "PSEC$A": "http status: 404",
+    "PSQH.W": "http status: 404",
+    "PTACW": "Non-USD security is not eligible",
+    "PTORW": "Fewer than 50 completed daily bars",
+    "PW$A": "http status: 404",
+    "PWRX": "Fewer than 50 completed daily bars",
+    "QADRW": "Fewer than 50 completed daily bars",
+    "QLEP.W": "http status: 404"
   },
   "decisions": [
     {
+      "action": "BUY_SIGNAL",
+      "at": 1794284361.225311,
+      "evidence": "{\"conviction\":0.9,\"earnings_date\":null,\"headlines\":[\"GIBO Holdings Outlines Strategic Direction for AI-Native Content Production Through AIOS Framework\",\"GIBO Holdings Limited Announces Ratio and Effective Date of Share Consolidation\",\"GIBO WATCH Introduces Breakthrough in AI Filmmaking: Solving Continuity and Context at Scale\",\"The Ultimate Editing Bay: GIBO Unveils Multi-Modal Workspaces Within GIBO Watch\",\"GIBO Announces Breakthrough in Proprietary AIGC Engine, Entering Next-Generation Intelligent Content Infrastructure Phase\",\"GIBO Announces Development of Initial 30MW + 14,000-GPU AI Data Center, Advancing Malaysia as a Leading Digital AI Hub in Asia-Pacific\",\"GIBO Signs Core Partnership Agreement with Ricloud, a NVIDIA Cloud Partner\"],\"source\":\"llm\",\"thesis\":\"GIBO announced a breakthrough in its proprietary AIGC engine and unveiled multi-modal AI workspaces, directly advancing its AI-native content infrastructure. This is a specific, recent, and structural catalyst that aligns with a growing AI content demand trend.\"}",
+      "id": 8924,
+      "reason": "Analyst conviction 0.90: GIBO announced a breakthrough in its proprietary AIGC engine and unveiled multi-modal AI workspaces, directly advancing its AI-native content infrastructure. This is a specific, recent, and structural catalyst that aligns with a growing AI content demand trend.",
+      "symbol": "GIBO"
+    },
+    {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":35681570479.888306,\"earnings_date\":null,\"momentum20d\":-0.055589129930164294,\"price_at\":1793975400.0,\"sma20\":763.3634887695313,\"sma50\":765.679794921875}",
-      "id": 8133,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":35686379276.344604,\"earnings_date\":null,\"momentum20d\":-0.055589129930164294,\"price_at\":1793975400.0,\"sma20\":763.3634887695313,\"sma50\":765.679794921875}",
+      "id": 8923,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
       "symbol": "SPY"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":1065426.0723495483,\"earnings_date\":\"2026-11-12\",\"momentum20d\":-0.017777807918595512,\"price_at\":1793975400.0,\"sma20\":19.934999847412108,\"sma50\":20.27240001678467}",
-      "id": 8132,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":228972.4017572403,\"earnings_date\":null,\"momentum20d\":-0.2840136128896542,\"price_at\":1793975400.0,\"sma20\":2.3957500219345094,\"sma50\":3.012400007247925}",
+      "id": 8922,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PARK"
+      "symbol": "QNTM"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":16140528.712816164,\"earnings_date\":\"2026-11-16\",\"momentum20d\":-0.8114754108372186,\"price_at\":1793975400.0,\"sma20\":1.122400015220046,\"sma50\":0.9874600051343441}",
-      "id": 8131,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":87093842.82068253,\"earnings_date\":null,\"momentum20d\":-0.09031476056031529,\"price_at\":1793975400.0,\"sma20\":35.75149993896484,\"sma50\":43.40699996948242}",
+      "id": 8921,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PARA"
-    },
-    {
-      "action": "CANDIDATE",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":17953914.014191628,\"earnings_date\":null,\"momentum20d\":0.32495157535803987,\"price_at\":1793975400.0,\"sma20\":17.630999898910524,\"sma50\":16.759199962615966}",
-      "id": 8130,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PAR"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":1161330.5852127075,\"earnings_date\":null,\"momentum20d\":-0.01370172519192736,\"price_at\":1793975400.0,\"sma20\":43.291650390625,\"sma50\":43.186180114746094}",
-      "id": 8129,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PAPR"
+      "symbol": "QNT"
     },
     {
       "action": "CANDIDATE",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":2462042.716064453,\"earnings_date\":null,\"momentum20d\":0.05243444114329465,\"price_at\":1793975400.0,\"sma20\":27.90550003051758,\"sma50\":27.45002010345459}",
-      "id": 8128,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":15658366.405625343,\"earnings_date\":null,\"momentum20d\":0.3134138873900365,\"price_at\":1793975400.0,\"sma20\":17.06700005531311,\"sma50\":16.89279998779297}",
+      "id": 8920,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PAPI"
+      "symbol": "QNST"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":2236600817.21756,\"earnings_date\":\"2026-11-18\",\"momentum20d\":-0.2505850392743115,\"price_at\":1793975400.0,\"sma20\":363.48400115966797,\"sma50\":370.29640075683596}",
-      "id": 8127,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":99776.9005227089,\"earnings_date\":null,\"momentum20d\":-0.18888886769612623,\"price_at\":1793975400.0,\"sma20\":4.0455000638961796,\"sma50\":5.289500026702881}",
+      "id": 8919,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PANW"
+      "symbol": "QNRX"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":2848969.956319332,\"earnings_date\":null,\"momentum20d\":-0.09014417676354103,\"price_at\":1793975400.0,\"sma20\":7.860250020027161,\"sma50\":8.12220004081726}",
-      "id": 8126,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":624483.8434517384,\"earnings_date\":\"2026-11-18\",\"momentum20d\":-0.49730457668892813,\"price_at\":1793975400.0,\"sma20\":0.4633499994874001,\"sma50\":0.4864000004529953}",
+      "id": 8918,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PANL"
+      "symbol": "QNME"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":1058732.9760837555,\"earnings_date\":null,\"momentum20d\":-0.4647847361607085,\"price_at\":1793975400.0,\"sma20\":31.34695053100586,\"sma50\":33.440000228881836}",
-      "id": 8125,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":41694281.485824585,\"earnings_date\":null,\"momentum20d\":-0.1261297012020418,\"price_at\":1793975400.0,\"sma20\":23.97400016784668,\"sma50\":24.424400062561034}",
+      "id": 8917,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PANG"
+      "symbol": "QNDX"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":332493.9025402069,\"earnings_date\":null,\"momentum20d\":0.09624417227000093,\"price_at\":1793975400.0,\"sma20\":11.586000061035156,\"sma50\":11.997400016784669}",
-      "id": 8124,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":747832.6985600591,\"earnings_date\":\"2026-11-20\",\"momentum20d\":-0.4556962082619429,\"price_at\":1793975400.0,\"sma20\":1.1340000003576278,\"sma50\":1.5172000014781952}",
+      "id": 8916,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PAMT"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":138105.4598045349,\"earnings_date\":null,\"momentum20d\":-0.07871155741143965,\"price_at\":1793975400.0,\"sma20\":49.06354999542236,\"sma50\":51.399960098266604}",
-      "id": 8123,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PAMC"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":14071368.84765625,\"earnings_date\":null,\"momentum20d\":-0.2086133342145977,\"price_at\":1793975400.0,\"sma20\":75.21599998474122,\"sma50\":79.23939987182617}",
-      "id": 8122,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PAM"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":4427046.516971588,\"earnings_date\":null,\"momentum20d\":-0.46342167795842126,\"price_at\":1793975400.0,\"sma20\":51.11924991607666,\"sma50\":54.44949966430664}",
-      "id": 8121,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PALU"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":353.6000061035157,\"earnings_date\":null,\"momentum20d\":0.0009900272108764874,\"price_at\":1793975400.0,\"sma20\":10.101500272750856,\"sma50\":10.073600234985351}",
-      "id": 8120,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PALOU"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":20680.699529647827,\"earnings_date\":null,\"momentum20d\":0.0010010239350302097,\"price_at\":1793975400.0,\"sma20\":9.994999837875366,\"sma50\":9.990599899291992}",
-      "id": 8119,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PALO"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":19860864.434595108,\"earnings_date\":null,\"momentum20d\":-0.10640351194576925,\"price_at\":1793975400.0,\"sma20\":19.094000148773194,\"sma50\":21.474000091552735}",
-      "id": 8118,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PALL"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":5014397.024812102,\"earnings_date\":\"2026-11-09\",\"momentum20d\":-0.2662337511541626,\"price_at\":1793975400.0,\"sma20\":1.3100000083446504,\"sma50\":1.5640000104904175}",
-      "id": 8117,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PALI"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":1317831.2444639206,\"earnings_date\":null,\"momentum20d\":0.2992575501212762,\"price_at\":1793975400.0,\"sma20\":10.005600023269654,\"sma50\":10.020139980316163}",
-      "id": 8116,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PALD"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":614235.0419807434,\"earnings_date\":null,\"momentum20d\":-0.05004455835048194,\"price_at\":1793975400.0,\"sma20\":53.263949966430665,\"sma50\":54.74542007446289}",
-      "id": 8115,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PALC"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":1595383.7346434593,\"earnings_date\":\"2026-11-12\",\"momentum20d\":-0.15642456835580687,\"price_at\":1793975400.0,\"sma20\":2.8855000138282776,\"sma50\":3.706199998855591}",
-      "id": 8114,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PAL"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":2838494.831347466,\"earnings_date\":null,\"momentum20d\":0.0019361527503765075,\"price_at\":1793975400.0,\"sma20\":10.33045015335083,\"sma50\":10.316880092620849}",
-      "id": 8113,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PAII"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":274405.24693489075,\"earnings_date\":null,\"momentum20d\":0.019469049850918685,\"price_at\":1793975400.0,\"sma20\":11.407999992370605,\"sma50\":11.526600036621094}",
-      "id": 8112,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PAI"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":8106784.517631531,\"earnings_date\":null,\"momentum20d\":-0.13942559422875134,\"price_at\":1793975400.0,\"sma20\":38.10900039672852,\"sma50\":37.076500244140625}",
-      "id": 8111,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PAHC"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":42137481.849946976,\"earnings_date\":\"2026-11-16\",\"momentum20d\":-0.3189964150048863,\"price_at\":1793975400.0,\"sma20\":9.596499919891357,\"sma50\":9.610000019073487}",
-      "id": 8110,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PAGS"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":64476433.14027786,\"earnings_date\":null,\"momentum20d\":-0.03155522637511987,\"price_at\":1793975400.0,\"sma20\":27.607000160217286,\"sma50\":27.36340000152588}",
-      "id": 8109,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PAGP"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":135240212.35107422,\"earnings_date\":null,\"momentum20d\":0.08258562727265817,\"price_at\":1793975400.0,\"sma20\":209.66299896240236,\"sma50\":209.9439990234375}",
-      "id": 8108,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PAG"
+      "symbol": "QNC"
     },
     {
       "action": "CANDIDATE",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":44109294.03734207,\"earnings_date\":null,\"momentum20d\":0.14549652074054453,\"price_at\":1793975400.0,\"sma20\":47.46349983215332,\"sma50\":44.60859970092773}",
-      "id": 8107,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":2198513.854827881,\"earnings_date\":null,\"momentum20d\":0.02616214236697645,\"price_at\":1793975400.0,\"sma20\":46.484000015258786,\"sma50\":45.81560005187988}",
+      "id": 8915,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PACS"
+      "symbol": "QNBC"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":2892171.512297392,\"earnings_date\":null,\"momentum20d\":-0.021563321531935076,\"price_at\":1793975400.0,\"sma20\":3.487500011920929,\"sma50\":3.8902000093460085}",
-      "id": 8106,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":44775.09876251221,\"earnings_date\":null,\"momentum20d\":-0.09094299444636655,\"price_at\":1793975400.0,\"sma20\":25.78799991607666,\"sma50\":26.08720001220703}",
+      "id": 8914,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PACK"
+      "symbol": "QMY"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":28896.700820922844,\"earnings_date\":null,\"momentum20d\":0.0067113799401792296,\"price_at\":1793975400.0,\"sma20\":10.43350028991699,\"sma50\":10.402800178527832}",
-      "id": 8105,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":2055216.4876937866,\"earnings_date\":null,\"momentum20d\":-0.11290967899702242,\"price_at\":1793975400.0,\"sma20\":71.2535499572754,\"sma50\":72.37062026977539}",
+      "id": 8913,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PACHU"
+      "symbol": "QMOM"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":1627240.577263832,\"earnings_date\":null,\"momentum20d\":0.001926734476768388,\"price_at\":1793975400.0,\"sma20\":10.375999927520752,\"sma50\":10.355999946594238}",
-      "id": 8104,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":102535.30450820923,\"earnings_date\":null,\"momentum20d\":-0.03770679303065516,\"price_at\":1793975400.0,\"sma20\":25.72264995574951,\"sma50\":25.72386001586914}",
+      "id": 8912,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PACH"
+      "symbol": "QMNV"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":30081304.88057375,\"earnings_date\":null,\"momentum20d\":-0.03004289078750577,\"price_at\":1793975400.0,\"sma20\":2.2504999935626984,\"sma50\":1.9259999942779542}",
-      "id": 8103,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":676692.7754878998,\"earnings_date\":null,\"momentum20d\":-0.07043950483830785,\"price_at\":1793975400.0,\"sma20\":26.45130023956299,\"sma50\":26.66518009185791}",
+      "id": 8911,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PACB"
-    },
-    {
-      "action": "CANDIDATE",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":31503007.397003174,\"earnings_date\":null,\"momentum20d\":0.2338958058700371,\"price_at\":1793975400.0,\"sma20\":221.62849960327148,\"sma50\":211.98639984130858}",
-      "id": 8102,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PAC"
+      "symbol": "QMMY"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":2750640.098876953,\"earnings_date\":null,\"momentum20d\":-0.07455531417621841,\"price_at\":1793975400.0,\"sma20\":78.30904922485351,\"sma50\":78.58299942016602}",
-      "id": 8101,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":1100082.5448274612,\"earnings_date\":\"2026-11-24\",\"momentum20d\":-0.40380950201125376,\"price_at\":1793975400.0,\"sma20\":3.559500002861023,\"sma50\":5.2238000297546385}",
+      "id": 8910,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PABU"
+      "symbol": "QMLS"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":36830.17539978027,\"earnings_date\":null,\"momentum20d\":-0.00014781845998868004,\"price_at\":1793975400.0,\"sma20\":68.09194946289062,\"sma50\":68.63858032226562}",
-      "id": 8100,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":3896.17000579834,\"earnings_date\":null,\"momentum20d\":0.0037459768843504104,\"price_at\":1793975400.0,\"sma20\":29.95374994277954,\"sma50\":29.64797996520996}",
+      "id": 8909,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PABD"
+      "symbol": "QMID"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":543855.0293540955,\"earnings_date\":null,\"momentum20d\":0.020570058548751158,\"price_at\":1793975400.0,\"sma20\":40.85264987945557,\"sma50\":40.83611999511719}",
-      "id": 8099,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":73004.274559021,\"earnings_date\":null,\"momentum20d\":-0.03863007555257636,\"price_at\":1793975400.0,\"sma20\":24.771849822998046,\"sma50\":24.813219947814943}",
+      "id": 8908,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PAB"
+      "symbol": "QMFE"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":194231679.77933884,\"earnings_date\":null,\"momentum20d\":-0.11022265481656435,\"price_at\":1793975400.0,\"sma20\":41.86250019073486,\"sma50\":45.899599914550784}",
-      "id": 8098,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":31293896.707992554,\"earnings_date\":null,\"momentum20d\":-0.524482414659469,\"price_at\":1793975400.0,\"sma20\":19.276500129699706,\"sma50\":24.05560001373291}",
+      "id": 8907,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PAAS"
+      "symbol": "QMCO"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":144253.55020344257,\"earnings_date\":\"2026-11-09\",\"momentum20d\":-0.1759259719171623,\"price_at\":1793975400.0,\"sma20\":0.8530000030994416,\"sma50\":1.083999993801117}",
-      "id": 8097,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":353631.94122314453,\"earnings_date\":null,\"momentum20d\":-0.04592500532478416,\"price_at\":1793975400.0,\"sma20\":38.04320030212402,\"sma50\":38.13540023803711}",
+      "id": 8906,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PAAI"
+      "symbol": "QMAR"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":1081.5000200271606,\"earnings_date\":null,\"momentum20d\":0.0,\"price_at\":1793975400.0,\"sma20\":10.300000190734863,\"sma50\":10.247399997711181}",
-      "id": 8096,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":310239.6723270416,\"earnings_date\":null,\"momentum20d\":-0.06696767087113376,\"price_at\":1793975400.0,\"sma20\":25.801799869537355,\"sma50\":25.979179992675782}",
+      "id": 8905,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PAACU"
+      "symbol": "QMAG"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":264547.95338630676,\"earnings_date\":null,\"momentum20d\":0.0,\"price_at\":1793975400.0,\"sma20\":10.009500217437743,\"sma50\":10.049600067138671}",
-      "id": 8095,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":165798897.9496765,\"earnings_date\":null,\"momentum20d\":-0.05933205520934792,\"price_at\":1793975400.0,\"sma20\":205.52200012207032,\"sma50\":190.7629998779297}",
+      "id": 8904,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PAAC"
+      "symbol": "QLYS"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":172678385.44015884,\"earnings_date\":null,\"momentum20d\":-0.0007785308426583315,\"price_at\":1793975400.0,\"sma20\":51.40049991607666,\"sma50\":51.401600189208985}",
-      "id": 8094,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":32061.09930038452,\"earnings_date\":null,\"momentum20d\":-0.07179568271237946,\"price_at\":1793975400.0,\"sma20\":32.446799659729,\"sma50\":33.44009994506836}",
+      "id": 8903,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PAAA"
+      "symbol": "QLVE"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":70075376.5653038,\"earnings_date\":null,\"momentum20d\":-0.017255549451970276,\"price_at\":1793975400.0,\"sma20\":25.621499919891356,\"sma50\":25.226399993896486}",
-      "id": 8093,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":65939.21117782593,\"earnings_date\":null,\"momentum20d\":0.04442825836128961,\"price_at\":1793975400.0,\"sma20\":34.32344989776611,\"sma50\":33.99185974121094}",
+      "id": 8902,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "PAA"
+      "symbol": "QLVD"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":438728478.7072754,\"earnings_date\":\"2026-11-18\",\"momentum20d\":-0.3737458957868893,\"price_at\":1793975400.0,\"sma20\":127.32399940490723,\"sma50\":119.98100006103516}",
-      "id": 8092,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":1413367.5664901733,\"earnings_date\":null,\"momentum20d\":0.008526079343529336,\"price_at\":1793975400.0,\"sma20\":81.46934928894044,\"sma50\":80.16419982910156}",
+      "id": 8901,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "P"
+      "symbol": "QLV"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":629626.5015268326,\"earnings_date\":null,\"momentum20d\":-0.018060167728030874,\"price_at\":1793975400.0,\"sma20\":14.785500001907348,\"sma50\":15.071900062561035}",
-      "id": 8091,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":25538773.61055374,\"earnings_date\":null,\"momentum20d\":-0.01730415194030177,\"price_at\":1793975400.0,\"sma20\":43.84325008392334,\"sma50\":43.33470001220703}",
+      "id": 8900,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OZKAP"
-    },
-    {
-      "action": "CANDIDATE",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":88501772.19491959,\"earnings_date\":null,\"momentum20d\":0.1402837100572376,\"price_at\":1793975400.0,\"sma20\":48.85850009918213,\"sma50\":48.038400115966795}",
-      "id": 8090,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OZK"
+      "symbol": "QLTY"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":337074.7516345978,\"earnings_date\":null,\"momentum20d\":0.04344445476124825,\"price_at\":1793975400.0,\"sma20\":29.910949993133546,\"sma50\":30.795000190734864}",
-      "id": 8089,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":495723.0693435669,\"earnings_date\":null,\"momentum20d\":0.04444773660069479,\"price_at\":1793975400.0,\"sma20\":27.676850032806396,\"sma50\":27.214060096740724}",
+      "id": 8899,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OZEM"
+      "symbol": "QLTI"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":755499.3011474609,\"earnings_date\":null,\"momentum20d\":-0.09509041151600206,\"price_at\":1793975400.0,\"sma20\":35.45049991607666,\"sma50\":41.02083999633789}",
-      "id": 8088,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":6405646.623840332,\"earnings_date\":null,\"momentum20d\":0.018851152611324862,\"price_at\":1793975400.0,\"sma20\":45.62749977111817,\"sma50\":45.62939987182617}",
+      "id": 8898,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OZ"
+      "symbol": "QLTA"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":210.0,\"earnings_date\":null,\"momentum20d\":-0.015009366763823362,\"price_at\":1793975400.0,\"sma20\":10.651999855041504,\"sma50\":10.656799850463868}",
-      "id": 8087,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":374481.45775318146,\"earnings_date\":null,\"momentum20d\":0.002985048000183177,\"price_at\":1793975400.0,\"sma20\":10.067000102996825,\"sma50\":10.043600101470947}",
+      "id": 8897,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OYSEU"
+      "symbol": "QLEP"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":850.0250233523548,\"earnings_date\":null,\"momentum20d\":-0.5384615318485968,\"price_at\":1793975400.0,\"sma20\":0.09624999929219484,\"sma50\":0.1113599994033575}",
-      "id": 8086,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":1626109.1518211365,\"earnings_date\":null,\"momentum20d\":-0.16264168779590382,\"price_at\":1793975400.0,\"sma20\":38.026100158691406,\"sma50\":39.750180130004885}",
+      "id": 8896,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OYSER"
+      "symbol": "QLDY"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":716502.5899744034,\"earnings_date\":null,\"momentum20d\":0.003363752840973344,\"price_at\":1793975400.0,\"sma20\":10.424999952316284,\"sma50\":10.405240001678466}",
-      "id": 8085,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":545014600.2248001,\"earnings_date\":null,\"momentum20d\":-0.24700262152884644,\"price_at\":1793975400.0,\"sma20\":87.05800018310546,\"sma50\":90.80219970703125}",
+      "id": 8895,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OYSE"
+      "symbol": "QLD"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":558235422.9408073,\"earnings_date\":\"2026-11-09\",\"momentum20d\":-0.062052894765633804,\"price_at\":1793975400.0,\"sma20\":61.50700016021729,\"sma50\":60.05280014038086}",
-      "id": 8084,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":2794065.2309799194,\"earnings_date\":null,\"momentum20d\":-0.06290531675306088,\"price_at\":1793975400.0,\"sma20\":90.4101001739502,\"sma50\":91.36501998901367}",
+      "id": 8894,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OXY"
+      "symbol": "QLC"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":113945.43096542358,\"earnings_date\":null,\"momentum20d\":-0.01933143550991545,\"price_at\":1793975400.0,\"sma20\":24.437550163269044,\"sma50\":24.795420112609865}",
-      "id": 8083,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":1791371.9230747223,\"earnings_date\":null,\"momentum20d\":-0.09022755962781215,\"price_at\":1793975400.0,\"sma20\":33.266649913787845,\"sma50\":33.6635599899292}",
+      "id": 8893,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OXSQH"
+      "symbol": "QJUN"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":56623.490409851074,\"earnings_date\":null,\"momentum20d\":-0.002066162926976145,\"price_at\":1793975400.0,\"sma20\":24.05594997406006,\"sma50\":24.184440002441406}",
-      "id": 8082,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":53044.350509643555,\"earnings_date\":null,\"momentum20d\":-0.08310570544329632,\"price_at\":1793975400.0,\"sma20\":24.663999843597413,\"sma50\":24.93159999847412}",
+      "id": 8892,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OXSQG"
+      "symbol": "QJN"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":2309273.1453362107,\"earnings_date\":null,\"momentum20d\":-0.340909113486607,\"price_at\":1793975400.0,\"sma20\":1.1614999949932099,\"sma50\":1.246399998664856}",
-      "id": 8081,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":2506.649990081787,\"earnings_date\":null,\"momentum20d\":-0.08298116751569207,\"price_at\":1793975400.0,\"sma20\":25.06649990081787,\"sma50\":25.32379997253418}",
+      "id": 8891,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OXSQ"
+      "symbol": "QJL"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":15436052.392148972,\"earnings_date\":null,\"momentum20d\":0.15642243309606196,\"price_at\":1793975400.0,\"sma20\":27.65399980545044,\"sma50\":28.629600105285643}",
-      "id": 8080,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":2758.075032234192,\"earnings_date\":null,\"momentum20d\":-0.16838983372731808,\"price_at\":1793975400.0,\"sma20\":11.00450005531311,\"sma50\":11.2925}",
+      "id": 8890,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OXM"
+      "symbol": "QIS"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":207495.87451934814,\"earnings_date\":null,\"momentum20d\":0.008627614443405207,\"price_at\":1793975400.0,\"sma20\":25.005249977111816,\"sma50\":24.9835400390625}",
-      "id": 8079,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":3972067.6640701294,\"earnings_date\":null,\"momentum20d\":-0.017218961523609133,\"price_at\":1793975400.0,\"sma20\":69.02849922180175,\"sma50\":70.09759994506835}",
+      "id": 8889,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OXLCZ"
+      "symbol": "QINT"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":56365.87447166443,\"earnings_date\":null,\"momentum20d\":0.002529568930351278,\"price_at\":1793975400.0,\"sma20\":23.564899921417236,\"sma50\":23.662719955444334}",
-      "id": 8078,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":102544.81901168823,\"earnings_date\":null,\"momentum20d\":0.015284873873276927,\"price_at\":1793975400.0,\"sma20\":42.61674976348877,\"sma50\":42.69809989929199}",
+      "id": 8888,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OXLCO"
+      "symbol": "QIG"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":58054.71558570862,\"earnings_date\":null,\"momentum20d\":0.0020427862969203403,\"price_at\":1793975400.0,\"sma20\":24.332100105285644,\"sma50\":24.44294002532959}",
-      "id": 8077,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":25152.030262947083,\"earnings_date\":null,\"momentum20d\":-0.02249803321624433,\"price_at\":1793975400.0,\"sma20\":11.549199962615967,\"sma50\":11.528359966278076}",
+      "id": 8887,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OXLCN"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":1087289.6620559692,\"earnings_date\":null,\"momentum20d\":-0.006813630104030355,\"price_at\":1793975400.0,\"sma20\":24.787999820709228,\"sma50\":24.933800010681153}",
-      "id": 8076,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OXLCM"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":76249.02465820312,\"earnings_date\":null,\"momentum20d\":-0.006928444754446983,\"price_at\":1793975400.0,\"sma20\":23.758249950408935,\"sma50\":23.974259910583495}",
-      "id": 8075,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OXLCL"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":475530.49129486084,\"earnings_date\":null,\"momentum20d\":-0.0003971496727813717,\"price_at\":1793975400.0,\"sma20\":25.125799942016602,\"sma50\":25.33020008087158}",
-      "id": 8074,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OXLCI"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":167388.95134925842,\"earnings_date\":null,\"momentum20d\":-0.012560756163255471,\"price_at\":1793975400.0,\"sma20\":24.420000076293945,\"sma50\":24.763059997558592}",
-      "id": 8073,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OXLCG"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":14035950.8533597,\"earnings_date\":null,\"momentum20d\":-0.42523366412238406,\"price_at\":1793975400.0,\"sma20\":6.972000002861023,\"sma50\":8.293599996566773}",
-      "id": 8072,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OXLC"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":14471.290050148964,\"earnings_date\":\"2026-11-09\",\"momentum20d\":-0.1431372262568984,\"price_at\":1793975400.0,\"sma20\":0.8705499976873398,\"sma50\":1.1406199967861175}",
-      "id": 8071,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OXBR"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":267034.47452545166,\"earnings_date\":null,\"momentum20d\":0.031392829508850584,\"price_at\":1793975400.0,\"sma20\":16.68834991455078,\"sma50\":16.708259887695313}",
-      "id": 8070,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OWNS"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":39900.44506072998,\"earnings_date\":null,\"momentum20d\":-0.21032397025398253,\"price_at\":1793975400.0,\"sma20\":18.967999839782713,\"sma50\":20.70704002380371}",
-      "id": 8069,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OWNB"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":26886.850004196167,\"earnings_date\":null,\"momentum20d\":-0.08151326842198303,\"price_at\":1793975400.0,\"sma20\":24.646999835968018,\"sma50\":24.927999877929686}",
-      "id": 8068,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OWN"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":589451.3014626503,\"earnings_date\":\"2026-11-12\",\"momentum20d\":-0.1183932220975411,\"price_at\":1793975400.0,\"sma20\":4.2600000381469725,\"sma50\":4.662400016784668}",
-      "id": 8067,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OWLT"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":199323.54954361916,\"earnings_date\":null,\"momentum20d\":-0.593283579765914,\"price_at\":1793975400.0,\"sma20\":3.293500006198883,\"sma50\":4.572700009346009}",
-      "id": 8066,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OWLS"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":209624108.80984306,\"earnings_date\":null,\"momentum20d\":0.03477343853161896,\"price_at\":1793975400.0,\"sma20\":9.600500011444092,\"sma50\":9.926600036621094}",
-      "id": 8065,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OWL"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":240228493.32784653,\"earnings_date\":null,\"momentum20d\":-0.05259863109220664,\"price_at\":1793975400.0,\"sma20\":68.16500034332276,\"sma50\":64.8262003326416}",
-      "id": 8064,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OVV"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":221715.64490318298,\"earnings_date\":null,\"momentum20d\":-0.01038111385056184,\"price_at\":1793975400.0,\"sma20\":21.331750011444093,\"sma50\":21.394999961853028}",
-      "id": 8063,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OVT"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":607751.0725593567,\"earnings_date\":null,\"momentum20d\":-0.02398659606177067,\"price_at\":1793975400.0,\"sma20\":38.696200370788574,\"sma50\":39.21358024597168}",
-      "id": 8062,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OVS"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":231354.55668449402,\"earnings_date\":null,\"momentum20d\":0.02297900557874133,\"price_at\":1793975400.0,\"sma20\":20.814200019836427,\"sma50\":20.76577991485596}",
-      "id": 8061,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OVM"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":468247.05068588257,\"earnings_date\":null,\"momentum20d\":0.028468708221375927,\"price_at\":1793975400.0,\"sma20\":34.120499992370604,\"sma50\":34.18279983520508}",
-      "id": 8060,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OVLY"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":469595.96603393555,\"earnings_date\":null,\"momentum20d\":-0.04027188440831442,\"price_at\":1793975400.0,\"sma20\":42.10700035095215,\"sma50\":42.23800018310547}",
-      "id": 8059,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OVLH"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":13742007.00263977,\"earnings_date\":null,\"momentum20d\":-0.07844153730384196,\"price_at\":1793975400.0,\"sma20\":56.13924942016602,\"sma50\":56.67399971008301}",
-      "id": 8058,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OVL"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":5293037.725242376,\"earnings_date\":\"2026-11-11\",\"momentum20d\":0.1585365286332956,\"price_at\":1793975400.0,\"sma20\":2.3827500104904176,\"sma50\":2.511400008201599}",
-      "id": 8057,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OVID"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":696396.4279460907,\"earnings_date\":null,\"momentum20d\":-0.06419315816876725,\"price_at\":1793975400.0,\"sma20\":30.054249954223632,\"sma50\":30.900159912109373}",
-      "id": 8056,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OVF"
+      "symbol": "QIDX"
     },
     {
       "action": "CANDIDATE",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":1070877.3509788513,\"earnings_date\":null,\"momentum20d\":0.08649974936740734,\"price_at\":1793975400.0,\"sma20\":47.27200012207031,\"sma50\":46.140599975585936}",
-      "id": 8055,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":641633075.6406736,\"earnings_date\":null,\"momentum20d\":0.28883682186294957,\"price_at\":1793975400.0,\"sma20\":14.436999988555907,\"sma50\":13.984800033569336}",
+      "id": 8886,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OVBC"
+      "symbol": "QID"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":210673.94780158997,\"earnings_date\":null,\"momentum20d\":0.007509545512210947,\"price_at\":1793975400.0,\"sma20\":19.68625020980835,\"sma50\":19.726719970703126}",
-      "id": 8054,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":900835.5356407166,\"earnings_date\":null,\"momentum20d\":0.0019518089921344295,\"price_at\":1793975400.0,\"sma20\":44.59975032806396,\"sma50\":44.842620086669925}",
+      "id": 8885,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OVB"
+      "symbol": "QHY"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":49183315.40448189,\"earnings_date\":null,\"momentum20d\":0.027018058227448405,\"price_at\":1793975400.0,\"sma20\":31.207999992370606,\"sma50\":29.66559989929199}",
-      "id": 8053,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":15832.494941949844,\"earnings_date\":null,\"momentum20d\":-0.2447552414906743,\"price_at\":1793975400.0,\"sma20\":3.1558999896049498,\"sma50\":3.5978000164031982}",
+      "id": 8884,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OUT"
+      "symbol": "QH"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":94696511.0925293,\"earnings_date\":null,\"momentum20d\":-0.127944941396118,\"price_at\":1793975400.0,\"sma20\":31.238250064849854,\"sma50\":35.363500099182126}",
-      "id": 8052,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":28604461.60627365,\"earnings_date\":null,\"momentum20d\":-0.11282998674763545,\"price_at\":1793975400.0,\"sma20\":66.59000034332276,\"sma50\":67.52999992370606}",
+      "id": 8883,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OUST"
+      "symbol": "QGRW"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":11115817.83279419,\"earnings_date\":null,\"momentum20d\":-0.0805829731824026,\"price_at\":1793975400.0,\"sma20\":116.04500045776368,\"sma50\":116.9331999206543}",
+      "id": 8882,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QGRO"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":599946.5416622162,\"earnings_date\":null,\"momentum20d\":-0.09556840219636675,\"price_at\":1793975400.0,\"sma20\":28.935999965667726,\"sma50\":29.4206600189209}",
+      "id": 8881,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QGRD"
     },
     {
       "action": "CANDIDATE",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":1751180.0527572632,\"earnings_date\":null,\"momentum20d\":0.043022223223798006,\"price_at\":1793975400.0,\"sma20\":48.304650115966794,\"sma50\":47.794660110473636}",
-      "id": 8051,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":306769340.74934006,\"earnings_date\":null,\"momentum20d\":0.10907890362341588,\"price_at\":1793975400.0,\"sma20\":48.942500305175784,\"sma50\":45.833400344848634}",
+      "id": 8880,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OUSM"
+      "symbol": "QGEN"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":686353.5537266731,\"earnings_date\":null,\"momentum20d\":-0.3410169310488943,\"price_at\":1793975400.0,\"sma20\":8.625000023841858,\"sma50\":11.97500002861023}",
-      "id": 8050,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":28227.734937667847,\"earnings_date\":null,\"momentum20d\":-0.08618076359478288,\"price_at\":1793975400.0,\"sma20\":30.543400001525878,\"sma50\":30.372880058288573}",
+      "id": 8879,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OUSL"
+      "symbol": "QFRD"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":2417225.8337402344,\"earnings_date\":null,\"momentum20d\":-0.08768093501656549,\"price_at\":1793975400.0,\"sma20\":35.131300354003905,\"sma50\":35.49514030456543}",
+      "id": 8878,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QFLR"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":10358152.311077118,\"earnings_date\":\"2026-11-17\",\"momentum20d\":-0.09999998461815574,\"price_at\":1793975400.0,\"sma20\":5.521749997138977,\"sma50\":6.821800050735473}",
+      "id": 8877,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QFIN"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":33464.2050743103,\"earnings_date\":null,\"momentum20d\":0.06792383112401157,\"price_at\":1793975400.0,\"sma20\":28.140450096130373,\"sma50\":27.536479949951172}",
+      "id": 8876,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QFHD"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":115256.69987678528,\"earnings_date\":null,\"momentum20d\":-0.04393390471790115,\"price_at\":1793975400.0,\"sma20\":24.180000019073486,\"sma50\":24.293600006103517}",
+      "id": 8875,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QFF"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":694058.9551830292,\"earnings_date\":null,\"momentum20d\":-0.08109893842565763,\"price_at\":1793975400.0,\"sma20\":29.145500087738036,\"sma50\":29.527399864196777}",
+      "id": 8874,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QEW"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":769321.6540336609,\"earnings_date\":null,\"momentum20d\":-0.10140211250977327,\"price_at\":1793975400.0,\"sma20\":23.572000217437743,\"sma50\":24.74190010070801}",
+      "id": 8873,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QETH"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":295608.5027694702,\"earnings_date\":null,\"momentum20d\":-0.07788663020239228,\"price_at\":1793975400.0,\"sma20\":77.28950004577636,\"sma50\":79.82580001831055}",
+      "id": 8872,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QEMM"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":5238267.575378418,\"earnings_date\":null,\"momentum20d\":0.014485345251491477,\"price_at\":1793975400.0,\"sma20\":99.60910034179688,\"sma50\":99.38009963989258}",
+      "id": 8871,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QEFA"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":8269920.5430698395,\"earnings_date\":null,\"momentum20d\":-0.10141123144802944,\"price_at\":1793975400.0,\"sma20\":29.132999897003174,\"sma50\":29.616199989318847}",
+      "id": 8870,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QDVO"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":509025.7085800171,\"earnings_date\":null,\"momentum20d\":-0.1331211325973829,\"price_at\":1793975400.0,\"sma20\":36.645799827575686,\"sma50\":38.052399978637695}",
+      "id": 8869,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QDTY"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":13849617.10987091,\"earnings_date\":null,\"momentum20d\":-0.12576268082958153,\"price_at\":1793975400.0,\"sma20\":27.747000217437744,\"sma50\":28.52460006713867}",
+      "id": 8868,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QDTE"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":5928352.855758667,\"earnings_date\":null,\"momentum20d\":-0.05832086011845361,\"price_at\":1793975400.0,\"sma20\":45.798500061035156,\"sma50\":46.064659957885745}",
+      "id": 8867,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QDPL"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":122609.05321121216,\"earnings_date\":null,\"momentum20d\":0.08135203739452579,\"price_at\":1793975400.0,\"sma20\":41.49339981079102,\"sma50\":40.228740005493165}",
+      "id": 8866,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QDIV"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":2160465.7011032104,\"earnings_date\":null,\"momentum20d\":-0.037020851817694767,\"price_at\":1793975400.0,\"sma20\":90.7810001373291,\"sma50\":91.03760009765625}",
+      "id": 8865,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QDF"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":32384295.61384678,\"earnings_date\":null,\"momentum20d\":-0.20268258208385648,\"price_at\":1793975400.0,\"sma20\":13.534500026702881,\"sma50\":12.587600021362304}",
+      "id": 8864,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QDEL"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":698458.1559371948,\"earnings_date\":null,\"momentum20d\":-0.02773799323490611,\"price_at\":1793975400.0,\"sma20\":90.79500045776368,\"sma50\":90.48720016479493}",
+      "id": 8863,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QDEF"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":1061927.8609085083,\"earnings_date\":null,\"momentum20d\":-0.06806561484876883,\"price_at\":1793975400.0,\"sma20\":36.27814979553223,\"sma50\":36.444199829101564}",
+      "id": 8862,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QDEC"
     },
     {
       "action": "CANDIDATE",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":1117594.7925186157,\"earnings_date\":null,\"momentum20d\":0.038771162342100096,\"price_at\":1793975400.0,\"sma20\":62.72110023498535,\"sma50\":61.46630020141602}",
-      "id": 8049,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":13473704.37866211,\"earnings_date\":null,\"momentum20d\":0.03744470140860079,\"price_at\":1793975400.0,\"sma20\":100.78300056457519,\"sma50\":100.51380020141602}",
+      "id": 8861,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OUSA"
+      "symbol": "QCRH"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":24325104.99403,\"earnings_date\":null,\"momentum20d\":-0.031265467627465515,\"price_at\":1793975400.0,\"sma20\":39.06900005340576,\"sma50\":40.341799926757815}",
-      "id": 8048,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":2302710958.4288025,\"earnings_date\":null,\"momentum20d\":-0.05749285662615744,\"price_at\":1793975400.0,\"sma20\":173.45800018310547,\"sma50\":178.10539978027344}",
+      "id": 8860,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OUNZ"
+      "symbol": "QCOM"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":19479016.01108551,\"earnings_date\":null,\"momentum20d\":-0.10313282343342467,\"price_at\":1793975400.0,\"sma20\":88.22350006103515,\"sma50\":88.58919982910156}",
-      "id": 8047,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":2299867.814645767,\"earnings_date\":null,\"momentum20d\":-0.03137170572086956,\"price_at\":1793975400.0,\"sma20\":24.551599979400635,\"sma50\":24.503060073852538}",
+      "id": 8859,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OTTR"
+      "symbol": "QCOC"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":1539144.4234752655,\"earnings_date\":null,\"momentum20d\":-0.2577903663586212,\"price_at\":1793975400.0,\"sma20\":10.179499959945678,\"sma50\":11.456000022888183}",
-      "id": 8046,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":1990467.7097892761,\"earnings_date\":null,\"momentum20d\":-0.14992648156880684,\"price_at\":1793975400.0,\"sma20\":19.690649890899657,\"sma50\":21.25163990020752}",
+      "id": 8858,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OTLY"
+      "symbol": "QCMU"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":1830825.539638549,\"earnings_date\":null,\"momentum20d\":-0.27212019003434185,\"price_at\":1793975400.0,\"sma20\":0.503999999165535,\"sma50\":0.5820199978351593}",
-      "id": 8045,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":7192571.264362335,\"earnings_date\":null,\"momentum20d\":-0.15677966590919235,\"price_at\":1793975400.0,\"sma20\":15.890800046920777,\"sma50\":17.12551996231079}",
+      "id": 8857,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OTLK"
+      "symbol": "QCML"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":430730.5108833313,\"earnings_date\":null,\"momentum20d\":0.029759331199131323,\"price_at\":1793975400.0,\"sma20\":16.610649728775023,\"sma50\":16.40539993286133}",
+      "id": 8856,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QCMD"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":77088.29997897148,\"earnings_date\":\"2026-11-18\",\"momentum20d\":-0.46031745055605455,\"price_at\":1793975400.0,\"sma20\":0.4716499999165535,\"sma50\":0.8829199934005737}",
+      "id": 8855,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QCLS"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":5457742.382946014,\"earnings_date\":null,\"momentum20d\":-0.11003102094556838,\"price_at\":1793975400.0,\"sma20\":44.396999740600585,\"sma50\":47.04159980773926}",
+      "id": 8854,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QCLN"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":211172.6750278473,\"earnings_date\":null,\"momentum20d\":-0.056174246306981424,\"price_at\":1793975400.0,\"sma20\":25.681500053405763,\"sma50\":25.820840187072754}",
+      "id": 8853,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QCJL"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":231988.480052948,\"earnings_date\":null,\"momentum20d\":-0.03540148403522625,\"price_at\":1793975400.0,\"sma20\":23.80389986038208,\"sma50\":23.829739875793457}",
+      "id": 8852,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QCJA"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":182526.6224861145,\"earnings_date\":null,\"momentum20d\":-0.04315340200006279,\"price_at\":1793975400.0,\"sma20\":25.274950122833253,\"sma50\":25.338779945373535}",
+      "id": 8851,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QCAP"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":38219.04534101486,\"earnings_date\":null,\"momentum20d\":-0.11021194998005823,\"price_at\":1793975400.0,\"sma20\":4.86870002746582,\"sma50\":5.361680002212524}",
+      "id": 8850,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QBY"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":137487.1743106842,\"earnings_date\":null,\"momentum20d\":-0.0077066841603765646,\"price_at\":1793975400.0,\"sma20\":24.041350078582763,\"sma50\":24.070079956054688}",
+      "id": 8849,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QBUL"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":950148.3142662048,\"earnings_date\":null,\"momentum20d\":-0.052614648068867065,\"price_at\":1793975400.0,\"sma20\":30.403700065612792,\"sma50\":30.6797200012207}",
+      "id": 8848,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QBUF"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":3377677.214574814,\"earnings_date\":null,\"momentum20d\":0.35950105890768236,\"price_at\":1793975400.0,\"sma20\":31.139050006866455,\"sma50\":23.20280002593994}",
+      "id": 8847,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QBTZ"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":3636649.4746112823,\"earnings_date\":null,\"momentum20d\":-0.5145011602853278,\"price_at\":1793975400.0,\"sma20\":10.587750005722047,\"sma50\":18.152300052642822}",
+      "id": 8846,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QBTX"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":173575389.96539116,\"earnings_date\":\"2026-11-10\",\"momentum20d\":-0.266986923207027,\"price_at\":1793975400.0,\"sma20\":11.548250007629395,\"sma50\":14.580700054168702}",
+      "id": 8845,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QBTS"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":78648.35012435913,\"earnings_date\":null,\"momentum20d\":-0.030589886134200106,\"price_at\":1793975400.0,\"sma20\":27.20399990081787,\"sma50\":27.248399963378905}",
+      "id": 8844,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QBSV"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":473220.2110004425,\"earnings_date\":null,\"momentum20d\":-0.01319594262949042,\"price_at\":1793975400.0,\"sma20\":27.539550018310546,\"sma50\":27.4960599899292}",
+      "id": 8843,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QBSF"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":26591.399841308594,\"earnings_date\":null,\"momentum20d\":-0.085036494749814,\"price_at\":1793975400.0,\"sma20\":26.425999927520753,\"sma50\":26.79939998626709}",
+      "id": 8842,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QBQV"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":94841.39925956726,\"earnings_date\":null,\"momentum20d\":-0.034403655343266615,\"price_at\":1793975400.0,\"sma20\":25.785499858856202,\"sma50\":25.938999900817873}",
+      "id": 8841,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QBQF"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":12044.45011138916,\"earnings_date\":null,\"momentum20d\":-0.009304056278069406,\"price_at\":1793975400.0,\"sma20\":26.797000026702882,\"sma50\":26.991600036621094}",
+      "id": 8840,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QBKV"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":40739.8002910614,\"earnings_date\":null,\"momentum20d\":-0.0015342926216701525,\"price_at\":1793975400.0,\"sma20\":26.057499980926515,\"sma50\":26.054000053405762}",
+      "id": 8839,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QBKF"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":12288.350219726562,\"earnings_date\":null,\"momentum20d\":-0.007175174848697785,\"price_at\":1793975400.0,\"sma20\":26.511499977111818,\"sma50\":26.810599937438965}",
+      "id": 8838,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QBIV"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":105493.53931427002,\"earnings_date\":null,\"momentum20d\":-0.0908922198379134,\"price_at\":1793975400.0,\"sma20\":41.34249992370606,\"sma50\":41.69096008300781}",
+      "id": 8837,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QBIG"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":80467.19974517822,\"earnings_date\":null,\"momentum20d\":-0.00038536526349997047,\"price_at\":1793975400.0,\"sma20\":26.000500011444093,\"sma50\":26.196200103759764}",
+      "id": 8836,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QBIF"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":141649.38174247742,\"earnings_date\":null,\"momentum20d\":-0.06587733323388978,\"price_at\":1793975400.0,\"sma20\":18.066249942779542,\"sma50\":18.22805992126465}",
+      "id": 8835,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QBF"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":998880.1329803467,\"earnings_date\":null,\"momentum20d\":0.012179795129443782,\"price_at\":1793975400.0,\"sma20\":23.862400150299074,\"sma50\":23.844940032958984}",
+      "id": 8834,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QBER"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":33951.4453125,\"earnings_date\":null,\"momentum20d\":-0.08046443904720613,\"price_at\":1793975400.0,\"sma20\":48.12585029602051,\"sma50\":48.69646034240723}",
+      "id": 8833,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QB"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":2554.7999954223633,\"earnings_date\":null,\"momentum20d\":-0.07540734434040008,\"price_at\":1793975400.0,\"sma20\":25.547999954223634,\"sma50\":25.74379993438721}",
+      "id": 8832,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QAU"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":465120.30099868774,\"earnings_date\":null,\"momentum20d\":0.10082564885255763,\"price_at\":1793975400.0,\"sma20\":16.11059989929199,\"sma50\":16.547559909820556}",
+      "id": 8831,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QAT"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":89925.48084259033,\"earnings_date\":null,\"momentum20d\":-0.0017983667456756836,\"price_at\":1793975400.0,\"sma20\":68.99955024719239,\"sma50\":68.15850006103516}",
+      "id": 8830,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QARP"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":396389.61609840393,\"earnings_date\":null,\"momentum20d\":-0.024819961896392018,\"price_at\":1793975400.0,\"sma20\":25.938150310516356,\"sma50\":26.152140159606933}",
+      "id": 8829,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QALT"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":2767353.2413482666,\"earnings_date\":null,\"momentum20d\":-0.023776523063047006,\"price_at\":1793975400.0,\"sma20\":35.684500503540036,\"sma50\":36.03740036010742}",
+      "id": 8828,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QAI"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":3457.650065422058,\"earnings_date\":null,\"momentum20d\":-0.0019802432681454984,\"price_at\":1793975400.0,\"sma20\":10.141500186920165,\"sma50\":10.116600303649903}",
+      "id": 8827,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QADRU"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":296175.20515441895,\"earnings_date\":null,\"momentum20d\":0.0009990238414763208,\"price_at\":1793975400.0,\"sma20\":10.00850019454956,\"sma50\":9.998199958801269}",
+      "id": 8826,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QADR"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":344745.3943634033,\"earnings_date\":null,\"momentum20d\":0.04793235222395231,\"price_at\":1793975400.0,\"sma20\":66.04999980926513,\"sma50\":66.17539985656738}",
+      "id": 8825,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "QABA"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":246276984.4498062,\"earnings_date\":null,\"momentum20d\":-0.07582937274745283,\"price_at\":1793975400.0,\"sma20\":117.69650077819824,\"sma50\":121.0120004272461}",
+      "id": 8824,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "Q"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":29501758.45683098,\"earnings_date\":null,\"momentum20d\":-0.0010126814057555,\"price_at\":1793975400.0,\"sma20\":18.950499629974367,\"sma50\":20.065399742126466}",
+      "id": 8823,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "PZZA"
     },
     {
       "action": "CANDIDATE",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":381459457.569046,\"earnings_date\":null,\"momentum20d\":0.19727070111073353,\"price_at\":1793975400.0,\"sma20\":73.88000030517578,\"sma50\":70.33379989624024}",
-      "id": 8044,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":1522702.7386379242,\"earnings_date\":null,\"momentum20d\":0.05724070673796988,\"price_at\":1793975400.0,\"sma20\":21.02549991607666,\"sma50\":20.98800003051758}",
+      "id": 8822,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OTIS"
+      "symbol": "PZT"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":33260.25457382202,\"earnings_date\":null,\"momentum20d\":-0.131853735407081,\"price_at\":1793975400.0,\"sma20\":10.77209997177124,\"sma50\":10.890819988250733}",
-      "id": 8043,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":86293.95011901855,\"earnings_date\":null,\"momentum20d\":0.04383651671117783,\"price_at\":1793975400.0,\"sma20\":31.43100004196167,\"sma50\":31.006600189208985}",
+      "id": 8821,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OTGL"
+      "symbol": "PZLV"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":502.62498527765274,\"earnings_date\":null,\"momentum20d\":-0.14516134304260941,\"price_at\":1793975400.0,\"sma20\":0.28349999338388443,\"sma50\":0.3070000004768372}",
-      "id": 8042,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":53673.84930610657,\"earnings_date\":null,\"momentum20d\":0.03656868374758404,\"price_at\":1793975400.0,\"sma20\":30.051499938964845,\"sma50\":29.94900005340576}",
+      "id": 8820,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OTGAW"
+      "symbol": "PZIV"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":5031.039996147156,\"earnings_date\":null,\"momentum20d\":-0.0038461503192515067,\"price_at\":1793975400.0,\"sma20\":10.364050006866455,\"sma50\":10.377019882202148}",
-      "id": 8041,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":284596.80116057396,\"earnings_date\":\"2026-11-13\",\"momentum20d\":-0.1603448231566107,\"price_at\":1793975400.0,\"sma20\":0.9883499860763549,\"sma50\":1.1759399962425232}",
+      "id": 8819,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OTGAU"
+      "symbol": "PZG"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":653898.9084100723,\"earnings_date\":null,\"momentum20d\":0.0,\"price_at\":1793975400.0,\"sma20\":10.259550189971923,\"sma50\":10.252220115661622}",
-      "id": 8040,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":71433278.27192307,\"earnings_date\":null,\"momentum20d\":0.053026799457278395,\"price_at\":1793975400.0,\"sma20\":21.825000095367432,\"sma50\":21.843800010681154}",
+      "id": 8818,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OTGA"
+      "symbol": "PZA"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":23214974.29224968,\"earnings_date\":null,\"momentum20d\":0.016025702746429227,\"price_at\":1793975400.0,\"sma20\":9.305499935150147,\"sma50\":10.003600006103516}",
-      "id": 8039,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":105204.39964294434,\"earnings_date\":null,\"momentum20d\":-0.048615383148065905,\"price_at\":1793975400.0,\"sma20\":113.03899993896485,\"sma50\":116.37980010986328}",
+      "id": 8817,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OTF"
+      "symbol": "PYZ"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":39496980.35982132,\"earnings_date\":null,\"momentum20d\":0.04852318909324982,\"price_at\":1793975400.0,\"sma20\":26.288500022888183,\"sma50\":24.439400024414063}",
-      "id": 8038,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":1442787.247234583,\"earnings_date\":null,\"momentum20d\":-0.1822660147699725,\"price_at\":1793975400.0,\"sma20\":1.7674999952316284,\"sma50\":2.507000012397766}",
+      "id": 8816,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OTEX"
+      "symbol": "PYXS"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":427896.5903329849,\"earnings_date\":null,\"momentum20d\":0.0009911029465419219,\"price_at\":1793975400.0,\"sma20\":10.107499933242797,\"sma50\":10.051000022888184}",
-      "id": 8037,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":21633.549823760986,\"earnings_date\":null,\"momentum20d\":-0.008182542305232188,\"price_at\":1793975400.0,\"sma20\":23.19849967956543,\"sma50\":23.491199913024904}",
+      "id": 8815,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OTAI"
+      "symbol": "PYT"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":168997.38913536072,\"earnings_date\":null,\"momentum20d\":0.036844149673126436,\"price_at\":1793975400.0,\"sma20\":26.213349914550783,\"sma50\":26.086979904174804}",
+      "id": 8814,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "PYPY"
+    },
+    {
+      "action": "PASS",
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":37054.749240875244,\"earnings_date\":null,\"momentum20d\":0.12274361643611131,\"price_at\":1793975400.0,\"sma20\":35.05549945831299,\"sma50\":32.96579978942871}",
+      "id": 8813,
+      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
+      "symbol": "PYPU"
     },
     {
       "action": "CANDIDATE",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":28045978.722820282,\"earnings_date\":null,\"momentum20d\":0.3112889410655779,\"price_at\":1793975400.0,\"sma20\":26.508000087738036,\"sma50\":24.21440010070801}",
-      "id": 8036,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":662939392.610836,\"earnings_date\":null,\"momentum20d\":0.06681078661491191,\"price_at\":1793975400.0,\"sma20\":57.22824974060059,\"sma50\":55.095199737548825}",
+      "id": 8812,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OSW"
+      "symbol": "PYPL"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":2438587.9941260815,\"earnings_date\":\"2026-11-09\",\"momentum20d\":-0.11794872484577079,\"price_at\":1793975400.0,\"sma20\":3.8024999856948853,\"sma50\":3.7281999969482422}",
-      "id": 8035,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":632667.750453949,\"earnings_date\":null,\"momentum20d\":0.120815875385887,\"price_at\":1793975400.0,\"sma20\":8.071949982643128,\"sma50\":7.573680000305176}",
+      "id": 8811,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OSUR"
+      "symbol": "PYPG"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":712504.9013674259,\"earnings_date\":\"2026-11-13\",\"momentum20d\":-0.3827160511996539,\"price_at\":1793975400.0,\"sma20\":1.2549999952316284,\"sma50\":1.5194000005722046}",
-      "id": 8034,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":738157.2553539276,\"earnings_date\":\"2026-11-11\",\"momentum20d\":0.2110452975534305,\"price_at\":1793975400.0,\"sma20\":5.3080000400543215,\"sma50\":5.251800003051758}",
+      "id": 8810,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OSTX"
+      "symbol": "PYPD"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":0.0,\"earnings_date\":null,\"momentum20d\":0.0,\"price_at\":1793975400.0,\"sma20\":1.6950000524520874,\"sma50\":1.6950000524520874}",
-      "id": 8033,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":195440359.15390015,\"earnings_date\":null,\"momentum20d\":0.010240261328554157,\"price_at\":1793975400.0,\"sma20\":25.524499893188477,\"sma50\":25.61629997253418}",
+      "id": 8809,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OST"
+      "symbol": "PYLD"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":21106.79967790842,\"earnings_date\":null,\"momentum20d\":-0.73033707564173,\"price_at\":1793975400.0,\"sma20\":1.4650000005960464,\"sma50\":2.8994000017642976}",
-      "id": 8032,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":649931.9659042358,\"earnings_date\":null,\"momentum20d\":0.019882997209579534,\"price_at\":1793975400.0,\"sma20\":58.21435012817383,\"sma50\":57.46379997253418}",
+      "id": 8808,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OSSL"
+      "symbol": "PY"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":8610002.178609371,\"earnings_date\":null,\"momentum20d\":-0.4431524457064817,\"price_at\":1793975400.0,\"sma20\":5.800499987602234,\"sma50\":7.7627999877929685}",
-      "id": 8031,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":632742.3988699913,\"earnings_date\":\"2026-11-19\",\"momentum20d\":-0.288831837101163,\"price_at\":1793975400.0,\"sma20\":7.113249993324279,\"sma50\":6.9750000095367435}",
+      "id": 8807,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OSS"
+      "symbol": "PXS"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":1791.3999652862549,\"earnings_date\":null,\"momentum20d\":0.004036323155289789,\"price_at\":1793975400.0,\"sma20\":9.95599980354309,\"sma50\":9.971599826812744}",
-      "id": 8030,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":121650.20055770874,\"earnings_date\":\"2026-11-11\",\"momentum20d\":-0.14814816598717373,\"price_at\":1793975400.0,\"sma20\":5.30550000667572,\"sma50\":6.246599979400635}",
+      "id": 8806,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OSPRU"
+      "symbol": "PXLW"
     },
     {
       "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":275328.3602619171,\"earnings_date\":null,\"momentum20d\":0.002038685344943003,\"price_at\":1793975400.0,\"sma20\":9.825499963760375,\"sma50\":9.829199981689452}",
-      "id": 8029,
+      "at": 1794284361.225311,
+      "evidence": "{\"average_dollar_volume\":1761357.9489326477,\"earnings_date\":null,\"momentum20d\":-0.11238941914399037,\"price_at\":1793975400.0,\"sma20\":44.36049976348877,\"sma50\":45.234399948120114}",
+      "id": 8805,
       "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OSPR"
-    },
-    {
-      "action": "CANDIDATE",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":20661349.799175262,\"earnings_date\":null,\"momentum20d\":0.18496163371221042,\"price_at\":1793975400.0,\"sma20\":20.358000087738038,\"sma50\":18.579400157928468}",
-      "id": 8028,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OSPN"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":105760848.93070221,\"earnings_date\":null,\"momentum20d\":0.0729058293434317,\"price_at\":1793975400.0,\"sma20\":134.203999710083,\"sma50\":138.2497999572754}",
-      "id": 8027,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OSK"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":41742053.410339355,\"earnings_date\":null,\"momentum20d\":0.007439315176228201,\"price_at\":1793975400.0,\"sma20\":197.78149871826173,\"sma50\":199.20979919433594}",
-      "id": 8026,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OSIS"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":1522420.2280712128,\"earnings_date\":\"2026-11-09\",\"momentum20d\":0.08008655729962366,\"price_at\":1793975400.0,\"sma20\":4.84549994468689,\"sma50\":4.6755999565124515}",
-      "id": 8025,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OSG"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":7058451.105537415,\"earnings_date\":null,\"momentum20d\":0.0,\"price_at\":1793975400.0,\"sma20\":29.76614999771118,\"sma50\":29.68576000213623}",
-      "id": 8024,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OSEA"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":448049.04567718506,\"earnings_date\":null,\"momentum20d\":-0.19741868471317559,\"price_at\":1793975400.0,\"sma20\":36.2607497215271,\"sma50\":46.268039817810056}",
-      "id": 8023,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OSCX"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":2915001.6614723206,\"earnings_date\":null,\"momentum20d\":0.018886930679715475,\"price_at\":1793975400.0,\"sma20\":40.5242000579834,\"sma50\":40.5076399230957}",
-      "id": 8022,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OSCV"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":182104027.09566116,\"earnings_date\":null,\"momentum20d\":-0.08151032065978148,\"price_at\":1793975400.0,\"sma20\":32.39800004959106,\"sma50\":31.84120002746582}",
-      "id": 8021,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OSCR"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":15482437.78219223,\"earnings_date\":null,\"momentum20d\":-0.008533156709185752,\"price_at\":1793975400.0,\"sma20\":24.732999897003175,\"sma50\":24.92479999542236}",
-      "id": 8020,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "OSBC"
-    },
-    {
-      "action": "CANDIDATE",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":4156377.5446510315,\"earnings_date\":null,\"momentum20d\":0.07139359559920133,\"price_at\":1793975400.0,\"sma20\":43.28799991607666,\"sma50\":42.36420013427735}",
-      "id": 8019,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "ORRF"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":2899573.235721588,\"earnings_date\":null,\"momentum20d\":0.00597091224047408,\"price_at\":1793975400.0,\"sma20\":38.736400032043456,\"sma50\":38.5332600402832}",
-      "id": 8018,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "ORR"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":16928.64016532898,\"earnings_date\":null,\"momentum20d\":-0.03259258505738816,\"price_at\":1793975400.0,\"sma20\":19.85610008239746,\"sma50\":20.335100173950195}",
-      "id": 8017,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "ORO"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":5798339.379062653,\"earnings_date\":null,\"momentum20d\":-0.21092895178159898,\"price_at\":1793975400.0,\"sma20\":8.524499940872193,\"sma50\":8.834999980926513}",
-      "id": 8016,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "ORN"
-    },
-    {
-      "action": "PASS",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":495067.90061950684,\"earnings_date\":\"2026-11-12\",\"momentum20d\":-0.10854504316202285,\"price_at\":1793975400.0,\"sma20\":4.102499985694886,\"sma50\":4.461199989318848}",
-      "id": 8015,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "ORMP"
-    },
-    {
-      "action": "CANDIDATE",
-      "at": 1794176509.1649928,
-      "evidence": "{\"average_dollar_volume\":591234527.2095871,\"earnings_date\":null,\"momentum20d\":0.03979181680556665,\"price_at\":1793975400.0,\"sma20\":89.46299934387207,\"sma50\":87.33399993896484}",
-      "id": 8014,
-      "reason": "20/50-day trend, 20-day momentum above 2%, price >= $5, liquidity >= $1M/day",
-      "symbol": "ORLY"
+      "symbol": "PXJ"
     }
   ],
   "events": [
+    {
+      "at": 1794284361.225311,
+      "id": 12,
+      "kind": "stock_scan",
+      "message": "{\"attempted\":873,\"attempted_ever\":7997,\"batch_size\":800,\"failed\":83,\"method\":\"Rotating alphabetical scan; positions, pending orders and SPY every run\",\"never_attempted\":5245,\"remaining\":12369,\"rotation_cycles\":17,\"scan_start_index\":8800,\"scope\":\"US exchange-listed issues; not worldwide or OTC\",\"succeeded\":790,\"universe_count\":13242,\"usable\":790}"
+    },
     {
       "at": 1794176509.1649928,
       "id": 11,
@@ -1188,9 +1194,9 @@
   ],
   "fills": [],
   "health": {
-    "age_seconds": 386.19786190986633,
-    "at": 1794176509.1649928,
-    "message": "Daily-price simulation, not live quotes. Prior completed sessions only. 770 usable prices; 91 provider errors.",
+    "age_seconds": 3444.133715391159,
+    "at": 1794284361.225311,
+    "message": "Daily-price simulation, not live quotes. Prior completed sessions only. 790 usable prices; 83 provider errors.",
     "status": "delayed"
   },
   "history": [
@@ -1292,11 +1298,20 @@
       "equity": 1000.0,
       "id": 11,
       "planned_risk": 0.0
+    },
+    {
+      "at": 1794284361.225311,
+      "benchmark": 999.9999999999999,
+      "cash": 1000.0,
+      "drawdown": 0.0,
+      "equity": 1000.0,
+      "id": 12,
+      "planned_risk": 0.0
     }
   ],
   "last_scan": {
-    "candidates": 119,
-    "rejected": 651
+    "candidates": 137,
+    "rejected": 653
   },
   "pending": {
     "AAOZ": {
@@ -1316,6 +1331,12 @@
       "reason": "Positive liquid daily trend; whole shares capped at 20% of equity",
       "side": "BUY",
       "size_fraction": 1.0
+    },
+    "GIBO": {
+      "at": 1794284361.225311,
+      "reason": "Analyst conviction 0.90: GIBO announced a breakthrough in its proprietary AIGC engine and unveiled multi-modal AI workspaces, directly advancing its AI-native content infrastructure. This is a specific, recent, and structural catalyst that aligns with a growing AI content demand trend.",
+      "side": "BUY",
+      "size_fraction": 0.5
     }
   },
   "positions": [],
@@ -1336,18 +1357,18 @@
   "source": "Nasdaq symbol directory; Yahoo Finance unofficial daily chart endpoint",
   "strategy": {
     "analyst": {
-      "at": 1794176509.1649928,
+      "at": 1794284361.225311,
       "error": null,
-      "market_view": "",
+      "market_view": "The market regime is risk_off, as indicated by the negative 20-day S&P 500 return (-5.56%) and median 20-day stock return of -1.05%. Despite some positive momentum in individual stocks, the breadth of gains is thin, and the environment favors defensive or low-volatility plays.",
       "model": "9 open-weights models from 9 companies",
-      "source": "quant"
+      "source": "llm"
     },
     "champion": {
       "analyst_enabled": true,
       "created_at": 0.0,
       "desk_depth": 3,
       "earnings_blackout_days": 0,
-      "finalists": 4,
+      "finalists": 8,
       "id": "baseline",
       "min_dollar_volume": 1000000.0,
       "min_momentum": 0.02,
@@ -1363,25 +1384,526 @@
       "use_memory": true
     },
     "desk": {
-      "at": 1794176509.1649928,
-      "degraded": [
-        "nothing to decide: no open slots or no candidates"
-      ],
+      "at": 1794284361.225311,
+      "degraded": [],
       "depth": 3,
       "doctor": [],
       "feedback": null,
-      "finalists": [],
-      "judge": null,
+      "finalists": [
+        {
+          "bear": "High Volatility Strongest point: The stock exhibits high daily volatility (10.8%/day), indicating significant price risk.",
+          "bull": "GIBO presents a high-growth, high-risk investment thesis centered on its strategic positioning in the AI content production and infrastructure space. Strongest point: The company is actively building large-scale AI data centers and securing key partnerships (e.g., with NVIDIA partners), backed by strong recent price momentum.",
+          "dossier": "GIBO | close 175.35 | 20d +181.6% | 5d +101.5% | vs 20d avg +127.6% | volatility 10.8%/day | biggest gap 6.2% | traded $3.1M/day\nEarnings: none in the next 14 days\n- news: GIBO Holdings Outlines Strategic Direction for AI-Native Content Production Through AIOS Framework\n- news: GIBO Holdings Limited Announces Ratio and Effective Date of Share Consolidation\n- news: GIBO WATCH Introduces Breakthrough in AI Filmmaking: Solving Continuity and Context at Scale\n- news: The Ultimate Editing Bay: GIBO Unveils Multi-Modal Workspaces Within GIBO Watch\n- news: GIBO Announces Breakthrough in Proprietary AIGC Engine, Entering Next-Generation Intelligent Content Infrastructure Phase\n",
+          "research": {
+            "findings": {
+              "key_facts": [
+                "Strong Momentum: The stock exhibits aggressive recent growth, with a 20-day increase of +181.6% and a 5-day increase of +101.5%.",
+                "AI Focus: The company is heavily positioned in the AI sector, announcing breakthroughs in AI-Native Content Production (AIOS Framework), proprietary AIGC engines, and AI Filmmaking.",
+                "Infrastructure Development: GIBO is developing a significant AI Data Center (30MW + 14,000-GPU) in Malaysia, positioning itself as a leading digital AI hub.",
+                "Strategic Partnerships: The company has secured a core partnership agreement with Ricloud, an NVIDIA Cloud Partner.",
+                "Corporate Action: The company is undergoing a Share Consolidation."
+              ],
+              "red_flags": [
+                "High Volatility: The stock exhibits high daily volatility (10.8%/day), indicating significant price risk.",
+                "No Immediate Earnings: There are no earnings reports scheduled in the next 14 days, meaning fundamental guidance is currently unavailable.",
+                "Price Action Risk: The recent price action shows extreme upward momentum, which carries the risk of sharp pullbacks."
+              ],
+              "summary": "GIBO presents a high-growth, high-risk investment thesis centered on its strategic positioning in the AI content production and infrastructure space. The company is actively building large-scale AI data centers and securing key partnerships (e.g., with NVIDIA partners), backed by strong recent price momentum. However, investors must be aware of the extreme volatility and the lack of immediate fundamental earnings guidance."
+            },
+            "steps": [
+              {
+                "action": "price_action",
+                "arg": 0,
+                "observation": "close 55.15 (+6.8%), volume 0.6x average\nclose 59.83 (+8.5%), volume 1.3x average\nclose 59.69 (-0.2%), volume 1.3x average\nclose 59.65 (-0.1%), volume 1.6x average\nclose 62.45 (+4.7%), volume 0.8x average\nclose 70.52 (+12.9%), volume 0.8x average\nclose 72.06 (+2.2%), volume 0.7x average\nclose 73.80 (+2.4%), volume 0.3x average\nclose 87.02 (+17.9%), volume 0.6x average\nclose 86.99 (-0.0%), volume 0.5x average\nclose 95.99 (+10.3%), volume 0.3x average\nclose 112.34 (+17.0%), volume 0.5x average\nclose 126.28 (+12.4%), volume 0.5x average\nclose 175.35 (+38.9%), volume 0.4x average",
+                "thought": "The stock shows extremely strong recent performance and high volatility. To assess the sustainability of this momentum and determine if a 'buy' is warranted, I need to analyze the recent price action over the last 15 sessions."
+              },
+              {
+                "action": "more_news",
+                "arg": 0,
+                "observation": "- GIBO Announces Development of Initial 30MW + 14,000-GPU AI Data Center, Advancing Malaysia as a Leading Digital AI Hub in Asia-Pacific\n- GIBO Signs Core Partnership Agreement with Ricloud, a NVIDIA Cloud Partner",
+                "thought": "The stock is showing extreme momentum and volatility based on recent news and price action."
+              },
+              {
+                "action": "finish",
+                "thought": "The stock exhibits extremely high growth (20d +181.6%, 5d +101.5%) driven by strong, positive news regarding AI innovation (AIOS framework, AIGC engine, AI filmmaking breakthroughs)."
+              }
+            ]
+          },
+          "symbol": "GIBO"
+        },
+        {
+          "bear": "Lack of immediate catalyst: There are no earnings events scheduled within the next 14 days, which could result in a lack of immediate catalyst for the stock's performance and potential underperformance in the short term. Strongest point: Lack of immediate catalyst",
+          "bull": "PCOR is exhibiting strong upward momentum and high trading volume, supported by positive industry trends related to AI adoption in construction. Strongest point: High market interest: PCOR trades with a high daily volume of $242.1M, indicating strong investor interest in the stock.",
+          "dossier": "PCOR | close 75.33 | 20d +34.0% | 5d +22.7% | vs 20d avg +20.5% | volatility 4.5%/day | biggest gap 6.0% | traded $242.1M/day\nEarnings: none in the next 14 days\n- news: Half of Young People Say AI Would Make Construction More Appealing, but 41% Don’t Know the Industry Uses It\n- news: Procore Technologies Q3 Earnings Call Highlights\n- news: Procore Technologies Inc (PCOR) Q3 2026 Earnings Call Highlights: Revenue Accelerates to 18. ...\n- news: Procore (PCOR) Q3 2026 Earnings Call Transcript\n- news: Procore Technologies, Inc. Q3 2026 Earnings Call Summary\n- filing #0: 2026-11-06 4: insider transaction (Form 4)\n- filing #1: 2026-11-06 4: insider transaction (Form 4)\n- filing #2: 2026-11-05 10-Q: quarterly report\n- filing #3: 2026-11-04 4: insider transaction (Form 4)\n- filing #4: 2026-11-03 8-K: earnings results; exhibits\n- filing #5: 2026-10-14 4: insider transaction (Form 4)\n",
+          "research": {
+            "findings": {
+              "key_facts": [
+                "Strong recent momentum: The stock has shown significant gains, up +34.0% over 20 days and +22.7% over 5 days.",
+                "High market interest: PCOR trades with a high daily volume of $242.1M.",
+                "Positive industry outlook: News indicates that AI is making construction more appealing, suggesting a favorable industry trend for Procore.",
+                "Recent corporate activity: The company has recently released Q3 2026 Earnings Call Highlights and filed multiple insider transactions (Form 4) in November 2026.",
+                "Financial reporting: The Q3 2026 quarterly report (10-Q) is available."
+              ],
+              "red_flags": [
+                "Volatility: The stock exhibits a daily volatility of 4.5%, indicating potential price risk.",
+                "Lack of immediate catalyst: There are no earnings events scheduled within the next 14 days.",
+                "Insider activity: Multiple recent insider transactions (Form 4) have been filed, which warrants further review of the transaction types (buying vs. selling)."
+              ],
+              "summary": "PCOR is exhibiting strong upward momentum and high trading volume, supported by positive industry trends related to AI adoption in construction. Recent earnings call highlights and insider activity suggest active corporate interest. The stock is currently high-momentum, but investors should monitor its 4.5% daily volatility and the nature of recent insider transactions before making a buy decision."
+            },
+            "steps": [
+              {
+                "action": "read_filing",
+                "arg": 4,
+                "observation": "pcor-20261103 false 0001611052 0001611052 2026-11-03 2026-11-03 UNITED STATES SECURITIES AND EXCHANGE COMMISSION WASHINGTON, D.C. 20549 ___________________________________________________ FORM 8-K ___________________________________________________ CURRENT REPORT Pursuant to Section 13 or 15(d) of the Securities Exchange Act of 1934 Date of Report (Date of earliest event reported): November 3, 2026 ___________________________________________________ Procore Technologies, Inc. (Exact name of Registrant as Specified in Its Charter) ___________________________________________________ Delaware 001",
+                "thought": "The stock has shown strong recent performance, and there are several recent filings, including an 8-K (filing #4) which typically contains earnings results."
+              },
+              {
+                "action": "read_filing",
+                "arg": 2,
+                "observation": "pcor-20260930 false 0001611052 12-31 2026 Q3 1 P01Y http://fasb.org/us-gaap/2026#OtherLiabilitiesCurrent http://fasb.org/us-gaap/2026#OtherLiabilitiesCurrent http://fasb.org/us-gaap/2026#OtherLiabilitiesCurrent http://fasb.org/us-gaap/2026#OtherLiabilitiesCurrent P2Y 0.0120642 P3Y http://fasb.org/us-gaap/2026#CostOfRevenue http://fasb.org/us-gaap/2026#SellingAndMarketingExpense http://fasb.org/us-gaap/2026#ResearchAndDevelopmentExpense http://fasb.org/us-gaap/2026#GeneralAndAdministrativeExpense 456 xbrli:shares iso4217:USD iso4217:USD xbrli:shares xbrli:pure pcor:segment pcor:renewal_option p",
+                "thought": "The stock has shown very strong recent performance. To determine if a buy is warranted, I need to assess the company's fundamental health. I have already reviewed the header of the 8-K."
+              },
+              {
+                "action": "price_action",
+                "arg": 0,
+                "observation": "close 60.73 (+4.7%), volume 0.5x average\nclose 60.91 (+0.3%), volume 0.5x average\nclose 62.29 (+2.3%), volume 0.9x average\nclose 63.00 (+1.1%), volume 0.9x average\nclose 62.77 (-0.4%), volume 0.7x average\nclose 61.73 (-1.7%), volume 0.6x average\nclose 62.05 (+0.5%), volume 0.8x average\nclose 61.12 (-1.5%), volume 0.8x average\nclose 61.38 (+0.4%), volume 0.7x average\nclose 62.57 (+1.9%), volume 0.8x average\nclose 63.17 (+1.0%), volume 1.3x average\nclose 75.60 (+19.7%), volume 2.4x average\nclose 75.60 (+0.0%), volume 2.5x average\nclose 75.33 (-0.4%), volume 1.1x average",
+                "thought": "I have reviewed the initial data, including the 8-K and 10-Q snippets. The stock has shown strong recent gains."
+              },
+              {
+                "action": "read_filing",
+                "arg": 3,
+                "observation": "SEC FORM 4 SEC Form 4 FORM 4 UNITED STATES SECURITIES AND EXCHANGE COMMISSION Washington, D.C. 20549 STATEMENT OF CHANGES IN BENEFICIAL OWNERSHIP Filed pursuant to Section 16(a) of the Securities Exchange Act of 1934 or Section 30(h) of the Investment Company Act of 1940 OMB APPROVAL OMB Number: 3235-0287 Estimated average burden hours per response: 0.5 Check this box if no longer subject to Section 16. Form 4 or Form 5 obligations may continue. See Instruction 1(b). X Check this box to indicate that a transaction was made pursuant to a contract, instruction or written plan for the purchase or",
+                "thought": "The stock has experienced a significant recent price surge, likely driven by the Q3 earnings results (filing #4) or related news. I have read the 8-K and the 10-Q, but the 10-Q snippet was not detailed enough."
+              }
+            ]
+          },
+          "symbol": "PCOR"
+        },
+        {
+          "bear": "Extreme Volatility Strongest point: The stock exhibits very high volatility at 95.4% per day, indicating significant risk.",
+          "bull": "Strong Momentum and Positive Structural News Strongest point: The stock shows significant upward momentum, with a 20-day gain of +198.6% and a 5-day gain of +157.3%, indicating strong investor interest and potential for continued growth.",
+          "dossier": "OMH | close 7.36 | 20d +198.6% | 5d +157.3% | vs 20d avg +70.2% | volatility 95.4%/day | biggest gap 25.1% | traded $84.8M/day\nEarnings: none in the next 14 days\n- news: Ohmyhome Limited Regains Compliance with Nasdaq Minimum Closing Bid Price Rule\n- news: Ohmyhome Limited Announces Share Consolidation\n- news: Univest Securities, LLC Announces Closing of $4 Million Registered Direct Offering for its Client Ohmyhome Ltd (NASDAQ: OMH)\n- news: Ohmyhome Ltd Announces Pricing of $4 Million Registered Direct Offering\n- news: Is Ohmyhome (NASDAQ:OMH) In A Good Position To Deliver On Growth Plans?\n- filing #0: 2026-10-07 424B5: securities offering\n",
+          "research": {
+            "findings": {
+              "key_facts": [
+                "Strong Momentum: The stock shows significant upward momentum, with a 20-day gain of +198.6% and a 5-day gain of +157.3%.",
+                "Structural Improvements: The company has regained compliance with the Nasdaq Minimum Closing Bid Price Rule and announced a Share Consolidation.",
+                "Capital Activity: A Standby Equity Purchase Agreement was filed for up to $40,000,000 in Class A Ordinary Shares with Magnus Capital Ventures Limited, contingent on the stock closing at or above $0.",
+                "Market Activity: The stock maintains high liquidity, trading an average of $84.8M per day, and exhibits extreme price swings (e.g., a 432.5% gain recorded in historical data)."
+              ],
+              "red_flags": [
+                "Extreme Volatility: The stock exhibits very high volatility at 95.4% per day, indicating significant risk.",
+                "Dilution Risk: The pending Standby Equity Purchase Agreement allows for the potential issuance of up to $40 million in shares, which could lead to future dilution.",
+                "High Price Risk: The stock has demonstrated massive price swings in recent history, suggesting high speculative risk."
+              ],
+              "summary": "OMH presents a high-risk, high-reward opportunity driven by strong recent momentum and positive structural news (Nasdaq compliance, consolidation). While the company is actively raising capital via a large standby equity offering, the extreme volatility and potential for dilution necessitate caution. The current momentum suggests strong investor interest, but the risk profile is exceptionally high."
+            },
+            "steps": [
+              {
+                "action": "read_filing",
+                "arg": 0,
+                "observation": "424B5 1 ea0307806-424b5_ohmyhome.htm PROSPECTUS SUPPLEMENT Filed Pursuant to Rule 424(b)(5) Registration No. 333-285637 Prospectus Supplement (To Prospectus dated March 18, 2025) Ohmyhome Limited Up to $40,000,000 Class A Ordinary Shares and 200,000 Class A Ordinary Shares We are offering up to $40,000,000 of our Class A ordinary shares, par value US$0.000005 per share, of the Company (the &ldquo; Class A Ordinary Shares &rdquo;) by this prospectus supplement and the accompanying prospectus directly to Magnus Capital Ventures Limited (the &ldquo; Investor &rdquo;), in connection with a Standby",
+                "thought": "The stock is highly volatile and has seen massive recent gains, coupled with news of capital raises (securities offering)."
+              },
+              {
+                "action": "price_action",
+                "arg": 0,
+                "observation": "close 3.18 (+12.0%), volume 0.1x average\nclose 3.32 (+4.4%), volume 0.0x average\nclose 3.12 (-6.0%), volume 0.0x average\nclose 3.26 (+4.5%), volume 0.0x average\nclose 3.23 (-0.9%), volume 0.0x average\nclose 3.05 (-5.6%), volume 0.0x average\nclose 2.96 (-3.0%), volume 0.0x average\nclose 3.05 (+3.0%), volume 0.0x average\nclose 2.86 (-6.2%), volume 0.0x average\nclose 2.92 (+2.1%), volume 0.0x average\nclose 2.92 (+0.0%), volume 0.0x average\nclose 15.55 (+432.5%), volume 15.9x average\nclose 13.35 (-14.1%), volume 2.0x average\nclose 7.36 (-44.9%), volume 1.9x average",
+                "thought": "The stock shows extremely high volatility and massive recent gains. Before making a buy decision, I need to analyze the recent price action to understand the momentum and volatility patterns."
+              },
+              {
+                "action": "more_news",
+                "arg": 0,
+                "observation": "- BC-Most Active Stocks\n- Ohmyhome Ltd Announces Receipt of Nasdaq Notification Regarding Minimum Bid Price Deficiency",
+                "thought": "The stock is highly volatile and has experienced massive growth, coupled with ongoing capital raises (dilution risk). I have reviewed the recent price action and the details of the latest offering (424B5)."
+              },
+              {
+                "action": "finish",
+                "thought": "I have reviewed the recent price action, the key news items (compliance, consolidation, RDOS), and the details of the Standby Equity Purchase Agreement (424B5 filing). The stock exhibits extreme volatility and has recently experienced a 44."
+              }
+            ]
+          },
+          "symbol": "OMH"
+        },
+        {
+          "bear": "High Volatility and Recent Pullback Strongest point: The stock's 10.8% daily volatility indicates significant risk, compounded by a recent -9.9% decline on the last recorded day, which could lead to unpredictable price movements and potential losses.",
+          "bull": "MUZ shows strong bullish momentum, evidenced by an 80.7% gain over 20 days and high daily trading volume ($89.8M). Strongest point: High Trading Activity: MUZ trades at an average of $89.8M per day, indicating significant investor interest and momentum-based buying opportunities.",
+          "dossier": "MUZ | close 12.99 | 20d +80.7% | 5d +45.8% | vs 20d avg +38.0% | volatility 10.8%/day | biggest gap 14.9% | traded $89.8M/day\nEarnings: none in the next 14 days\n",
+          "research": {
+            "findings": {
+              "key_facts": [
+                "Strong Momentum: The stock has gained 80.7% over the last 20 days and 45.8% over the last 5 days.",
+                "High Trading Activity: MUZ trades at an average of $89.8M per day.",
+                "Volatility: The stock exhibits a daily volatility of 10.8%.",
+                "Recent Price Action: The most recent close was 12.99, representing a -9.9% drop on 1.3x average volume.",
+                "Catalysts: There are no earnings reports scheduled within the next 14 days."
+              ],
+              "red_flags": [
+                "High Volatility: The 10.8% daily volatility indicates significant risk.",
+                "Recent Pullback: The stock experienced a sharp -9.9% decline on the last recorded day.",
+                "No Immediate Catalysts: The lack of upcoming earnings means the current momentum is not supported by near-term company news."
+              ],
+              "summary": "MUZ shows strong bullish momentum, evidenced by an 80.7% gain over 20 days and high daily trading volume ($89.8M). While the stock is highly volatile and recently pulled back by 9.9%, the overall trend is strongly upward, suggesting significant investor interest and momentum-based buying opportunities."
+            },
+            "steps": [
+              {
+                "action": "price_action",
+                "arg": 0,
+                "observation": "close 9.10 (+1.6%), volume 0.7x average\nclose 8.78 (-3.5%), volume 0.6x average\nclose 9.86 (+12.3%), volume 0.9x average\nclose 9.37 (-5.0%), volume 0.9x average\nclose 8.81 (-6.0%), volume 0.8x average\nclose 8.31 (-5.7%), volume 0.8x average\nclose 7.31 (-12.0%), volume 1.4x average\nclose 8.05 (+10.1%), volume 0.7x average\nclose 8.91 (+10.7%), volume 0.9x average\nclose 9.94 (+11.6%), volume 0.6x average\nclose 9.42 (-5.2%), volume 0.6x average\nclose 10.76 (+14.2%), volume 1.1x average\nclose 14.41 (+33.9%), volume 1.8x average\nclose 12.99 (-9.9%), volume 1.3x average",
+                "thought": "The stock MUZ is showing very strong momentum (20d +80.7%). To validate this momentum and assess the immediate risk/support levels before making a buy recommendation, I need to examine the recent price action over the last 15 sessions."
+              },
+              {
+                "action": "more_news",
+                "arg": 0,
+                "observation": "No older headlines.",
+                "thought": "The stock shows extremely strong recent performance and high volatility. I have analyzed the price action, which confirms the volatility and momentum."
+              },
+              {
+                "action": "finish",
+                "thought": "I have analyzed the price action and checked for older news. The stock shows extremely strong momentum (20d +80.7%) but also high volatility and a recent pullback."
+              }
+            ]
+          },
+          "symbol": "MUZ"
+        },
+        {
+          "bear": "High volatility Strongest point: The stock exhibits high daily volatility (8.5%/day), indicating significant price risk.",
+          "bull": "KRRO presents a high-momentum investment opportunity driven by positive preclinical data for its lead candidate, KRRO-111, and strong analyst support. The company's visibility at major healthcare conferences adds to its positive trajectory. Strongest point: KRRO reported best-in-class preclinical data for KRRO-111, demonstrating potential to benefit Lung and Liver manifestations of Alpha-1 Antitr.",
+          "dossier": "KRRO | close 14.75 | 20d +45.2% | 5d +3.0% | vs 20d avg +21.9% | volatility 8.5%/day | biggest gap 5.9% | traded $3.0M/day\nEarnings: none in the next 14 days\n- news: Korro to Present at the 2026 Jefferies Global Healthcare Conference in London\n- news: Korro Reports Third Quarter 2026 Financial Results and Provides Corporate Update\n- news: Korro Bio, Inc. (KRRO) Surges 29.7%: Is This an Indication of Further Gains?\n- news: Korro Reports Best-in-Class Preclinical Data for KRRO-111 Demonstrating Potential to Benefit Lung and Liver Manifestations of Alpha-1 Antitr\n- news: Korro Bio Reports Inducement Grants Under Nasdaq Listing Rule 5635(c)(4)\n- filing #0: 2026-11-05 10-Q: quarterly report\n- filing #1: 2026-11-05 8-K: agreement terminated; earnings results; exhibits\n- filing #2: 2026-10-26 4: insider transaction (Form 4)\n- filing #3: 2026-10-22 8-K: other events; exhibits\n- filing #4: 2026-10-05 8-K: other events; exhibits\n",
+          "research": {
+            "findings": {
+              "key_facts": [
+                "Strong clinical momentum: Korro reported best-in-class preclinical data for KRRO-111, demonstrating potential to benefit Lung and Liver manifestations of Alpha-1 Antitr.",
+                "Positive market sentiment: The stock has shown significant momentum (20d +45.2%) and has been subject to recent surges (e.g., 29.7%), with external reports noting an 'Upgrade to Buy'.",
+                "Corporate visibility: Korro is scheduled to present at the 2026 Jefferies Global Healthcare Conference in London.",
+                "Insider activity: One Korro Bio insider previously raised their stake by 19%."
+              ],
+              "red_flags": [
+                "High volatility: The stock exhibits high daily volatility (8.5%/day), indicating significant price risk.",
+                "Emerging Growth Company status: KRRO is classified as an Emerging Growth Company, which typically implies higher risk and less established financial reporting.",
+                "Financial complexity: The 10-Q filing details various financial items (e.g."
+              ],
+              "summary": "KRRO presents a high-momentum investment opportunity driven by positive preclinical data for its lead candidate, KRRO-111, and strong analyst support. The company's visibility at major healthcare conferences adds to its positive trajectory. However, investors must be aware of the high volatility and the inherent risks associated with an Emerging Growth Company in the biotech sector."
+            },
+            "steps": [
+              {
+                "action": "read_filing",
+                "arg": 1,
+                "observation": "8-K false 0001703647 0001703647 2026-11-03 2026-11-03 UNITED STATES SECURITIES AND EXCHANGE COMMISSION Washington, D.C. 20549 FORM 8-K CURRENT REPORT Pursuant to Section 13 OR 15(d) of The Securities Exchange Act of 1934 Date of Report (Date of earliest event report ed): November 3, 2026 Korro Bio, Inc. (Exact name of registrant as specified in its charter) Delaware 001-39062 47-2324450 (State or other jurisdiction of incorporation) (Commission File Number) (IRS Employer Identification No.) 60 First Street , 2 nd floor , Suite 250 Cambridge , MA 02141 (Address of principal executive offices) (",
+                "thought": "The stock has shown strong recent performance driven by positive news (preclinical data, Q3 results). To determine if a 'buy' is warranted, I must assess the fundamental health and recent operational updates."
+              },
+              {
+                "action": "read_filing",
+                "arg": 0,
+                "observation": "10-Q false Q3 0001703647 --12-31 November 30, 2014 http://fasb.org/us-gaap/2026#LeaseholdImprovementsGross http://fasb.org/us-gaap/2026#LeaseholdImprovementsGross 0001703647 2025-09-30 0001703647 krro:AtTheMarketEquityProgramMember 2024-12-01 2024-12-31 0001703647 us-gaap:GeneralAndAdministrativeExpense 2025-07-01 2025-09-30 0001703647 krro:RamAiyarMember 2026-07-01 2026-09-30 0001703647 krro:DevelopmentMilestoneMember 2025-12-31 0001703647 us-gaap:FairValueMeasurementsRecurringMember 2025-12-31 0001703647 2026-01-01 2026-09-30 0001703647 us-gaap:FairValueInputsLevel3Member us-gaap:USTreasuryB",
+                "thought": "I have reviewed the initial data and the header of filing #1. To make an informed decision on a biotech stock, I need to assess its financial health."
+              },
+              {
+                "action": "price_action",
+                "arg": 0,
+                "observation": "close 9.44 (+5.9%), volume 1.0x average\nclose 9.29 (-1.6%), volume 0.5x average\nclose 12.05 (+29.7%), volume 1.9x average\nclose 11.98 (-0.6%), volume 1.0x average\nclose 12.02 (+0.3%), volume 0.7x average\nclose 13.30 (+10.6%), volume 1.3x average\nclose 13.86 (+4.2%), volume 1.1x average\nclose 14.20 (+2.5%), volume 0.6x average\nclose 14.31 (+0.8%), volume 0.5x average\nclose 15.85 (+10.7%), volume 0.8x average\nclose 15.86 (+0.1%), volume 1.7x average\nclose 16.62 (+4.8%), volume 1.1x average\nclose 14.73 (-11.4%), volume 1.8x average\nclose 14.75 (+0.1%), volume 0.5x average",
+                "thought": "The stock has shown strong recent performance (20d +45.2%). To decide on a buy, I need to understand the recent trading momentum and volatility patterns."
+              },
+              {
+                "action": "more_news",
+                "arg": 0,
+                "observation": "- Korro Bio Reports Inducement Grant Under Nasdaq Listing Rule 5635(c)(4)\n- Korro to Participate in Upcoming Investor Conferences\n- Korro Reports Second Quarter 2026 Financial Results and Provides Corporate Update\n- Korro Bio, Inc. (KRRO) Upgraded to Buy: What Does It Mean for the Stock?\n- Korro Bio, Inc. (KRRO) Soars 17.6%: Is Further Upside Left in the Stock?\n- One Korro Bio Insider Raised Stake By 19% In Previous Year",
+                "thought": "I have reviewed the recent price action, the 8-K, and the 10-Q. The stock is highly volatile and driven by positive biotech news (preclinical data)."
+              }
+            ]
+          },
+          "symbol": "KRRO"
+        },
+        {
+          "bear": "The single strongest point against buying Kyndryl (KD) stock in the next one to three weeks is the significant valuation risk, with news suggesting the stock could be 30% overvalued following an earnings beat. This overvaluation poses a high risk to potential investors, as it indicates that the stock price may not accurately reflect the company's intrinsic value and could lead to a substantial correction in the near future. Strongest point: Significant valuation risk with potential 30% overvaluation",
+          "bull": "Strong recent momentum and positive operational news outweigh valuation concerns for the next 1-3 weeks. Strongest point: Kyndryl reaffirmed $1 Billion in Free Cash during the Q2 2027 Earnings Call, indicating a strong financial position and potential for continued growth.",
+          "dossier": "KD | close 16.29 | 20d +38.6% | 5d +17.8% | vs 20d avg +16.3% | volatility 7.5%/day | biggest gap 15.2% | traded $67.6M/day\nEarnings: none in the next 14 days\n- news: What Kyndryl (KD) Said on Its Q2 Earnings Call\n- news: Can Kyndryl Holdings (KD) Stay Below Fair Value After A 45% Jump?\n- news: Kyndryl Holdings Inc (KD) (Q2 2027) Earnings Call Highlights: Reaffirmed $1 Billion Free Cash ...\n- news: Kyndryl Uses Agentic AI to Accelerate Enterprise Modernization with AWS\n- news: Kyndryl Holdings (KD) Could Be 30% Overvalued As Earnings Beat Sparks A Rally\n- filing #0: 2026-11-04 10-Q: quarterly report\n- filing #1: 2026-11-04 8-K: earnings results; exhibits\n- filing #2: 2026-09-28 8-K: other events; exhibits\n",
+          "research": {
+            "findings": {
+              "key_facts": [
+                "The stock exhibits strong recent momentum, with a 20-day gain of +38.6% and a 5-day gain of +17.8%.",
+                "Kyndryl reaffirmed $1 Billion in Free Cash during the Q2 2027 Earnings Call.",
+                "The company is leveraging Agentic AI to accelerate enterprise modernization with AWS.",
+                "Recent earnings results were reported via an 8-K filing (November 4, 2026)."
+              ],
+              "red_flags": [
+                "The stock faces significant valuation risk, with news suggesting KD 'could be 30% Overvalued' following an earnings beat.",
+                "Analysts question if the stock can stay below 'fair value after a 45% jump.",
+                "The stock displays high volatility (7.5%/day) and a biggest gap of 15.2%."
+              ],
+              "summary": "KD is experiencing a strong rally driven by positive operational news, including the use of Agentic AI and reaffirmed $1 Billion in Free Cash. However, the stock is currently facing intense scrutiny regarding its valuation, with multiple reports suggesting it may be significantly overvalued, posing a high risk to a buy decision."
+            },
+            "steps": [
+              {
+                "action": "read_filing",
+                "arg": 1,
+                "observation": "Kyndryl Holdings, Inc._November 4, 2026 0001867072 false 0001867072 2026-11-04 2026-11-04 UNITED STATES SECURITIES AND EXCHANGE COMMISSION WASHINGTON, DC 20549 &#8203; FORM 8-K CURRENT REPORT Pursuant to Section 13 or 15(d) of the Securities Exchange Act of 1934 &#8203; Date of report (Date of earliest event reported): November 4, 2026 &#8203; Kyndryl Holdings, Inc. (Exact name of registrant as specified in its charter) &#8203; &#8203; &#8203; &#8203; Delaware 001-40853 86-1185492 (State or other jurisdiction of incorporation) (Commission File Number) (I.R.S. Employer Identification No.) &#820",
+                "thought": "The stock is highly volatile and has rallied significantly. To determine if a buy recommendation is warranted, I need to assess the company's fundamental health and the basis for the recent price action."
+              },
+              {
+                "action": "price_action",
+                "arg": 0,
+                "observation": "close 13.89 (+4.6%), volume 0.7x average\nclose 14.35 (+3.3%), volume 0.8x average\nclose 15.20 (+5.9%), volume 0.9x average\nclose 14.76 (-2.9%), volume 0.6x average\nclose 14.68 (-0.5%), volume 0.6x average\nclose 14.16 (-3.5%), volume 0.8x average\nclose 14.09 (-0.5%), volume 0.8x average\nclose 13.94 (-1.1%), volume 1.0x average\nclose 13.83 (-0.8%), volume 0.8x average\nclose 13.57 (-1.9%), volume 0.7x average\nclose 12.94 (-4.6%), volume 1.3x average\nclose 16.84 (+30.1%), volume 3.2x average\nclose 16.18 (-3.9%), volume 1.4x average\nclose 16.29 (+0.7%), volume 1.1x average",
+                "thought": "The stock has shown strong recent performance (5d +17.8%) and is flagged as potentially overvalued."
+              },
+              {
+                "action": "read_filing",
+                "arg": 0,
+                "observation": "Kyndryl Holdings, Inc_SEPTEMBER 30, 2026 http://www.kyndryl.com/20260930#OtherIncomeAndExpense http://www.kyndryl.com/20260930#OtherIncomeAndExpense http://www.kyndryl.com/20260930#OtherIncomeAndExpense http://www.kyndryl.com/20260930#OtherIncomeAndExpense http://www.kyndryl.com/20260930#OtherIncomeAndExpense http://www.kyndryl.com/20260930#OtherIncomeAndExpense http://www.kyndryl.com/20260930#OtherIncomeAndExpense http://www.kyndryl.com/20260930#OtherIncomeAndExpense http://www.kyndryl.com/20260930#OtherIncomeAndExpense http://www.kyndryl.com/20260930#OtherIncomeAndExpense http://www.kyndryl.",
+                "thought": "I have reviewed the initial summary, recent price action, and the boilerplate of the 8-K filing. To determine if the stock is fundamentally sound enough for a buy recommendation, I need detailed financial information."
+              },
+              {
+                "action": "finish",
+                "thought": "I have reviewed the 8-K (earnings results) and the recent price action. To make a comprehensive decision, I need to analyze the detailed financial health and performance metrics contained in the 10-Q (quarterly report)."
+              }
+            ]
+          },
+          "symbol": "KD"
+        },
+        {
+          "bear": "The strongest point against buying PTLE stock in the next one to three weeks is the 'Underlying compliance risk: While a grace period was granted, the company still faces the challenge of regaining Nasdaq compliance.' This compliance issue introduces significant uncertainty and potential for further decline in the stock's value, which could outweigh the recent positive momentum and price action. Investors should be cautious given this unresolved regulatory issue and the associated risks it poses to the company's future performance and stock price stability. Strongest point: Underlying compliance risk: While a grace period was granted, the company still faces the challenge of regaining Nasdaq compliance.",
+          "bull": "Strong recent momentum and corporate actions outweigh short-term weakness and compliance uncertainty. Strongest point: The stock's 32.9% gain over the last 20 days significantly outperforms the 20-day average gain (+2.1%), indicating strong underlying momentum.",
+          "dossier": "PTLE | close 9.17 | 20d +32.9% | 5d -3.0% | vs 20d avg +2.1% | volatility 5.5%/day | biggest gap 5.8% | traded $1.6M/day\nEarnings: none in the next 14 days\n- news: PTLE Announces 1-for-80 Share Consolidation\n- news: PTL Limited Granted Additional 180-Day Grace Period to Regain Nasdaq Compliance\n",
+          "research": {
+            "findings": {
+              "key_facts": [
+                "Strong recent momentum: The stock is up 32.9% over the last 20 days.",
+                "Technical strength: The current performance (+32.9%) significantly outperforms the 20-day average gain (+2.1%).",
+                "Corporate actions: The company announced a 1-for-80 Share Consolidation.",
+                "Compliance status: PTL Limited was granted an additional 180-day grace period to regain Nasdaq compliance.",
+                "Trading activity: The stock trades with a daily volume of $1.6M, and recent price action shows periods of high volume (up to 2.8x average)."
+              ],
+              "red_flags": [
+                "Short-term weakness: The stock has declined 3.0% over the last 5 days, and the most recent close was down 1.4%.",
+                "Underlying compliance risk: While a grace period was granted, the company still faces the challenge of regaining Nasdaq compliance.",
+                "Volatility: The stock exhibits a daily volatility of 5.5%, indicating significant price risk."
+              ],
+              "summary": "PTLE shows strong underlying momentum (+32.9% in 20 days) supported by corporate actions like a share consolidation and a temporary reprieve on Nasdaq compliance. However, recent short-term weakness and persistent compliance uncertainty suggest caution, making the buy decision dependent on risk tolerance given the 5.5% daily volatility."
+            },
+            "steps": [
+              {
+                "action": "price_action",
+                "arg": 0,
+                "observation": "close 9.26 (+2.9%), volume 0.5x average\nclose 9.01 (-2.7%), volume 0.1x average\nclose 9.13 (+1.3%), volume 0.3x average\nclose 9.30 (+1.9%), volume 0.6x average\nclose 8.99 (-3.3%), volume 0.6x average\nclose 9.19 (+2.2%), volume 0.2x average\nclose 9.47 (+3.0%), volume 0.5x average\nclose 9.61 (+1.5%), volume 2.4x average\nclose 9.45 (-1.7%), volume 0.6x average\nclose 9.43 (-0.2%), volume 1.2x average\nclose 9.45 (+0.2%), volume 2.8x average\nclose 9.57 (+1.3%), volume 2.5x average\nclose 9.30 (-2.8%), volume 1.1x average\nclose 9.17 (-1.4%), volume 0.5x average",
+                "thought": "The stock shows strong recent performance (20d +32.9%) but also has significant risks related to Nasdaq compliance. To determine if a 'buy' is warranted, I need to analyze the recent price momentum and volatility patterns."
+              },
+              {
+                "action": "more_news",
+                "arg": 0,
+                "observation": "No older headlines.",
+                "thought": "I have reviewed the current price action and recent news. To gain a comprehensive view of the stock's history and underlying drivers, I need to check older news headlines before making a final recommendation."
+              },
+              {
+                "action": "finish",
+                "thought": "I have analyzed the recent price action and reviewed all available news (current and older). The stock shows strong long-term gains (20d +32.9%) but recent short-term weakness (5d -3.0%) and volatility."
+              }
+            ]
+          },
+          "symbol": "PTLE"
+        },
+        {
+          "bear": "The strongest point against buying OneSpaWorld (OSW) stock in the next one to three weeks is the high volatility, with a daily volatility of 3.3%. This level of volatility indicates significant uncertainty and risk, which could lead to substantial price swings that may not be favorable for investors looking for stability in their investments. High volatility can result in unpredictable price movements, making it difficult to predict the stock's performance and potentially leading to losses if the market moves against the investor's position. Therefore, the high volatility is a significant concern for potential buyers in the short term. Strongest point: High volatility (3.3% per day)",
+          "bull": "The strongest point for buying OSW stock for the next one to three weeks is the recent analyst upgrade to 'Buy' and the positive sentiment surrounding the company's recent earnings results and corporate actions. Strongest point: The analyst upgrade to 'Buy' indicates a shift in the market's perception of the stock, suggesting that the analyst believes OSW has the potential to outperform the market in the near future.",
+          "dossier": "OSW | close 31.13 | 20d +31.1% | 5d +3.0% | vs 20d avg +17.4% | volatility 3.3%/day | biggest gap 6.7% | traded $28.0M/day\nEarnings: none in the next 14 days\n- news: OneSpaWorld Publishes Third Annual Sustainability and Social Responsibility Report\n- news: OneSpaWorld (OSW) Upgraded to Buy: Here's What You Should Know\n- news: OneSpaWorld (OSW) Stock Climbs As Q3 Earnings Fuel Guidance Upgrade\n- news: OneSpaWorld Holdings (OSW) Lifts Outlook And Buybacks As Valuation Looks Full\n- news: OneSpaWorld Holdings Limited Q3 2026 Earnings Call Summary\n- filing #0: 2026-11-04 4: insider transaction (Form 4)\n- filing #1: 2026-10-29 10-Q: quarterly report\n- filing #2: 2026-10-28 8-K: earnings results; exhibits\n",
+          "research": {
+            "findings": {
+              "key_facts": [
+                "Strong recent momentum: The stock is up 31.1% over 20 days and 3.0% over 5 days.",
+                "Analyst support is positive, with the stock recently being upgraded to 'Buy'.",
+                "Corporate actions are favorable, including the lifting of outlook and the initiation of buybacks.",
+                "Recent Q3 2026 earnings results were reported, fueling the guidance upgrade.",
+                "The company maintains high trading interest, with daily volume averaging $28.0M."
+              ],
+              "red_flags": [
+                "The news indicates that the current valuation 'looks full'.",
+                "The stock exhibits high volatility at 3.3% per day.",
+                "Insider activity was noted (Director transaction filed on 08/20/2026), though the specific nature of the transaction is not detailed in the provided filing summary."
+              ],
+              "summary": "OSW presents a bullish case driven by strong recent price momentum, positive analyst upgrades, and favorable corporate actions (outlook lift and buybacks) following the release of Q3 earnings. While the stock is highly volatile and noted as potentially fully valued, the current positive sentiment and fundamental catalysts suggest a strong buying opportunity."
+            },
+            "steps": [
+              {
+                "action": "read_filing",
+                "arg": 1,
+                "observation": "10-Q 0001758488 --12-31 Q3 false 00-0000000 00000 http://fasb.org/srt/2026#ChiefExecutiveOfficerMember http://fasb.org/us-gaap/2026#NetIncomeLoss One 275 0001758488 us-gaap:ProductMember 2025-07-01 2025-09-30 0001758488 country:US 2026-09-30 0001758488 osw:VotingCommonStockMember 2026-09-30 0001758488 us-gaap:LicensingAgreementsMember 2025-12-31 0001758488 us-gaap:InterestRateSwapMember us-gaap:CashFlowHedgingMember 2026-09-30 0001758488 osw:TermLoanFacilityMember 2026-09-30 0001758488 osw:TermLoanFacilityMember 2024-09-20 0001758488 us-gaap:TradeNamesMember 2026-01-01 2026-09-30 0001758488 sr",
+                "thought": "The stock shows strong momentum and positive news, suggesting a potential buy. To validate this, I need to examine the fundamental health of the company."
+              },
+              {
+                "action": "read_filing",
+                "arg": 2,
+                "observation": "8-K False 0001758488 00-0000000 0001758488 2026-10-28 2026-10-28 UNITED STATES SECURITIES AND EXCHANGE COMMISSION Washington, D.C. 20549 FORM 8-K CURRENT REPORT PURSUANT TO SECTION 13 OR 15(d) OF THE SECURITIES EXCHANGE ACT OF 1934 Date of Report (Date of earliest event reported): October 28, 2026 OneSpaWorld Holdings Limited (Exact name of registrant as specified in its charter) Commonwealth of The Bahamas 001-38843 Not Applicable (State or other jurisdiction of incorporation) (Commission File Number) (IRS Employer Identification No.) Harry B. Sands, Lobosky Management Co. Ltd. Office Number ",
+                "thought": "The stock has strong recent performance and positive news regarding Q3 earnings and guidance upgrades. I have reviewed the 10-Q, which provided a list of accounts but not the detailed financial results."
+              },
+              {
+                "action": "read_filing",
+                "arg": 0,
+                "observation": "SEC FORM 4 SEC Form 4 FORM 4 UNITED STATES SECURITIES AND EXCHANGE COMMISSION Washington, D.C. 20549 STATEMENT OF CHANGES IN BENEFICIAL OWNERSHIP Filed pursuant to Section 16(a) of the Securities Exchange Act of 1934 or Section 30(h) of the Investment Company Act of 1940 OMB APPROVAL OMB Number: 3235-0287 Estimated average burden hours per response: 0.5 Check this box if no longer subject to Section 16. Form 4 or Form 5 obligations may continue. See Instruction 1(b). Check this box to indicate that a transaction was made pursuant to a contract, instruction or written plan for the purchase or s",
+                "thought": "I have reviewed the initial summary and the start of the 10-Q and 8-K. The news is overwhelmingly positive (Upgraded to Buy, Q3 earnings fuel guidance upgrade). To validate this positive sentiment, I need to check insider activity."
+              },
+              {
+                "action": "price_action",
+                "arg": 0,
+                "observation": "close 23.97 (+1.2%), volume 0.6x average\nclose 23.93 (-0.2%), volume 0.5x average\nclose 24.29 (+1.5%), volume 0.4x average\nclose 23.86 (-1.8%), volume 0.3x average\nclose 23.99 (+0.5%), volume 0.6x average\nclose 24.95 (+4.0%), volume 1.3x average\nclose 28.07 (+12.5%), volume 1.6x average\nclose 30.10 (+7.2%), volume 2.0x average\nclose 30.22 (+0.4%), volume 1.7x average\nclose 30.02 (-0.7%), volume 2.4x average\nclose 30.04 (+0.1%), volume 1.7x average\nclose 31.29 (+4.2%), volume 1.5x average\nclose 30.72 (-1.8%), volume 0.9x average\nclose 31.13 (+1.3%), volume 0.8x average",
+                "thought": "The stock shows strong recent performance and positive news (Upgraded to Buy, Q3 Earnings Fuel Guidance Upgrade)."
+              }
+            ]
+          },
+          "symbol": "OSW"
+        }
+      ],
+      "judge": {
+        "avoid": [],
+        "capped_by_risk_off": true,
+        "market_view": "The market regime is risk_off, as indicated by the negative 20-day S&P 500 return (-5.56%) and median 20-day stock return of -1.05%. Despite some positive momentum in individual stocks, the breadth of gains is thin, and the environment favors defensive or low-volatility plays.",
+        "picks": [
+          {
+            "conviction": 0.9,
+            "invalidation": "The stock has no earnings, no near-term catalyst, and is highly volatile. The momentum is driven by speculative AI infrastructure news, not a clear, actionable catalyst.",
+            "key_risk": "Extreme volatility (10.8%/day) and lack of fundamental guidance make this a speculative bet with high drawdown risk.",
+            "symbol": "GIBO",
+            "thesis": "GIBO announced a breakthrough in its proprietary AIGC engine and unveiled multi-modal AI workspaces, directly advancing its AI-native content infrastructure. This is a specific, recent, and structural catalyst that aligns with a growing AI content demand trend."
+          }
+        ],
+        "reasoning": "In a risk_off regime, we prioritize clarity, recent catalysts, and fundamental support. GIBO offers a strong, specific AI infrastructure breakthrough with tangible product launches (multi-modal workspaces, AIGC engine), backed by strategic partnerships and data center development. OSW has a clear earnings-driven guidance upgrade and buyback signal, which is a proven catalyst. Both are above the 20-day average momentum. GIBO’s volatility is high, but the catalyst is structural and forward-looking. OSW’s valuation risk is notable, but the guidance upgrade is recent and actionable. Given the risk-off environment, we limit to two picks—only one would be allowed if the regime were stricter. However, the regime allows two open slots, and both candidates meet the criteria of a clear, recent, specific catalyst. We select these based on strength of evidence and trend alignment, not just momentum. No other stock has a direct, recent, positive catalyst with clear operational or financial backing. The others suffer from volatility, compliance risk, or lack of actionable news.",
+        "regime": "risk_off"
+      },
       "lessons_shown": [],
-      "minutes_left": 0.0,
+      "minutes_left": 187.50597283655,
       "model": "9 open-weights models from 9 companies",
       "regime_stats": {
-        "median_20d_return_pct": -1.775153229781612,
-        "pct_above_50d_avg": 34.41558441558442,
+        "median_20d_return_pct": -1.0543399452174862,
+        "pct_above_50d_avg": 37.34177215189873,
         "spy_20d_return_pct": -5.558912993016429,
-        "stocks_scanned": 770
+        "stocks_scanned": 790
       },
-      "triage": []
+      "triage": [
+        {
+          "score": 9.0,
+          "symbol": "GIBO",
+          "why": "High 20d and 5d performance, strong positive news on AI strategy, share consolidation, and breakthrough technology. No earnings in the next 2 weeks."
+        },
+        {
+          "score": 9.0,
+          "symbol": "PCOR",
+          "why": "Strong 20d performance, specific positive catalysts from earnings call, no earnings in next 14 days, no negative news, no big gaps, high trading volume, good Q3"
+        },
+        {
+          "score": 8.0,
+          "symbol": "OMH",
+          "why": "Strong 20d and 5d performance, positive compliance and share consolidation news, and a registered direct offering by a major investor."
+        },
+        {
+          "score": 8.0,
+          "symbol": "MUZ",
+          "why": "Good 20d performance with strong recent gains, but no earnings in the next 2 weeks. Volatility is low."
+        },
+        {
+          "score": 8.0,
+          "symbol": "KRRO",
+          "why": "Strong 20d and 5d gains, specific positive news about conference presentation, preclinical data, and insider grants. No earnings in next 14 days."
+        },
+        {
+          "score": 8.0,
+          "symbol": "KD",
+          "why": "Strong 20d and 5d performance, specific positive catalysts from earnings call, no earnings in next 14 days, no negative news, no big gaps, good trading volume."
+        },
+        {
+          "score": 8.0,
+          "symbol": "PTLE",
+          "why": "Strong 20d performance, specific positive catalysts from share consolidation and compliance, no earnings in next 14 days, no negative news, no big gaps, but low"
+        },
+        {
+          "score": 8.0,
+          "symbol": "OSW",
+          "why": "The stock shows strong recent performance with a 20-day increase of +31.1% and a 5-day increase of +3.0%, indicating a positive short-term trend."
+        },
+        {
+          "score": 7.0,
+          "symbol": "LITZ",
+          "why": "Impressive 20d and 5d gains, but no earnings in the next 2 weeks. Volatility is low, and no negative news."
+        },
+        {
+          "score": 7.0,
+          "symbol": "NBIZ",
+          "why": "Strong 20d performance with positive news, but no earnings in the next 2 weeks. Volatility is moderate."
+        },
+        {
+          "score": 7.0,
+          "symbol": "PTLO",
+          "why": "Impressive 20d and 5d performance with positive news and insider buying. No earnings in the next 2 weeks."
+        },
+        {
+          "score": 7.0,
+          "symbol": "NVD",
+          "why": "High 20d and 5d gains, specific positive news about AI financing push and market rally. No earnings in next 14 days. Slightly higher volatility than KRRO."
+        },
+        {
+          "score": 7.0,
+          "symbol": "NVDQ",
+          "why": "Strong 20d and 5d gains, specific positive news about analyst upgrades and record quarter. No earnings in next 14 days."
+        },
+        {
+          "score": 7.0,
+          "symbol": "MYGN",
+          "why": "Good 20d performance, specific positive catalysts from earnings call and revenue guidance raise, no earnings in next 14 days, no negative news, no big gaps, but"
+        },
+        {
+          "score": 7.0,
+          "symbol": "POOL",
+          "why": "Strong 20d performance, specific positive catalysts from stock looking like a bargain, no earnings in next 14 days, no negative news, no big gaps, good trading"
+        },
+        {
+          "score": 7.0,
+          "symbol": "QNST",
+          "why": "Strong 20d performance, specific positive catalysts from Q1 earnings beat and AI strategy, no earnings in next 14 days, no negative news, no big gaps, good"
+        },
+        {
+          "score": 6.0,
+          "symbol": "KPLT",
+          "why": "Good 20d performance with a near-term earnings announcement. News is mixed, but overall positive."
+        },
+        {
+          "score": 6.0,
+          "symbol": "KIDS",
+          "why": "Good 20d performance with positive news on product launch and rating upgrade. No earnings in the next 2 weeks."
+        },
+        {
+          "score": 6.0,
+          "symbol": "MAX",
+          "why": "Solid 20d gain with recent dip, specific positive news about record quarter and analyst upgrades. No earnings in next 14 days."
+        },
+        {
+          "score": 6.0,
+          "symbol": "JLHL",
+          "why": "Strong 20d gain with recent dip, specific positive news about private placement and board changes. No earnings in next 14 days. Lower volatility than MAX."
+        },
+        {
+          "score": 6.0,
+          "symbol": "PAR",
+          "why": "Strong 20d performance, specific positive catalysts from Q3 earnings call, no earnings in next 14 days, no negative news, no big gaps, but no filings"
+        },
+        {
+          "score": 5.0,
+          "symbol": "MUD",
+          "why": "Strong 20d gain with recent dip, specific positive news about private placement. No earnings in next 14 days."
+        },
+        {
+          "score": 5.0,
+          "symbol": "KRMN",
+          "why": "Strong 20d gain with recent dip, specific positive news about earnings estimates and Q3 call. No earnings in next 14 days."
+        },
+        {
+          "score": 5.0,
+          "symbol": "NAIL",
+          "why": "Strong 20d gain with recent dip, specific positive news about housing recovery potential. No earnings in next 14 days."
+        },
+        {
+          "score": 5.0,
+          "symbol": "NVDS",
+          "why": "Strong 20d performance, specific positive catalysts from 20d performance, no earnings in next 14 days, no negative news, no big gaps, but low trading volume"
+        }
+      ]
     },
     "lessons": [],
     "log": [
@@ -1404,7 +1926,7 @@
         "id": "control"
       }
     ],
-    "minutes_left": 234.0379758566,
+    "minutes_left": 183.1436628385833,
     "roster": [
       {
         "company": "IBM",
@@ -1567,7 +2089,7 @@
               }
             }
           },
-          "total_recorded": 120
+          "total_recorded": 161
         }
       },
       {
@@ -1650,7 +2172,7 @@
               }
             }
           },
-          "total_recorded": 120
+          "total_recorded": 162
         }
       },
       {
@@ -1733,7 +2255,7 @@
               }
             }
           },
-          "total_recorded": 124
+          "total_recorded": 166
         }
       },
       {
@@ -1816,18 +2338,18 @@
               }
             }
           },
-          "total_recorded": 129
+          "total_recorded": 170
         }
       }
     ],
     "shadows": [
       {
-        "age_days": 0.16082191673141938,
+        "age_days": 1.4091096518961368,
         "champion_return_pct": 0.0,
         "changes": [
           "analyst_enabled"
         ],
-        "days_to_decision": 13.83917808326858,
+        "days_to_decision": 12.590890348103864,
         "fills": 0,
         "id": "control",
         "kind": "challenger",
@@ -1836,10 +2358,10 @@
         "started_at": 1794162614.1513872
       },
       {
-        "age_days": 0.0870494703065466,
+        "age_days": 1.335337205471264,
         "champion_return_pct": 0.0,
         "changes": [],
-        "days_to_decision": 13.912950529693454,
+        "days_to_decision": 12.664662794528736,
         "fills": 0,
         "id": "depth1-single-shot",
         "kind": "ablation",
@@ -1848,10 +2370,10 @@
         "started_at": 1794168988.0907583
       },
       {
-        "age_days": 0.0870494703065466,
+        "age_days": 1.335337205471264,
         "champion_return_pct": 0.0,
         "changes": [],
-        "days_to_decision": 13.912950529693454,
+        "days_to_decision": 12.664662794528736,
         "fills": 0,
         "id": "depth2-committee",
         "kind": "ablation",
@@ -1864,22 +2386,34 @@
       "current": {
         "cores": 4,
         "cpu": "AMD EPYC 9V45 96-Core Processor",
-        "ended_at": 1794176895.3395858,
-        "git_sha": "f5f64a6",
+        "ended_at": 1794287805.3346214,
+        "git_sha": "52af34b",
         "minutes_budget": 240.0,
-        "minutes_used": 6.862400988737742,
+        "minutes_used": 58.116799859205884,
         "ram_mb": 15983,
-        "run_id": "42529779491",
-        "started_at": 1794176483.595526,
+        "run_id": "42754962424",
+        "started_at": 1794284318.3266294,
         "status": "ok",
-        "trigger": "manual"
+        "trigger": "schedule"
       },
       "determinism": [
+        {
+          "canary_hash_latest": "c2d5f58bfe758864",
+          "canary_hash_previous": null,
+          "model_id": "gemma-4-e4b",
+          "stable": null
+        },
         {
           "canary_hash_latest": "dc192c7624001ab2",
           "canary_hash_previous": "dc192c7624001ab2",
           "model_id": "granite-4.0-h-micro",
           "stable": true
+        },
+        {
+          "canary_hash_latest": "dc192c7624001ab2",
+          "canary_hash_previous": null,
+          "model_id": "lfm2.5-2.6b",
+          "stable": null
         },
         {
           "canary_hash_latest": "293d2b271af8ea44",
@@ -1901,6 +2435,168 @@
         }
       ],
       "events": [
+        {
+          "at": 1794287805.1666067,
+          "detail": "hash dc192c7624001ab2 stable (13644 ms)",
+          "kind": "determinism",
+          "subject": "lfm2.5-2.6b"
+        },
+        {
+          "at": 1794287805.164524,
+          "detail": "LFM2.5 2.6B (Liquid AI) ready (2202 ms)",
+          "kind": "model_load",
+          "subject": "lfm2.5-2.6b"
+        },
+        {
+          "at": 1794287805.1632037,
+          "detail": "1674 MB, sha256 verified, attempt 1 (6729 ms)",
+          "kind": "download",
+          "subject": "lfm2.5-2.6b"
+        },
+        {
+          "at": 1794287543.5833728,
+          "detail": "hash 293d2b271af8ea44 stable (3101 ms)",
+          "kind": "determinism",
+          "subject": "qwen3-4b-instruct"
+        },
+        {
+          "at": 1794287543.5802364,
+          "detail": "Qwen3 4B Instruct 2507 (Alibaba) ready (4512 ms)",
+          "kind": "model_load",
+          "subject": "qwen3-4b-instruct"
+        },
+        {
+          "at": 1794287543.5751405,
+          "detail": "2497 MB, sha256 verified, attempt 1 (8440 ms)",
+          "kind": "download",
+          "subject": "qwen3-4b-instruct"
+        },
+        {
+          "at": 1794287339.355823,
+          "detail": "hash bd099a30714f1b21 stable (3476 ms)",
+          "kind": "determinism",
+          "subject": "phi-4-mini"
+        },
+        {
+          "at": 1794287339.3537354,
+          "detail": "Phi-4 mini Instruct (Microsoft) ready (4503 ms)",
+          "kind": "model_load",
+          "subject": "phi-4-mini"
+        },
+        {
+          "at": 1794287339.352326,
+          "detail": "2491 MB, sha256 verified, attempt 1 (11763 ms)",
+          "kind": "download",
+          "subject": "phi-4-mini"
+        },
+        {
+          "at": 1794287315.3973646,
+          "detail": "hash 293d2b271af8ea44 stable (2947 ms)",
+          "kind": "determinism",
+          "subject": "llama-3.2-3b"
+        },
+        {
+          "at": 1794287315.395672,
+          "detail": "Llama 3.2 3B Instruct (Meta) ready (3002 ms)",
+          "kind": "model_load",
+          "subject": "llama-3.2-3b"
+        },
+        {
+          "at": 1794287315.3944607,
+          "detail": "2019 MB, sha256 verified, attempt 1 (14637 ms)",
+          "kind": "download",
+          "subject": "llama-3.2-3b"
+        },
+        {
+          "at": 1794287283.8996675,
+          "detail": "hash dc192c7624001ab2 stable (3310 ms)",
+          "kind": "determinism",
+          "subject": "granite-4.0-h-micro"
+        },
+        {
+          "at": 1794287283.897802,
+          "detail": "Granite 4.0 H Micro (IBM) ready (1501 ms)",
+          "kind": "model_load",
+          "subject": "granite-4.0-h-micro"
+        },
+        {
+          "at": 1794287283.896192,
+          "detail": "1942 MB, sha256 verified, attempt 1 (33903 ms)",
+          "kind": "download",
+          "subject": "granite-4.0-h-micro"
+        },
+        {
+          "at": 1794287153.5041707,
+          "detail": "hash bd099a30714f1b21 stable (3578 ms)",
+          "kind": "determinism",
+          "subject": "phi-4-mini"
+        },
+        {
+          "at": 1794287153.5010285,
+          "detail": "Phi-4 mini Instruct (Microsoft) ready (3002 ms)",
+          "kind": "model_load",
+          "subject": "phi-4-mini"
+        },
+        {
+          "at": 1794287153.4997158,
+          "detail": "2491 MB, sha256 verified, attempt 1 (53228 ms)",
+          "kind": "download",
+          "subject": "phi-4-mini"
+        },
+        {
+          "at": 1794287020.2046406,
+          "detail": "hash 293d2b271af8ea44 stable (2885 ms)",
+          "kind": "determinism",
+          "subject": "llama-3.2-3b"
+        },
+        {
+          "at": 1794287020.2026107,
+          "detail": "Llama 3.2 3B Instruct (Meta) ready (3035 ms)",
+          "kind": "model_load",
+          "subject": "llama-3.2-3b"
+        },
+        {
+          "at": 1794287020.20144,
+          "detail": "2019 MB, sha256 verified, attempt 1 (25116 ms)",
+          "kind": "download",
+          "subject": "llama-3.2-3b"
+        },
+        {
+          "at": 1794284770.0671763,
+          "detail": "hash c2d5f58bfe758864 stable (21084 ms)",
+          "kind": "determinism",
+          "subject": "gemma-4-e4b"
+        },
+        {
+          "at": 1794284770.0652363,
+          "detail": "Gemma 4 E4B (Google) ready (3002 ms)",
+          "kind": "model_load",
+          "subject": "gemma-4-e4b"
+        },
+        {
+          "at": 1794284770.0174086,
+          "detail": "4977 MB, sha256 verified, attempt 1 (120317 ms)",
+          "kind": "download",
+          "subject": "gemma-4-e4b"
+        },
+        {
+          "at": 1794284501.0563347,
+          "detail": "hash dc192c7624001ab2 stable (3404 ms)",
+          "kind": "determinism",
+          "subject": "granite-4.0-h-micro"
+        },
+        {
+          "at": 1794284501.0545611,
+          "detail": "Granite 4.0 H Micro (IBM) ready (1501 ms)",
+          "kind": "model_load",
+          "subject": "granite-4.0-h-micro"
+        },
+        {
+          "at": 1794284501.0531297,
+          "detail": "1942 MB, sha256 verified, attempt 1 (65437 ms)",
+          "kind": "download",
+          "subject": "granite-4.0-h-micro"
+        },
         {
           "at": 1794176895.1675427,
           "detail": "hash 293d2b271af8ea44 stable (3283 ms)",
@@ -1978,126 +2674,69 @@
           "detail": "nothing to decide: no open slots or no candidates",
           "kind": "degraded",
           "subject": "desk"
-        },
-        {
-          "at": 1794175110.51884,
-          "detail": "hash 293d2b271af8ea44 stable (5580 ms)",
-          "kind": "determinism",
-          "subject": "qwen3-4b-instruct"
-        },
-        {
-          "at": 1794175110.51687,
-          "detail": "Qwen3 4B Instruct 2507 (Alibaba) ready (4503 ms)",
-          "kind": "model_load",
-          "subject": "qwen3-4b-instruct"
-        },
-        {
-          "at": 1794175110.5142722,
-          "detail": "2497 MB, sha256 verified, attempt 1 (16474 ms)",
-          "kind": "download",
-          "subject": "qwen3-4b-instruct"
-        },
-        {
-          "at": 1794174833.6363778,
-          "detail": "hash bd099a30714f1b21 stable (6559 ms)",
-          "kind": "determinism",
-          "subject": "phi-4-mini"
-        },
-        {
-          "at": 1794174833.6303697,
-          "detail": "Phi-4 mini Instruct (Microsoft) ready (4503 ms)",
-          "kind": "model_load",
-          "subject": "phi-4-mini"
-        },
-        {
-          "at": 1794174833.6290302,
-          "detail": "2491 MB, sha256 verified, attempt 1 (27264 ms)",
-          "kind": "download",
-          "subject": "phi-4-mini"
-        },
-        {
-          "at": 1794174725.0263202,
-          "detail": "hash 293d2b271af8ea44 stable (5535 ms)",
-          "kind": "determinism",
-          "subject": "llama-3.2-3b"
-        },
-        {
-          "at": 1794174725.0223763,
-          "detail": "Llama 3.2 3B Instruct (Meta) ready (4509 ms)",
-          "kind": "model_load",
-          "subject": "llama-3.2-3b"
-        },
-        {
-          "at": 1794174725.020505,
-          "detail": "2019 MB, sha256 verified, attempt 1 (8489 ms)",
-          "kind": "download",
-          "subject": "llama-3.2-3b"
-        },
-        {
-          "at": 1794174518.6171985,
-          "detail": "hash dc192c7624001ab2 stable (6065 ms)",
-          "kind": "determinism",
-          "subject": "granite-4.0-h-micro"
-        },
-        {
-          "at": 1794174518.6156342,
-          "detail": "Granite 4.0 H Micro (IBM) ready (3002 ms)",
-          "kind": "model_load",
-          "subject": "granite-4.0-h-micro"
-        },
-        {
-          "at": 1794174518.612521,
-          "detail": "1942 MB, sha256 verified, attempt 1 (15942 ms)",
-          "kind": "download",
-          "subject": "granite-4.0-h-micro"
         }
       ],
       "fetches": [
         {
-          "mean_ms": 350.25,
+          "mean_ms": 423.0,
           "ok_rate": 1.0,
           "p95_ms": 769.0,
-          "requests": 4,
+          "requests": 6,
           "source": "nasdaq-directory"
         },
         {
-          "mean_ms": 1818.95,
+          "mean_ms": 1845.225806451613,
           "ok_rate": 1.0,
           "p95_ms": 3062.0,
-          "requests": 20,
+          "requests": 31,
           "source": "nasdaq-earnings"
         },
         {
-          "mean_ms": 134.05882352941177,
+          "mean_ms": 129.86111111111111,
           "ok_rate": 1.0,
           "p95_ms": 252.0,
-          "requests": 17,
+          "requests": 36,
           "source": "sec-edgar"
         },
         {
-          "mean_ms": 143.1611957796014,
-          "ok_rate": 0.9618991793669402,
-          "p95_ms": 1055.0,
-          "requests": 1706,
+          "mean_ms": 159.04885614579294,
+          "ok_rate": 0.9554090732842186,
+          "p95_ms": 252.0,
+          "requests": 2579,
           "source": "yahoo-bars"
         },
         {
-          "mean_ms": 141.35714285714286,
+          "mean_ms": 160.4047619047619,
           "ok_rate": 1.0,
-          "p95_ms": 203.0,
-          "requests": 56,
+          "p95_ms": 229.0,
+          "requests": 84,
           "source": "yahoo-news"
         }
       ],
       "models": [
         {
-          "calls": 2,
+          "calls": 1,
+          "company": "Liquid AI",
+          "errors": 1,
+          "mean_completion_tokens": null,
+          "mean_gen_tps": null,
+          "mean_latency_ms": 167797.0,
+          "mean_prompt_tps": null,
+          "model_id": "lfm2.5-2.6b",
+          "ok_rate": 0.0,
+          "p95_latency_ms": 167797.0,
+          "roles": [
+            "single_shot"
+          ]
+        },
+        {
+          "calls": 4,
           "company": "Alibaba",
           "errors": 0,
-          "mean_completion_tokens": 823.0,
-          "mean_gen_tps": 8.565720262636182,
-          "mean_latency_ms": 179898.0,
-          "mean_prompt_tps": 46.52597050714199,
+          "mean_completion_tokens": 673.0,
+          "mean_gen_tps": 8.8524808326728,
+          "mean_latency_ms": 164450.0,
+          "mean_prompt_tps": 52.2142093039362,
           "model_id": "qwen3-4b-instruct",
           "ok_rate": 1.0,
           "p95_latency_ms": 240154.0,
@@ -2106,46 +2745,61 @@
           ]
         },
         {
-          "calls": 8,
+          "calls": 37,
+          "company": "Google",
+          "errors": 0,
+          "mean_completion_tokens": 607.5945945945946,
+          "mean_gen_tps": 12.184724380614007,
+          "mean_latency_ms": 64347.59459459459,
+          "mean_prompt_tps": 114.06694532824035,
+          "model_id": "gemma-4-e4b",
+          "ok_rate": 1.0,
+          "p95_latency_ms": 131662.0,
+          "roles": [
+            "research"
+          ]
+        },
+        {
+          "calls": 13,
           "company": "IBM",
           "errors": 0,
-          "mean_completion_tokens": 342.25,
-          "mean_gen_tps": 16.139894860421535,
-          "mean_latency_ms": 50316.25,
-          "mean_prompt_tps": 60.75859078131633,
+          "mean_completion_tokens": 330.0769230769231,
+          "mean_gen_tps": 17.496684516508573,
+          "mean_latency_ms": 50236.53846153846,
+          "mean_prompt_tps": 73.24793999872493,
           "model_id": "granite-4.0-h-micro",
           "ok_rate": 1.0,
-          "p95_latency_ms": 90835.0,
+          "p95_latency_ms": 107012.0,
           "roles": [
             "triage"
           ]
         },
         {
-          "calls": 8,
+          "calls": 17,
           "company": "Microsoft",
           "errors": 0,
-          "mean_completion_tokens": 73.125,
-          "mean_gen_tps": 13.5609680400364,
-          "mean_latency_ms": 18665.0,
-          "mean_prompt_tps": 64.83272780709157,
+          "mean_completion_tokens": 75.05882352941177,
+          "mean_gen_tps": 14.450821625794433,
+          "mean_latency_ms": 18940.29411764706,
+          "mean_prompt_tps": 82.44551567814065,
           "model_id": "phi-4-mini",
           "ok_rate": 1.0,
-          "p95_latency_ms": 59432.0,
+          "p95_latency_ms": 68998.0,
           "roles": [
             "bear"
           ]
         },
         {
-          "calls": 8,
+          "calls": 17,
           "company": "Meta",
           "errors": 0,
-          "mean_completion_tokens": 118.75,
-          "mean_gen_tps": 17.187888455542165,
-          "mean_latency_ms": 16024.875,
-          "mean_prompt_tps": 72.31852364964655,
+          "mean_completion_tokens": 103.52941176470588,
+          "mean_gen_tps": 18.43404882966399,
+          "mean_latency_ms": 15617.764705882353,
+          "mean_prompt_tps": 91.58436904667772,
           "model_id": "llama-3.2-3b",
           "ok_rate": 1.0,
-          "p95_latency_ms": 34292.0,
+          "p95_latency_ms": 41526.0,
           "roles": [
             "bull"
           ]
@@ -2153,43 +2807,71 @@
       ],
       "roles": [
         {
-          "calls": 8,
+          "calls": 17,
           "company": "Microsoft",
-          "mean_latency_ms": 18665.0,
+          "mean_latency_ms": 18940.29411764706,
           "model_id": "phi-4-mini",
           "ok_rate": 1.0,
           "role": "bear",
-          "total_minutes": 2.4886666666666666
+          "total_minutes": 5.366416666666667
         },
         {
-          "calls": 8,
+          "calls": 17,
           "company": "Meta",
-          "mean_latency_ms": 16024.875,
+          "mean_latency_ms": 15617.764705882353,
           "model_id": "llama-3.2-3b",
           "ok_rate": 1.0,
           "role": "bull",
-          "total_minutes": 2.13665
+          "total_minutes": 4.425033333333333
         },
         {
-          "calls": 2,
+          "calls": 4,
           "company": "Alibaba",
-          "mean_latency_ms": 179898.0,
+          "mean_latency_ms": 164450.0,
           "model_id": "qwen3-4b-instruct",
           "ok_rate": 1.0,
           "role": "judge",
-          "total_minutes": 5.9966
+          "total_minutes": 10.963333333333333
         },
         {
-          "calls": 8,
+          "calls": 37,
+          "company": "Google",
+          "mean_latency_ms": 64347.59459459459,
+          "model_id": "gemma-4-e4b",
+          "ok_rate": 1.0,
+          "role": "research",
+          "total_minutes": 39.681016666666665
+        },
+        {
+          "calls": 1,
+          "company": "Liquid AI",
+          "mean_latency_ms": 167797.0,
+          "model_id": "lfm2.5-2.6b",
+          "ok_rate": 0.0,
+          "role": "single_shot",
+          "total_minutes": 2.7966166666666665
+        },
+        {
+          "calls": 13,
           "company": "IBM",
-          "mean_latency_ms": 50316.25,
+          "mean_latency_ms": 50236.53846153846,
           "model_id": "granite-4.0-h-micro",
           "ok_rate": 1.0,
           "role": "triage",
-          "total_minutes": 6.708833333333334
+          "total_minutes": 10.884583333333333
         }
       ],
       "runs": [
+        {
+          "calls": 63,
+          "degraded": [],
+          "errors": 1,
+          "minutes_budget": 240.0,
+          "minutes_used": 58.116799859205884,
+          "run_id": "42754962424",
+          "started_at": 1794284318.3266294,
+          "status": "ok"
+        },
         {
           "calls": 13,
           "degraded": [],
@@ -2216,91 +2898,99 @@
       "stage_history": [
         {
           "fail_rate": 0.0,
-          "max_ms": 442581.0,
-          "mean_ms": 340207.5,
+          "max_ms": 2945313.0,
+          "mean_ms": 1208576.0,
           "name": "desk.prepare",
-          "p95_ms": 442581.0,
-          "runs": 2
+          "p95_ms": 2945313.0,
+          "runs": 3
         },
         {
           "fail_rate": 0.0,
-          "max_ms": 240155.0,
-          "mean_ms": 179899.0,
+          "max_ms": 298010.0,
+          "mean_ms": 219269.33333333334,
           "name": "desk.judge",
-          "p95_ms": 240155.0,
-          "runs": 2
+          "p95_ms": 298010.0,
+          "runs": 3
         },
         {
           "fail_rate": 0.0,
-          "max_ms": 37437.0,
-          "mean_ms": 31470.5,
+          "max_ms": 167798.0,
+          "mean_ms": 55932.666666666664,
+          "name": "desk.single_shot",
+          "p95_ms": 167798.0,
+          "runs": 3
+        },
+        {
+          "fail_rate": 0.0,
+          "max_ms": 42828.0,
+          "mean_ms": 35256.333333333336,
           "name": "scan",
-          "p95_ms": 37437.0,
-          "runs": 2
+          "p95_ms": 42828.0,
+          "runs": 3
         },
         {
           "fail_rate": 0.0,
-          "max_ms": 22679.0,
-          "mean_ms": 22171.0,
+          "max_ms": 26402.0,
+          "mean_ms": 23581.333333333332,
           "name": "intel",
-          "p95_ms": 22679.0,
-          "runs": 2
+          "p95_ms": 26402.0,
+          "runs": 3
         },
         {
           "fail_rate": 0.0,
           "max_ms": 5550.0,
-          "mean_ms": 5550.0,
+          "mean_ms": 5448.5,
           "name": "edgar",
           "p95_ms": 5550.0,
-          "runs": 1
+          "runs": 2
         },
         {
           "fail_rate": 0.0,
           "max_ms": 177.0,
-          "mean_ms": 163.0,
+          "mean_ms": 157.33333333333334,
           "name": "cycles",
           "p95_ms": 177.0,
-          "runs": 2
+          "runs": 3
         },
         {
           "fail_rate": 0.0,
           "max_ms": 51.0,
-          "mean_ms": 45.5,
+          "mean_ms": 42.0,
           "name": "cycle:baseline",
           "p95_ms": 51.0,
-          "runs": 2
+          "runs": 3
         },
         {
           "fail_rate": 0.0,
-          "max_ms": 42.0,
-          "mean_ms": 38.5,
+          "max_ms": 46.0,
+          "mean_ms": 41.0,
           "name": "cycle:control",
-          "p95_ms": 42.0,
-          "runs": 2
+          "p95_ms": 46.0,
+          "runs": 3
         },
         {
           "fail_rate": 0.0,
           "max_ms": 38.0,
-          "mean_ms": 37.5,
+          "mean_ms": 34.333333333333336,
           "name": "cycle:depth1-single-shot",
           "p95_ms": 38.0,
-          "runs": 2
+          "runs": 3
         },
         {
           "fail_rate": 0.0,
           "max_ms": 40.0,
-          "mean_ms": 36.0,
+          "mean_ms": 33.333333333333336,
           "name": "cycle:depth2-committee",
           "p95_ms": 40.0,
-          "runs": 2
+          "runs": 3
         },
         {
           "fail_rate": 0.0,
           "max_ms": 2.0,
-          "mean_ms": 1.5,
+          "mean_ms": 1.3333333333333333,
           "name": "lab",
           "p95_ms": 2.0,
-          "runs": 2
+          "runs": 3
         },
         {
           "fail_rate": 0.0,
@@ -2308,15 +2998,7 @@
           "mean_ms": 0.0,
           "name": "desk.doctor",
           "p95_ms": 0.0,
-          "runs": 2
-        },
-        {
-          "fail_rate": 0.0,
-          "max_ms": 0.0,
-          "mean_ms": 0.0,
-          "name": "desk.single_shot",
-          "p95_ms": 0.0,
-          "runs": 2
+          "runs": 3
         },
         {
           "fail_rate": 0.0,
@@ -2324,42 +3006,42 @@
           "mean_ms": 0.0,
           "name": "post_mortem",
           "p95_ms": 0.0,
-          "runs": 2
+          "runs": 3
         }
       ],
       "stages": [
         {
-          "ms": 25504,
+          "ms": 42828,
           "name": "scan",
           "note": "",
           "ok": true
         },
         {
-          "ms": 21663,
+          "ms": 26402,
           "name": "intel",
           "note": "",
           "ok": true
         },
         {
-          "ms": 5550,
+          "ms": 5347,
           "name": "edgar",
           "note": "",
           "ok": true
         },
         {
-          "ms": 237834,
+          "ms": 2945313,
           "name": "desk.prepare",
           "note": "",
           "ok": true
         },
         {
-          "ms": 119643,
+          "ms": 298010,
           "name": "desk.judge",
           "note": "",
           "ok": true
         },
         {
-          "ms": 0,
+          "ms": 167798,
           "name": "desk.single_shot",
           "note": "",
           "ok": true
@@ -2371,31 +3053,31 @@
           "ok": true
         },
         {
-          "ms": 149,
+          "ms": 146,
           "name": "cycles",
           "note": "",
           "ok": true
         },
         {
-          "ms": 40,
+          "ms": 35,
           "name": "cycle:baseline",
           "note": "",
           "ok": true
         },
         {
-          "ms": 35,
+          "ms": 46,
           "name": "cycle:control",
           "note": "",
           "ok": true
         },
         {
-          "ms": 37,
+          "ms": 28,
           "name": "cycle:depth1-single-shot",
           "note": "",
           "ok": true
         },
         {
-          "ms": 32,
+          "ms": 28,
           "name": "cycle:depth2-committee",
           "note": "",
           "ok": true
@@ -2414,10 +3096,10 @@
         }
       ],
       "totals": {
-        "calls": 26,
-        "errors": 0,
-        "minutes_total": 19.265128517150877,
-        "runs": 2
+        "calls": 89,
+        "errors": 1,
+        "minutes_total": 77.38192837635677,
+        "runs": 3
       }
     }
   }

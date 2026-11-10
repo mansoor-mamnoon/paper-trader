@@ -15,7 +15,7 @@
     "shortlist_size": 25,
     "playbook": "You are the portfolio analyst for a $1,000 long-only US-stock paper account. Each day you receive stocks that already passed a quantitative screen, with recent headlines and upcoming earnings dates. Pick the stocks most likely to rise over the next one to three weeks. Prefer a clear, recent, specific catalyst (guidance raised, contract won, upgrade, product launch) and a trend that the news supports. Avoid stocks with a pending earnings report unless the setup is unusually strong, stocks whose news is mostly negative, legal trouble, dilution or a recent spike on thin news. Be selective: choosing no stock is a valid answer when nothing is convincing.",
     "desk_depth": 3,
-    "finalists": 4,
+    "finalists": 8,
     "use_doctor": true,
     "use_memory": true
   },
@@ -37,7 +37,7 @@
         "shortlist_size": 25,
         "playbook": "You are the portfolio analyst for a $1,000 long-only US-stock paper account. Each day you receive stocks that already passed a quantitative screen, with recent headlines and upcoming earnings dates. Pick the stocks most likely to rise over the next one to three weeks. Prefer a clear, recent, specific catalyst (guidance raised, contract won, upgrade, product launch) and a trend that the news supports. Avoid stocks with a pending earnings report unless the setup is unusually strong, stocks whose news is mostly negative, legal trouble, dilution or a recent spike on thin news. Be selective: choosing no stock is a valid answer when nothing is convincing.",
         "desk_depth": 3,
-        "finalists": 4,
+        "finalists": 8,
         "use_doctor": true,
         "use_memory": true
       },
@@ -61,7 +61,7 @@
         "shortlist_size": 25,
         "playbook": "You are the portfolio analyst for a $1,000 long-only US-stock paper account. Each day you receive stocks that already passed a quantitative screen, with recent headlines and upcoming earnings dates. Pick the stocks most likely to rise over the next one to three weeks. Prefer a clear, recent, specific catalyst (guidance raised, contract won, upgrade, product launch) and a trend that the news supports. Avoid stocks with a pending earnings report unless the setup is unusually strong, stocks whose news is mostly negative, legal trouble, dilution or a recent spike on thin news. Be selective: choosing no stock is a valid answer when nothing is convincing.",
         "desk_depth": 1,
-        "finalists": 4,
+        "finalists": 8,
         "use_doctor": true,
         "use_memory": true
       },
@@ -85,7 +85,7 @@
         "shortlist_size": 25,
         "playbook": "You are the portfolio analyst for a $1,000 long-only US-stock paper account. Each day you receive stocks that already passed a quantitative screen, with recent headlines and upcoming earnings dates. Pick the stocks most likely to rise over the next one to three weeks. Prefer a clear, recent, specific catalyst (guidance raised, contract won, upgrade, product launch) and a trend that the news supports. Avoid stocks with a pending earnings report unless the setup is unusually strong, stocks whose news is mostly negative, legal trouble, dilution or a recent spike on thin news. Be selective: choosing no stock is a valid answer when nothing is convincing.",
         "desk_depth": 2,
-        "finalists": 4,
+        "finalists": 8,
         "use_doctor": true,
         "use_memory": true
       },
@@ -120,10 +120,11 @@
   "lessons": [],
   "lessons_cursor": 0,
   "analyst": {
-    "at": 1794176509.1649928,
-    "source": "quant",
+    "at": 1794284361.225311,
+    "source": "llm",
     "model": "9 open-weights models from 9 companies",
-    "market_view": "",
+    "market_view": "The market regime is risk_off, as indicated by the negative 20-day S&P 500 return (-5.56%) and median 20-day stock return of -1.05%. Despite some positive momentum in individual stocks, the breadth of gains is thin, and the environment favors defensive or low-volatility plays.",
     "error": null
-  }
+  },
+  "schema": 1
 }

@@ -7,7 +7,8 @@
  *   goatcounter  a cookie-free counter. Needs no consent banner. Shows pages, referrers,
  *                browsers, systems, screen sizes and countries.
  *   ga4          Google Analytics 4. Adds city-level location, new versus returning
- *                visitors and a live view. Loads only after a visitor agrees.
+ *                visitors and a live view. Runs without a prompt, and in cookieless mode
+ *                for visitors in Europe.
  *
  * Your own devices are excluded: open the site once on each of them with ?me=1 on the
  * end of the address (use ?me=0 to count that device again). Local previews, visitors who
@@ -19,7 +20,6 @@
 (() => {
   const cfg = window.PT_ANALYTICS || {};
   const IGNORE = "pt_ignore";
-  const CONSENT = "pt_ga_consent";
   const safe = (fn, fallback) => { try { return fn(); } catch { return fallback; } };
 
   const params = new URLSearchParams(location.search);
@@ -83,33 +83,15 @@
     state.providers.push("ga4");
     window.dataLayer = window.dataLayer || [];
     window.gtag = function gtag() { window.dataLayer.push(arguments); };
-    window.gtag("consent", "default", { analytics_storage: "denied", ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied" });
+    // No prompt anywhere. Outside Europe, Google Analytics runs normally. Inside the EEA,
+    // the UK and Switzerland, where cookies need prior consent, it runs in Google's
+    // cookieless mode: no cookie is stored and visits are counted without identifiers.
+    const EUROPE = ["AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IS", "IE", "IT", "LV", "LI", "LT", "LU", "MT", "NL", "NO", "PL", "PT", "RO", "SK", "SI", "ES", "SE", "CH", "GB"];
+    window.gtag("consent", "default", { analytics_storage: "denied", ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied", region: EUROPE });
+    window.gtag("consent", "default", { analytics_storage: "granted", ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied" });
     window.gtag("js", new Date());
-    window.gtag("config", cfg.ga4, { send_page_view: false, anonymize_ip: true });
+    window.gtag("config", cfg.ga4, { send_page_view: false, anonymize_ip: true, allow_google_signals: false, allow_ad_personalization_signals: false });
     script(`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(cfg.ga4)}`);
-    const grant = () => window.gtag("consent", "update", { analytics_storage: "granted" });
-    const choice = safe(() => localStorage.getItem(CONSENT), null);
-    if (choice === "yes") grant();
-    if (choice === null) {
-      document.addEventListener("DOMContentLoaded", () => {
-        const bar = document.createElement("div");
-        bar.className = "consent";
-        bar.setAttribute("role", "dialog");
-        bar.setAttribute("aria-label", "Visit statistics");
-        const text = document.createElement("span");
-        text.textContent = "Count this visit with Google Analytics? It helps me see which tabs people use and roughly where they are. No names or accounts are involved.";
-        const yes = document.createElement("button");
-        yes.textContent = "Yes, count it";
-        const no = document.createElement("button");
-        no.textContent = "No thanks";
-        no.className = "quiet";
-        const close = (value) => { safe(() => localStorage.setItem(CONSENT, value)); if (value === "yes") grant(); bar.remove(); };
-        yes.addEventListener("click", () => close("yes"));
-        no.addEventListener("click", () => close("no"));
-        bar.append(text, yes, no);
-        document.body.append(bar);
-      });
-    }
     attach({
       page: (t) => window.gtag("event", "page_view", { page_title: title(t), page_path: `/${t}`, page_location: `${location.origin}${location.pathname}#${t}` }),
       event: (e) => window.gtag("event", e),

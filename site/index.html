@@ -63,7 +63,7 @@
   <div class="stats">
     <article class="card stat"><p class="label">Cash <button class="tip" aria-label="What is cash?" data-tip="Money not invested in any stock. The account starts with $1,000 in cash.">?</button></p><h2 id="cash">—</h2><small id="invested" class="muted"></small></article>
     <article class="card stat"><p class="label">Profit and loss <button class="tip" aria-label="What is profit and loss?" data-tip="Realized is locked in by selling. Unrealized is the gain or loss on stocks still held, after estimated selling costs.">?</button></p><h2 id="pnl">—</h2><small id="pnl-detail" class="muted"></small></article>
-    <article class="card stat"><p class="label">Worst drop <button class="tip" aria-label="What is the worst drop?" data-tip="The largest fall from the account's highest value. At 10% the account stops buying for good.">?</button></p><h2 id="drawdown">—</h2><small class="muted">Stops buying at 10%</small></article>
+    <article class="card stat"><p class="label">Worst drop <button class="tip" aria-label="What is the worst drop?" data-tip="The largest fall from the account's highest value. It is only reported: the account keeps trading for all 60 days.">?</button></p><h2 id="drawdown">—</h2><small class="muted">Reported, never a stop</small></article>
     <article class="card stat"><p class="label">Fees paid <button class="tip" aria-label="What are fees?" data-tip="Modeled trading fees. Slippage, a worse-than-quoted fill price, is charged on top and is already inside the prices.">?</button></p><h2 id="fees">—</h2><small id="costs" class="muted"></small></article>
   </div>
 
@@ -175,7 +175,7 @@
         <li><strong>Test.</strong> The change trades a separate $1,000 shadow account on the same data for at least two weeks.</li>
         <li><strong>Decide.</strong> It replaces the live strategy only if it beats it by a clear margin with similar risk. The old strategy keeps running and wins its seat back if the change turns out to be luck.</li>
       </ol>
-      <p class="small muted">Position size, the three-position cap, costs and the 10% loss halt are written in code. No proposal can change them.</p></section>
+      <p class="small muted">Position size, the five-slot cap, costs and the 60-day end are written in code. No proposal can change them.</p></section>
   </div>
 </section>
 
@@ -256,7 +256,7 @@
     <li><h3>Triage</h3><p>The model scores the survivors in small batches for how specific and recent their catalyst is, and keeps the best few as finalists.</p></li>
     <li><h3>Research agents</h3><p>For each finalist an agent decides what to look up next: read a filing, pull older headlines, inspect price action. Each step is shown on The Desk tab.</p></li>
     <li><h3>Bull and bear</h3><p>Two calls argue the stock for and against, using only the evidence gathered.</p></li>
-    <li><h3>The judge</h3><p>A portfolio manager writes out its reasoning, calls the market regime, and picks, sizes and states what would prove it wrong. Orders fill at a later open with fees and slippage, and a 10% drop from peak stops all buying.</p></li>
+    <li><h3>The judge</h3><p>A portfolio manager writes out its reasoning, calls the market regime, and picks and states what would prove it wrong. Money splits equally across five slots. Orders fill at a later open with fees and slippage.</p></li>
     <li><h3>Doctor, memory and scorecard</h3><p>A doctor re-checks every holding and may exit or tighten a stop. Closed trades become lessons. Every pick, veto and near miss is scored against SPY, and shadow accounts at lower desk depths show whether each layer earns its place.</p></li>
   </ol>
   <section class="card"><div class="head"><h2>Independent models</h2></div>
@@ -270,7 +270,7 @@
     <p>Start at the top: the status word says whether the last run finished cleanly, and the bar shows how much of its time budget it used. "Where the time went" shows each stage of that run, and "Bottlenecks" shows which stage is slowest on average across the last 30 runs. If a model's latency or error count climbs, or a data source starts failing, it shows in the tables below before it shows in the results. The raw logs are downloadable.</p></section>
   <div class="two">
     <section class="card"><div class="head"><h2>Guardrails</h2></div>
-      <dl class="facts"><div><dt>Biggest position</dt><dd>20% of the account</dd></div><div><dt>Open positions</dt><dd>3 at most</dd></div><div><dt>Stop / target</dt><dd>−4% / +8%</dd></div><div><dt>Loss limit</dt><dd>10% drawdown</dd></div><div><dt>Leverage and shorting</dt><dd>None</dd></div><div><dt>Real orders</dt><dd>None</dd></div></dl></section>
+      <dl class="facts"><div><dt>Biggest position</dt><dd>20% of the account</dd></div><div><dt>Open positions</dt><dd>5 at most, fractional shares</dd></div><div><dt>Stop / target</dt><dd>−4% / +8%</dd></div><div><dt>Invested</dt><dd>Up to 100%</dd></div><div><dt>Leverage and shorting</dt><dd>None</dd></div><div><dt>Real orders</dt><dd>None</dd></div></dl></section>
     <section class="card"><div class="head"><h2>Coverage</h2></div><p id="coverage" class="muted">Loading…</p>
       <p class="small muted"><a href="api/universe.json">Symbol directory (JSON)</a> · <a href="api/state">Raw snapshot (JSON)</a> · <a href="export/equity.csv">Equity history (CSV)</a></p></section>
   </div>
@@ -283,7 +283,7 @@
 
 <footer class="wrap foot-bar">
   <span id="health-detail" class="muted">Delayed daily data</span>
-  <span id="privacy" class="muted">Visits are counted anonymously only if the owner turned that on.</span>
+  <span id="privacy" class="muted"></span>
   <span><a href="https://github.com/mansoor-mamnoon/paper-trader">Source on GitHub</a> · <a href="https://github.com/mansoor-mamnoon/paper-trader/actions">Run history</a></span>
 </footer>
 <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
