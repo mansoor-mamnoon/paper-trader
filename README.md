@@ -129,6 +129,8 @@ Two layers decide what is bought. Hard gates come first and are fixed in code (`
 | 4 | Exits | A stop at −4% and a target at +8% from the entry fill, checked on daily closes; a crossing queues a sell for the next open, and a gap through the stop is taken at that open. The position doctor may raise a stop toward the price and never lower it. |
 | 5 | Circuit breaker | When equity is at least 10% below its high over the last five sessions, every queued buy is cancelled and nothing new opens for 48 hours (`CASH_LOCK`). Held positions keep following their stops and targets. |
 
+**First runs with the gates (10 November 2026).** Of the four buys queued on 6 November under the old $1M floor, AEYE ($2.9M a day), APLZ ($2.7M) and GIBO ($3.0M) were cancelled and only AAOZ filled, at $32.34 on 9 November. AAOZ closed at $29.88 that day, below its $31.05 stop, so its sell is queued for the next open. The screen removed 457 stocks before any model saw them: 380 for thin trading, 86 for an earnings report within a week and a few under $5. The desk then had three open slots. The judge called the market risk-off, which allows one new entry at half a slot, and picked REAL (The RealReal, σ 4.9%, so no volatility cut) for about $100. REPL (Replimune), picked by the earlier run, also waits for the open at half a slot. No industry cap or cash lock fired.
+
 ### The strategy's screen
 
 The defaults, which the lab may change within fixed bounds:
