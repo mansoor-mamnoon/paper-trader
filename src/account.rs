@@ -1,6 +1,7 @@
 //! Isolated stock paper ledger: fractional shares, delayed daily fills and explicit evidence.
 
 use crate::analyst::{Brief, Candidate, Review};
+use crate::gates;
 use crate::ledger::{self, decision, insert_fill};
 use crate::model::{Observation, Order, Position, Quote, State};
 use crate::scorecard;
@@ -660,11 +661,7 @@ pub fn screen(strategy: &Strategy, observation: &Observation, at: f64) -> Vec<Sc
         let mean = |k: usize| bars[n - k..].iter().map(|b| b.close).sum::<f64>() / k as f64;
         let (sma20, sma50) = (mean(20), mean(50));
         let momentum = close / bars[n - 21].close - 1.0;
-        let dollar_volume = bars[n - 20..]
-            .iter()
-            .map(|b| b.close * b.volume)
-            .sum::<f64>()
-            / 20.0;
+        let dollar_volume = gates::adtv(bars, gates::ADTV_DAYS);
         let momentum_5d = close / bars[n - 6].close - 1.0;
         let returns: Vec<f64> = bars[n - 21..]
             .windows(2)
@@ -691,26 +688,33 @@ pub fn screen(strategy: &Strategy, observation: &Observation, at: f64) -> Vec<Sc
                 && days.is_ok_and(|d| (0..=i64::from(strategy.earnings_blackout_days)).contains(&d))
         });
         let trend = !strategy.require_trend || (close > sma20 && sma20 > sma50);
-        let eligible = close >= strategy.min_price
-            && dollar_volume >= strategy.min_dollar_volume
-            && momentum > strategy.min_momentum
-            && trend
-            && blackout.is_none();
-        let reason = match blackout {
-            Some(date) => format!(
+        // Hard gates first: no strategy or model can loosen these.
+        let gate = gates::liquidity(
+            close,
+            dollar_volume,
+            strategy.min_price,
+            strategy.min_dollar_volume,
+        )
+        .or_else(|| gates::event(symbol, &observation.intel, today));
+        let eligible =
+            gate.is_none() && momentum > strategy.min_momentum && trend && blackout.is_none();
+        let reason = match (&gate, blackout) {
+            (Some(gate), _) => format!("Hard gate: {gate}"),
+            (None, Some(date)) => format!(
                 "Earnings report on {date} falls inside the {}-day blackout",
                 strategy.earnings_blackout_days
             ),
-            None => format!(
-                "{}20-day momentum above {:.0}%, price >= ${}, liquidity >= ${}M/day",
+            (None, None) => format!(
+                "{}20-day momentum above {:.0}%, price >= ${}, traded value >= ${}M/day over {} sessions",
                 if strategy.require_trend {
                     "20/50-day trend, "
                 } else {
                     ""
                 },
                 strategy.min_momentum * 100.0,
-                strategy.min_price,
-                strategy.min_dollar_volume / 1e6
+                strategy.min_price.max(gates::MIN_PRICE),
+                strategy.min_dollar_volume.max(gates::MIN_ADTV) / 1e6,
+                gates::ADTV_DAYS
             ),
         };
         rows.push(Screened {
@@ -737,7 +741,7 @@ pub fn screen(strategy: &Strategy, observation: &Observation, at: f64) -> Vec<Sc
             evidence: json!({
                 "sma20": sma20, "sma50": sma50, "momentum20d": momentum,
                 "average_dollar_volume": dollar_volume, "price_at": bars[n - 1].at,
-                "earnings_date": earnings_date,
+                "earnings_date": earnings_date, "hard_gate": gate,
             }),
         });
     }
@@ -878,6 +882,46 @@ mod tests {
         assert!((position.entry - price).abs() < 1e-9);
         assert!((position.stop - price * 0.96).abs() < 1e-9);
         assert!(state.cash < 1000.0 - price);
+    }
+
+    #[test]
+    fn hard_gates_reject_thin_and_event_stocks_even_if_the_strategy_allows_them() {
+        let rising = bars(60, 50.0, 1.0, None);
+        let thin: Vec<Bar> = rising
+            .iter()
+            .map(|b| Bar {
+                volume: 40_000.0,
+                ..b.clone()
+            })
+            .collect();
+        let at = rising.last().unwrap().at + DAY * 0.5;
+        let mut obs = observation(
+            at,
+            vec![("UP", rising.clone()), ("THIN", thin), ("SPLIT", rising)],
+        );
+        obs.intel.news.insert(
+            "SPLIT".into(),
+            vec![crate::model::Headline {
+                title: "Board approves 1-for-10 reverse stock split".into(),
+                published: String::new(),
+            }],
+        );
+        let loose = Strategy {
+            min_price: 1.0,
+            min_dollar_volume: 200_000.0,
+            ..Strategy::default()
+        };
+        let rows = screen(&loose, &obs, at);
+        let row = |s: &str| rows.iter().find(|r| r.candidate.symbol == s).unwrap();
+        assert!(row("UP").eligible);
+        assert!(!row("THIN").eligible);
+        assert!(
+            row("THIN")
+                .reason
+                .starts_with("Hard gate: Average daily traded value")
+        );
+        assert!(!row("SPLIT").eligible);
+        assert!(row("SPLIT").reason.contains("reverse stock split"));
     }
 
     #[test]
