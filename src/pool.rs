@@ -226,6 +226,8 @@ impl Pool {
                 &self.port.to_string(),
                 "-t",
                 &threads.to_string(),
+                "--reasoning-budget",
+                &reasoning_budget(spec.id).to_string(),
             ])
             .stdout(Stdio::from(log.try_clone()?))
             .stderr(Stdio::from(log))
@@ -314,6 +316,21 @@ impl Pool {
                 elapsed_ms(started),
             ),
         }
+    }
+}
+
+/// Hidden thinking tokens a model may spend before it answers; -1 leaves it unlimited.
+///
+/// Gemma 4 thinks before every answer, and the server strips that text, so it only costs
+/// time: on a real run it was about 80% of the research tokens (0.78 visible characters per
+/// token against about 4 for the other models). A 128-token budget made the same research
+/// choices as unlimited thinking on test prompts at about half the tokens, and stayed
+/// deterministic. Thinking off was four times faster but repeated tools and ended research
+/// early, so it is not used.
+pub fn reasoning_budget(model_id: &str) -> i32 {
+    match model_id {
+        "gemma-4-e4b" => 128,
+        _ => -1,
     }
 }
 
@@ -416,6 +433,18 @@ impl Drop for Pool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_the_thinking_research_model_gets_a_reasoning_budget() {
+        assert_eq!(reasoning_budget("gemma-4-e4b"), 128);
+        for spec in crate::models::MODELS
+            .iter()
+            .filter(|m| m.id != "gemma-4-e4b")
+        {
+            assert_eq!(reasoning_budget(spec.id), -1, "{}", spec.id);
+        }
+        assert!(crate::models::MODELS.iter().any(|m| m.id == "gemma-4-e4b"));
+    }
 
     #[derive(Debug)]
     struct Fixed;
