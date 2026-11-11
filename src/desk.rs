@@ -1949,3 +1949,753 @@ pub fn post_mortem(llm: &dyn Router, trade: &ClosedTrade, at: f64) -> Result<Les
         lesson: clip(lesson, 220),
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::analyst::Llm;
+    use crate::model::{Bar, Headline, Intel, Position, Quote};
+    use crate::pool::OneModel;
+    use std::cell::RefCell;
+
+    const T0: f64 = 1_700_000_000.0;
+    const DAY: f64 = 86400.0;
+    const SYMBOLS: [&str; 4] = ["AAA", "BBB", "CCC", "DDD"];
+
+    /// Answers by stage, recording which stages ran and what each was asked.
+    #[derive(Debug, Default)]
+    struct Scripted {
+        calls: RefCell<Vec<String>>,
+        prompts: RefCell<Vec<(String, String)>>,
+        fail_judge: bool,
+        /// The evidence id of AAA's results announcement.
+        event: String,
+        judge: Option<String>,
+        triage: Option<String>,
+        doctor: Option<String>,
+    }
+
+    impl Llm for Scripted {
+        fn name(&self) -> String {
+            "scripted".into()
+        }
+
+        fn complete(&self, system: &str, user: &str, _schema: Option<&Value>) -> Result<String> {
+            let stage = [
+                ("You screen stocks", "triage"),
+                ("research analyst", "research"),
+                ("Write up the research", "findings"),
+                ("BULL analyst", "bull"),
+                ("BEAR analyst", "bear"),
+                ("portfolio manager", "judge"),
+                ("already held", "doctor"),
+                ("just closed", "post_mortem"),
+            ]
+            .iter()
+            .find(|(needle, _)| system.contains(needle))
+            .map_or("unknown", |(_, s)| s);
+            self.calls.borrow_mut().push(stage.to_string());
+            self.prompts
+                .borrow_mut()
+                .push((stage.to_string(), user.to_string()));
+            let n = self
+                .calls
+                .borrow()
+                .iter()
+                .filter(|s| *s == "research")
+                .count();
+            let event = &self.event;
+            Ok(match stage {
+                "triage" => self.triage.clone().unwrap_or_else(|| format!(
+                    r#"{{"scores":[{{"symbol":"AAA","score":9,"basis":"verified_event","evidence_ids":["{event}"],"why":"Third quarter results were announced."}},{{"symbol":"BBB","score":7,"basis":"technical_only","evidence_ids":[],"why":"Steady trend."}},{{"symbol":"CCC","score":2,"basis":"technical_only","evidence_ids":[],"why":"Erratic path."}}]}}"#
+                )),
+                "research" if n == 1 => r#"{"thought":"check price","action":"price_action","arg":0}"#.into(),
+                "research" => r#"{"thought":"done","action":"finish","arg":0}"#.into(),
+                "findings" => format!(
+                    r#"{{"what_it_is":"A common stock.","verified_events":[{{"text":"Results were announced.","evidence_ids":["{event}"]}},{{"text":"A big contract was won.","evidence_ids":["N-deadbeef"]}},{{"text":"Insiders are accumulating.","evidence_ids":[]}}],"technical_signals":["Steady rise."],"unknowns":["Guidance is unknown."],"red_flags":[],"abstain":false,"summary":"Results out; guidance unknown."}}"#
+                ),
+                "bull" => format!(
+                    r#"{{"hypothesis":"The stock keeps rising for two weeks.","why_forward":"Estimates are still being revised up after the results.","evidence_ids":["{event}"],"assumptions":["Revisions continue"],"falsifier":"A close under the 20-day average."}}"#
+                ),
+                "bear" => r#"{"challenge":"The revisions may already be done.","alternative":"A reversal after the run.","downside_scenario":"A gap to the stop, about 4%.","structural_risks":[],"contradicting_evidence_ids":[],"hypothesis_survives":"weakened"}"#.into(),
+                "judge" if self.fail_judge => anyhow::bail!("judge down"),
+                "judge" => self.judge.clone().unwrap_or_else(|| format!(
+                    r#"{{"reasoning":"AAA is the only finalist with a verified event; BBB is technical only.","regime":"neutral","market_view":"fine","decision":"trade","picks":[{{"symbol":"AAA","basis":"event_driven","evidence_ids":["{event}"],"conviction":0.8,"thesis":"Results were announced and estimates are being revised up.","why_over_alternatives":"The others have no verified event.","why_not_cash":"The expected move exceeds the cost.","key_risk":"A gap down.","invalidation":"A close under the 20-day average."}}],"avoid":[{{"symbol":"CCC","reason":"Erratic path."}}],"no_trade_reason":""}}"#
+                )),
+                "doctor" => self.doctor.clone().unwrap_or_else(|| r#"{"assessment":"The thesis is intact.","action":"tighten","stop_pct":0.03}"#.into()),
+                "post_mortem" => r#"{"summary":"stopped out","lesson":"Skip stocks that already jumped on thin news."}"#.into(),
+                _ => anyhow::bail!("unexpected stage"),
+            })
+        }
+    }
+
+    fn observation() -> Observation {
+        let bars: Vec<Bar> = (0..60)
+            .map(|i| Bar {
+                at: T0 + DAY * f64::from(i),
+                open: 20.0,
+                close: 20.0 + f64::from(i) * 0.1,
+                volume: 1e6,
+            })
+            .collect();
+        let quote = || Quote {
+            bars: bars.clone(),
+            ..Quote::default()
+        };
+        let mut intel = Intel::default();
+        // T0 + 60 days is 13 January 2024; the announcement is from the day before.
+        intel.news.insert(
+            "AAA".into(),
+            vec![
+                Headline {
+                    title: "AAA Corp. Announces Third Quarter Results".into(),
+                    published: "Fri, 12 Jan 2024 13:00:00 +0000".into(),
+                    link: "https://finance.yahoo.com/news/aaa-results.html".into(),
+                    guid: "aaa-results".into(),
+                    summary: String::new(),
+                },
+                Headline {
+                    title: "AAA (AAA) Could Rally 30%: Should You Buy?".into(),
+                    published: "Fri, 12 Jan 2024 14:00:00 +0000".into(),
+                    link: "https://finance.yahoo.com/news/aaa-upside.html".into(),
+                    guid: "aaa-upside".into(),
+                    summary: String::new(),
+                },
+            ],
+        );
+        Observation {
+            at: T0 + DAY * 60.0,
+            universe: SYMBOLS
+                .iter()
+                .map(|s| {
+                    json!({"symbol": s, "name": format!("{s} Corp. - Common Stock"),
+                           "exchange": "Q", "etf": false})
+                })
+                .collect(),
+            quotes: SYMBOLS
+                .iter()
+                .chain(["SPY"].iter())
+                .map(|s| ((*s).to_string(), quote()))
+                .collect(),
+            intel,
+            ..Observation::default()
+        }
+    }
+
+    fn candidate(obs: &Observation, symbol: &str, momentum: f64) -> Candidate {
+        let identity = Master::new(obs).identify(symbol);
+        Candidate {
+            symbol: symbol.into(),
+            close: 25.9,
+            sma20: 24.9,
+            sma50: 23.4,
+            momentum_20d: momentum,
+            momentum_5d: 0.02,
+            volatility_20d: 0.01,
+            avg_dollar_volume: 25e6,
+            security: identity.describe(),
+            identity,
+            ..Candidate::default()
+        }
+    }
+
+    fn brief(obs: &Observation) -> Brief {
+        Brief {
+            date: "2024-01-13".into(),
+            equity: 1000.0,
+            cash: 1000.0,
+            open_slots: 2,
+            held: vec![],
+            candidates: vec![
+                candidate(obs, "AAA", 0.05),
+                candidate(obs, "BBB", 0.12),
+                candidate(obs, "CCC", 0.3),
+                candidate(obs, "DDD", 0.02),
+            ],
+        }
+    }
+
+    fn event_id(obs: &Observation) -> String {
+        let case = build_case(obs, &candidate(obs, "AAA", 0.05), &[]);
+        let events = case.evidence.verified_events();
+        assert_eq!(events.len(), 1, "{:#?}", case.evidence.records);
+        events[0].id.clone()
+    }
+
+    fn scripted(obs: &Observation) -> Scripted {
+        Scripted {
+            event: event_id(obs),
+            ..Scripted::default()
+        }
+    }
+
+    fn three() -> Strategy {
+        Strategy {
+            finalists: 3,
+            ..Strategy::default()
+        }
+    }
+
+    fn cases(obs: &Observation) -> BTreeMap<String, Case> {
+        SYMBOLS
+            .iter()
+            .map(|s| {
+                (
+                    (*s).to_string(),
+                    build_case(obs, &candidate(obs, s, 0.05), &[]),
+                )
+            })
+            .collect()
+    }
+
+    fn pick(symbol: &str, basis: &str, thesis: &str, ids: &[&str]) -> Review {
+        Review {
+            picks: vec![Pick {
+                symbol: symbol.into(),
+                conviction: 0.9,
+                thesis: thesis.into(),
+                basis: basis.into(),
+                evidence_ids: ids.iter().map(|s| (*s).to_string()).collect(),
+                ..Pick::default()
+            }],
+            source: "llm".into(),
+            regime: Some("neutral".into()),
+            ..Review::default()
+        }
+    }
+
+    #[test]
+    fn full_desk_runs_every_stage_and_keeps_an_event_backed_pick() {
+        let obs = observation();
+        let llm = scripted(&obs);
+        let budget = Budget::new(30.0);
+        let router = OneModel(&llm);
+        let mut desk = Desk::new(&router, None, &obs, &budget);
+        let (review, transcript) = desk.review(&three(), &brief(&obs), Some("n=8"), &[]);
+        let stages = llm.calls.borrow().clone();
+        for stage in ["triage", "research", "findings", "bull", "bear", "judge"] {
+            assert!(
+                stages.iter().any(|s| s == stage),
+                "missing {stage}: {stages:?}"
+            );
+        }
+        assert_eq!(review.source, "llm");
+        assert_eq!(review.picks.len(), 1);
+        assert_eq!(review.picks[0].symbol, "AAA");
+        assert_eq!(review.picks[0].basis, "event_driven");
+        assert_eq!(review.picks[0].evidence_ids, vec![llm.event.clone()]);
+        assert_eq!(review.rejected.len(), 0);
+        assert_eq!(review.avoid[0].symbol, "CCC");
+        assert_eq!(transcript.judge["decision"], "trade");
+        assert_eq!(transcript.judge["score_label"], SCORE_LABEL);
+        // Finalists were chosen by triage score, not momentum.
+        let names: Vec<&str> = transcript
+            .finalists
+            .iter()
+            .map(|f| f["symbol"].as_str().unwrap())
+            .collect();
+        assert_eq!(names, ["AAA", "BBB", "CCC"]);
+        assert_eq!(transcript.comparison.len(), 3);
+        assert_eq!(
+            transcript.comparison[0]["evidence"]["completeness"],
+            "event_supported"
+        );
+        assert_eq!(
+            transcript.comparison[1]["evidence"]["completeness"],
+            "technical_only"
+        );
+        assert_eq!(
+            transcript.comparison[0]["debate"]["hypothesis_survives"],
+            "weakened"
+        );
+        // The bear was handed the bull's hypothesis to attack.
+        let prompts = llm.prompts.borrow();
+        let bear = &prompts.iter().find(|(s, _)| s == "bear").unwrap().1;
+        assert!(bear.contains("The bull's hypothesis"), "{bear}");
+        assert!(bear.contains("Estimates are still being revised up"));
+        // The judge got one table per finalist and the cash alternative.
+        let judge = &prompts.iter().find(|(s, _)| s == "judge").unwrap().1;
+        assert!(
+            judge.contains("cash_alternative")
+                && judge.contains("hit_rate_needed_to_break_even_pct")
+        );
+    }
+
+    #[test]
+    fn the_dossier_states_identity_and_evidence_and_hides_what_the_policy_refuses() {
+        let obs = observation();
+        let with_event = build_case(&obs, &candidate(&obs, "AAA", 0.05), &[]);
+        let text = dossier(&with_event, &[]);
+        assert!(
+            text.starts_with("AAA = AAA Corp. - Common Stock [common stock]\n"),
+            "{text}"
+        );
+        assert!(text.contains("Technical observation [T-AAA-"));
+        assert!(text.contains(&format!("[{}]", event_id(&obs))));
+        assert!(text.contains("AAA Corp. Announces Third Quarter Results (results)"));
+        assert!(!text.contains("Could Rally"), "{text}");
+        assert!(text.contains("1 feed item(s) are withheld"));
+        assert!(
+            !text.contains("Calendar"),
+            "an empty calendar is not shown: {text}"
+        );
+        let without = build_case(&obs, &candidate(&obs, "BBB", 0.05), &[]);
+        let text = dossier(&without, &[]);
+        assert!(text.contains("Verified events about this security: NONE."));
+        // A filing is listed with its number for the tool and its evidence id.
+        let filing = Filing {
+            form: "4".into(),
+            date: "2024-01-10".into(),
+            accession: "0001".into(),
+            ..Filing::default()
+        };
+        let text = dossier(&without, std::slice::from_ref(&filing));
+        assert!(text.contains("- filing #0 [F-") && text.contains("direction not extracted"));
+        // A listed earnings date is shown.
+        let dated = Candidate {
+            earnings_date: Some("2024-01-25".into()),
+            ..candidate(&obs, "BBB", 0.05)
+        };
+        assert!(
+            dossier(&build_case(&obs, &dated, &[]), &[])
+                .contains("earnings report listed for 2024-01-25")
+        );
+    }
+
+    #[test]
+    fn research_keeps_only_the_events_the_evidence_supports() {
+        let obs = observation();
+        let llm = scripted(&obs);
+        let budget = Budget::new(30.0);
+        let router = OneModel(&llm);
+        let mut desk = Desk::new(&router, None, &obs, &budget);
+        let prepared = desk.prepare(&three(), &brief(&obs));
+        let research = &prepared.transcript.finalists[0]["research"];
+        let kept = research["findings"]["verified_events"].as_array().unwrap();
+        assert_eq!(kept.len(), 1);
+        assert_eq!(kept[0]["text"], "Results were announced.");
+        let dropped = research["audit"]["dropped_events"].as_array().unwrap();
+        assert_eq!(dropped.len(), 2);
+        assert!(dropped[0]["why"].as_str().unwrap().contains("N-deadbeef"));
+        assert!(
+            dropped[1]["why"]
+                .as_str()
+                .unwrap()
+                .contains("no evidence id")
+        );
+    }
+
+    #[test]
+    fn the_judge_can_decide_not_to_trade() {
+        let obs = observation();
+        let llm = Scripted {
+            judge: Some(r#"{"reasoning":"No finalist has adequate evidence.","regime":"neutral","market_view":"mixed","decision":"no_trade","picks":[{"symbol":"BBB","basis":"technical_only","evidence_ids":[],"conviction":0.6,"thesis":"x","why_over_alternatives":"","why_not_cash":"","key_risk":"","invalidation":""}],"avoid":[],"no_trade_reason":"Insufficient evidence: no verified event survives the bear."}"#.into()),
+            ..scripted(&obs)
+        };
+        let budget = Budget::new(30.0);
+        let router = OneModel(&llm);
+        let mut desk = Desk::new(&router, None, &obs, &budget);
+        let (review, transcript) = desk.review(&three(), &brief(&obs), None, &[]);
+        assert_eq!(review.source, "llm");
+        assert_eq!(
+            review.picks.len(),
+            0,
+            "no_trade wins over a pick listed beside it"
+        );
+        assert!(
+            review
+                .no_trade_reason
+                .unwrap()
+                .starts_with("Insufficient evidence")
+        );
+        assert_eq!(transcript.judge["decision"], "no_trade");
+    }
+
+    #[test]
+    fn a_pick_built_on_an_invented_catalyst_is_refused_before_any_order() {
+        let obs = observation();
+        let cases = cases(&obs);
+        // The incident's own thesis, on a stock with no verified event.
+        let mut review = pick(
+            "BBB",
+            "event_driven",
+            "The news of strong market interest and recent gains supports a short-term bullish thesis.",
+            &[],
+        );
+        let log = enforce(
+            &mut review,
+            "Only BBB has a tangible, recent catalyst (strong price action and volume spikes).",
+            &three(),
+            &cases,
+        );
+        assert_eq!(review.picks.len(), 0);
+        assert_eq!(review.rejected[0].code, "UNSUPPORTED_CLAIM");
+        assert!(
+            review
+                .no_trade_reason
+                .unwrap()
+                .contains("BBB UNSUPPORTED_CLAIM")
+        );
+        assert_eq!(log[0]["stated_basis"], "event_driven");
+        assert_eq!(log[0]["basis"], "technical_only");
+        // A wrong number is a contradiction.
+        let mut review = pick(
+            "BBB",
+            "technical_only",
+            "A 20-day gain of +58.0% on a steady path.",
+            &[],
+        );
+        enforce(&mut review, "", &three(), &cases);
+        assert_eq!(review.rejected[0].code, "CONTRADICTED_CLAIM");
+        // A minor notice or a blocked article cannot stand in for an event.
+        let mut review = pick(
+            "AAA",
+            "event_driven",
+            "The steady trend continues.",
+            &["N-deadbeef"],
+        );
+        enforce(&mut review, "", &three(), &cases);
+        assert_eq!(review.picks[0].basis, "technical_only");
+        assert_eq!(review.picks[0].evidence_ids.len(), 0);
+    }
+
+    #[test]
+    fn a_technical_only_pick_is_allowed_outside_risk_off_and_refused_inside_it() {
+        let obs = observation();
+        let cases = cases(&obs);
+        let plain = "The trend is steady and the path has been orderly.";
+        let mut review = pick("BBB", "technical_only", plain, &[]);
+        enforce(&mut review, "", &three(), &cases);
+        assert_eq!(review.picks.len(), 1);
+        assert_eq!(review.picks[0].basis, "technical_only");
+        assert_eq!(review.no_trade_reason, None);
+        let mut review = Review {
+            regime: Some("risk_off".into()),
+            ..pick("BBB", "technical_only", plain, &[])
+        };
+        enforce(&mut review, "", &three(), &cases);
+        assert_eq!(review.rejected[0].code, "INSUFFICIENT_EVIDENCE");
+        // With a verified event cited, risk-off allows it.
+        let id = event_id(&obs);
+        let mut review = Review {
+            regime: Some("risk_off".into()),
+            ..pick("AAA", "event_driven", "Results were announced.", &[&id])
+        };
+        enforce(&mut review, "", &three(), &cases);
+        assert_eq!(review.picks.len(), 1);
+    }
+
+    #[test]
+    fn a_geared_fund_that_reaches_the_judge_is_still_refused() {
+        // Defence in depth: the screen already refuses RAMZ, but if a case for it ever
+        // reached the judge, the instrument gate runs again before the order.
+        let mut obs = observation();
+        obs.universe.push(json!({"symbol": "RAMZ",
+            "name": "T-REX 2X Inverse DRAM Daily Target ETF", "exchange": "Z", "etf": true}));
+        let mut cases = cases(&obs);
+        cases.insert(
+            "RAMZ".into(),
+            build_case(&obs, &candidate(&obs, "RAMZ", 0.358), &[]),
+        );
+        let mut review = pick("RAMZ", "technical_only", "Orderly trend.", &[]);
+        enforce(
+            &mut review,
+            "RAMZ is fine without being a speculative or leveraged play.",
+            &three(),
+            &cases,
+        );
+        assert_eq!(review.picks.len(), 0);
+        assert_eq!(review.rejected[0].code, gates::code::LEVERAGED_INVERSE_ETF);
+        // And a symbol nobody built a case for is refused, not waved through.
+        let mut review = pick("ZZZ", "technical_only", "Orderly trend.", &[]);
+        enforce(&mut review, "", &three(), &cases);
+        assert_eq!(
+            review.rejected[0].code,
+            gates::code::UNVERIFIED_SECURITY_IDENTITY
+        );
+    }
+
+    #[test]
+    fn a_triage_reason_that_fails_the_check_cannot_lift_a_stock() {
+        let obs = observation();
+        let llm = Scripted {
+            triage: Some(r#"{"scores":[{"symbol":"BBB","score":9,"basis":"verified_event","evidence_ids":[],"why":"Strong gains and positive news."},{"symbol":"AAA","score":6,"basis":"technical_only","evidence_ids":[],"why":"Steady trend."},{"symbol":"CCC","score":1,"basis":"technical_only","evidence_ids":[],"why":"Erratic."}]}"#.into()),
+            ..scripted(&obs)
+        };
+        let budget = Budget::new(30.0);
+        let router = OneModel(&llm);
+        let mut desk = Desk::new(&router, None, &obs, &budget);
+        let prepared = desk.prepare(&three(), &brief(&obs));
+        let triage = &prepared.transcript.triage;
+        assert_eq!(triage[0]["symbol"], "AAA", "{triage:#?}");
+        let bbb = triage.iter().find(|t| t["symbol"] == "BBB").unwrap();
+        assert_eq!(bbb["raw_score"], 9.0);
+        assert_eq!(bbb["score"], UNSUPPORTED_SCORE_CAP);
+        assert_eq!(bbb["basis"], "technical_only");
+        assert!(bbb["flags"].as_array().unwrap().len() >= 2);
+    }
+
+    #[test]
+    fn prepare_times_each_part_of_the_desk_as_its_own_stage() {
+        let obs = observation();
+        let llm = scripted(&obs);
+        let budget = Budget::new(30.0);
+        let router = OneModel(&llm);
+        let meta = crate::telemetry::RunMeta::default();
+        let telemetry = crate::telemetry::Telemetry::open_memory("t", &meta, 0.0).unwrap();
+        let mut desk = Desk::new(&router, None, &obs, &budget).with_telemetry(&telemetry);
+        desk.prepare(&three(), &brief(&obs));
+        let names: Vec<String> = telemetry.summary_json()["stages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|s| s["name"].as_str().unwrap().to_string())
+            .collect();
+        assert_eq!(
+            names,
+            ["desk.triage", "desk.research", "desk.bull", "desk.bear"]
+        );
+    }
+
+    #[test]
+    fn committee_depth_skips_research_and_shared_stages_are_not_paid_for_twice() {
+        let obs = observation();
+        let llm = scripted(&obs);
+        let budget = Budget::new(30.0);
+        let router = OneModel(&llm);
+        let mut desk = Desk::new(&router, None, &obs, &budget);
+        let strategy = Strategy {
+            desk_depth: 2,
+            ..three()
+        };
+        desk.review(&strategy, &brief(&obs), None, &[]);
+        let count = |stage: &str| llm.calls.borrow().iter().filter(|s| *s == stage).count();
+        assert_eq!(count("research"), 0);
+        assert_eq!((count("triage"), count("bull"), count("judge")), (1, 3, 1));
+        desk.review(&strategy, &brief(&obs), None, &[]);
+        assert_eq!((count("triage"), count("bull"), count("judge")), (1, 3, 2));
+    }
+
+    #[test]
+    fn a_failed_judge_falls_back_to_triage_scores_and_they_are_checked_too() {
+        let obs = observation();
+        let llm = Scripted {
+            fail_judge: true,
+            ..scripted(&obs)
+        };
+        let budget = Budget::new(30.0);
+        let router = OneModel(&llm);
+        let mut desk = Desk::new(&router, None, &obs, &budget);
+        let (review, transcript) = desk.review(&three(), &brief(&obs), None, &[]);
+        let symbols: Vec<&str> = review.picks.iter().map(|p| p.symbol.as_str()).collect();
+        assert_eq!(symbols, ["AAA", "BBB"]);
+        assert!(review.error.unwrap().contains("judge failed"));
+        assert!(
+            transcript
+                .degraded
+                .iter()
+                .any(|d| d.contains("judge failed"))
+        );
+        assert_eq!(transcript.judge["fallback"], "triage");
+    }
+
+    #[test]
+    fn an_empty_budget_degrades_to_the_quant_ranking() {
+        let obs = observation();
+        let llm = scripted(&obs);
+        let budget = Budget::new(0.001);
+        std::thread::sleep(Duration::from_millis(20));
+        let router = OneModel(&llm);
+        let mut desk = Desk::new(&router, None, &obs, &budget);
+        let (review, transcript) = desk.review(&Strategy::default(), &brief(&obs), None, &[]);
+        assert_eq!(llm.calls.borrow().len(), 0);
+        assert_eq!(review.source, "quant");
+        assert_ne!(transcript.degraded.len(), 0);
+    }
+
+    fn position(symbol: &str, entry: f64) -> Position {
+        Position {
+            symbol: symbol.into(),
+            quantity: 1.0,
+            entry,
+            cost: entry,
+            stop: entry * 0.96,
+            target: entry * 1.08,
+            opened_at: T0 + DAY * 55.0,
+            ..Position::default()
+        }
+    }
+
+    #[test]
+    fn the_doctor_is_not_consulted_on_a_position_the_rules_are_selling() {
+        // AAOZ on 10 November 2026: a sell was queued, and the doctor was still asked and
+        // answered "hold" in the run that sold it.
+        let obs = observation();
+        let last = obs.quotes["AAA"].bars.last().unwrap().close;
+        let mut state = State::default();
+        state
+            .positions
+            .insert("AAA".into(), position("AAA", last * 0.99));
+        state
+            .positions
+            .insert("BBB".into(), position("BBB", last * 0.99));
+        state
+            .positions
+            .insert("CCC".into(), position("CCC", last * 1.10));
+        state
+            .positions
+            .insert("DDD".into(), position("DDD", last * 0.90));
+        state
+            .positions
+            .insert("GONE".into(), position("GONE", 10.0));
+        state.pending.insert(
+            "BBB".into(),
+            crate::model::Order {
+                side: "SELL".into(),
+                at: T0,
+                reason: "Close crossed stop/target".into(),
+                size_fraction: 1.0,
+                industry: String::new(),
+            },
+        );
+        let theses = BTreeMap::from([(
+            "AAA".to_string(),
+            "Desk pick (event_driven; model score 0.80, uncalibrated): Results were announced."
+                .to_string(),
+        )]);
+        let held = held_views(&state, &obs, &theses);
+        let view = |s: &str| held.iter().find(|h| h.symbol == s).unwrap();
+        assert_eq!(view("AAA").exit_pending, None);
+        assert_eq!(view("AAA").thesis, "Results were announced.");
+        assert_eq!(view("AAA").bar_date, "2024-01-12");
+        assert!(
+            view("BBB")
+                .exit_pending
+                .as_ref()
+                .unwrap()
+                .contains("already queued")
+        );
+        assert!(
+            view("CCC")
+                .exit_pending
+                .as_ref()
+                .unwrap()
+                .contains("at or below the stop")
+        );
+        assert!(
+            view("DDD")
+                .exit_pending
+                .as_ref()
+                .unwrap()
+                .contains("at or above the target")
+        );
+        assert!(view("GONE").stale);
+        let llm = scripted(&obs);
+        let budget = Budget::new(30.0);
+        let router = OneModel(&llm);
+        let mut desk = Desk::new(&router, None, &obs, &budget);
+        let mut notes = Vec::new();
+        let (calls, shown) = desk.doctor(&held, &mut notes);
+        assert_eq!(llm.calls.borrow().len(), 1, "only AAA is put to the doctor");
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].symbol, "AAA");
+        let action = |s: &str| shown.iter().find(|x| x["symbol"] == s).unwrap()["action"].clone();
+        assert_eq!(action("AAA"), "tighten");
+        for symbol in ["BBB", "CCC", "DDD"] {
+            assert_eq!(action(symbol), "exit_queued");
+        }
+        assert_eq!(action("GONE"), "not_reviewed");
+        assert!(shown.iter().all(|x| x["advisory"] == true));
+    }
+
+    #[test]
+    fn a_doctor_answer_that_contradicts_itself_is_discarded() {
+        let obs = observation();
+        let last = obs.quotes["AAA"].bars.last().unwrap().close;
+        let mut state = State::default();
+        state
+            .positions
+            .insert("AAA".into(), position("AAA", last * 0.99));
+        let held = held_views(&state, &obs, &BTreeMap::new());
+        assert!(held[0].thesis.starts_with("No written thesis"));
+        // The live answer of 10 November, markdown and all.
+        let llm = Scripted {
+            doctor: Some(r#"{"assessment":"The thesis is broken due to a **7.34% loss** in the last 7 days.","action":"hold","stop_pct":0.05}"#.into()),
+            ..scripted(&obs)
+        };
+        let budget = Budget::new(30.0);
+        let router = OneModel(&llm);
+        let mut desk = Desk::new(&router, None, &obs, &budget);
+        let (calls, shown) = desk.doctor(&held, &mut Vec::new());
+        assert_eq!(calls.len(), 0);
+        assert_eq!(shown[0]["action"], "discarded");
+        assert_eq!(shown[0]["answered"], "hold");
+        assert!(!shown[0]["assessment"].as_str().unwrap().contains("**"));
+        assert_eq!(
+            clean_thesis("Analyst conviction 0.90: Board appointment."),
+            "Board appointment."
+        );
+    }
+
+    #[test]
+    fn post_mortem_regime_stats_and_tidy_still_work() {
+        let obs = observation();
+        let llm = scripted(&obs);
+        let router = OneModel(&llm);
+        let budget = Budget::new(30.0);
+        let desk = Desk::new(&router, None, &obs, &budget);
+        let stats = desk.regime_stats();
+        assert_eq!(stats["stocks_scanned"], 5);
+        assert!(stats["pct_above_50d_avg"].as_f64().unwrap() > 99.0);
+        let trade = ClosedTrade {
+            symbol: "AAA".into(),
+            thesis: "t".into(),
+            entry: 20.0,
+            exit: 19.0,
+            pnl_pct: -5.0,
+            days_held: 3.0,
+            exit_reason: "stop".into(),
+        };
+        assert!(
+            post_mortem(&router, &trade, 1.0)
+                .unwrap()
+                .lesson
+                .starts_with("Skip stocks")
+        );
+        assert_eq!(
+            tidy("Strong guidance, priced in 动能 already."),
+            "Strong guidance, priced in  already."
+        );
+        assert_eq!(
+            tidy("It beat estimates. Volume rose. The strongest point is that the"),
+            "It beat estimates. Volume rose."
+        );
+        assert_eq!(tidy("A **bold** claim."), "A bold claim.");
+        assert_eq!(tidy("Gain of 4%"), "Gain of 4%");
+    }
+
+    #[test]
+    fn risk_off_caps_the_transcript_to_one_pick() {
+        let obs = observation();
+        let id = event_id(&obs);
+        let llm = Scripted {
+            judge: Some(format!(
+                r#"{{"reasoning":"Weak breadth.","regime":"risk_off","market_view":"x","decision":"trade","picks":[{{"symbol":"AAA","basis":"event_driven","evidence_ids":["{id}"],"conviction":0.9,"thesis":"Results were announced.","why_over_alternatives":"","why_not_cash":"","key_risk":"","invalidation":""}},{{"symbol":"BBB","basis":"technical_only","evidence_ids":[],"conviction":0.8,"thesis":"Orderly trend.","why_over_alternatives":"","why_not_cash":"","key_risk":"","invalidation":""}}],"avoid":[],"no_trade_reason":""}}"#
+            )),
+            ..scripted(&obs)
+        };
+        let budget = Budget::new(30.0);
+        let router = OneModel(&llm);
+        let mut desk = Desk::new(&router, None, &obs, &budget);
+        let (review, transcript) = desk.review(&three(), &brief(&obs), None, &[]);
+        assert_eq!(review.picks.len(), 1);
+        assert_eq!(review.picks[0].symbol, "AAA");
+        assert_eq!(review.rejected[0].symbol, "BBB");
+        assert_eq!(review.rejected[0].code, "INSUFFICIENT_EVIDENCE");
+        assert_eq!(transcript.judge["picks"].as_array().unwrap().len(), 1);
+        assert_eq!(
+            transcript.judge["proposed_picks"].as_array().unwrap().len(),
+            2
+        );
+    }
+}
