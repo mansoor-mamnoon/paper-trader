@@ -394,6 +394,37 @@ pub fn run(
                 edgar::gather_filings(edgar, &wanted, today, 45, 6);
             record_fetches(telemetry);
         }
+        // Freeze each relevant symbol's identity into the observation, so a replay resolves
+        // it exactly as this run did, and keep the cache that bridges a directory outage.
+        let mut cache = crate::security::Cache::load(&options.strategies);
+        let resolved: Vec<crate::security::SecurityIdentity> = {
+            let master = crate::security::Master::new(&observed);
+            wanted
+                .iter()
+                .map(|symbol| {
+                    let mut identity = master.identify(symbol);
+                    if let Some((cik, title)) = edgar.and_then(|e| e.registrant(symbol)) {
+                        identity.cik = Some(cik);
+                        if !identity.instrument_type.is_fund() && !title.is_empty() {
+                            identity.issuer_name = Some(title);
+                        }
+                    }
+                    cache.reconcile(identity, &today.to_string())
+                })
+                .collect()
+        };
+        for identity in resolved {
+            observed
+                .securities
+                .insert(identity.symbol.clone(), identity);
+        }
+        if let Err(error) = cache.save(&options.strategies) {
+            telemetry.event(
+                "error",
+                "security_master",
+                &format!("cache not saved: {error}"),
+            );
+        }
         observed
     };
     observation.intel.news.retain(|_, v| !v.is_empty());
@@ -493,7 +524,29 @@ pub fn run(
             let analyst = LlmAnalyst { llm: router };
             plan.review = Some(
                 memo.entry(key)
-                    .or_insert_with(|| review_or_fallback(Some(&analyst), &v.strategy, &plan.brief))
+                    .or_insert_with(|| {
+                        let mut review =
+                            review_or_fallback(Some(&analyst), &v.strategy, &plan.brief);
+                        // The single-shot analyst's picks face the same evidence check as
+                        // the committee's.
+                        if review.source == "llm" {
+                            let cases: BTreeMap<String, desk::Case> = plan
+                                .brief
+                                .candidates
+                                .iter()
+                                .map(|c| {
+                                    let filings = observation
+                                        .intel
+                                        .filings
+                                        .get(&c.symbol)
+                                        .map_or(&[][..], Vec::as_slice);
+                                    (c.symbol.clone(), desk::build_case(&observation, c, filings))
+                                })
+                                .collect();
+                            desk::enforce(&mut review, "", &v.strategy, &cases);
+                        }
+                        review
+                    })
                     .clone(),
             );
         }
@@ -611,6 +664,12 @@ pub fn run(
         .collect();
     summary["scorecards"] = json!(scorecards);
     summary["lessons"] = json!(registry.lessons.iter().rev().take(12).collect::<Vec<_>>());
+    summary["diagnostics"] = json!(crate::diagnostics::trace(
+        &observation,
+        &registry.champion,
+        &champion_transcript,
+        &options.db
+    ));
     summary["desk"] = serde_json::to_value(&champion_transcript)?;
     summary["minutes_left"] = json!(budget.minutes_left());
     summary["roster"] = json!(

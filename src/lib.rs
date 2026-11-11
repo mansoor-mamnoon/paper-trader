@@ -10,6 +10,7 @@ pub mod crypto;
 pub mod daily;
 pub mod data;
 pub mod desk;
+pub mod diagnostics;
 pub mod edgar;
 pub mod evidence;
 pub mod export;
