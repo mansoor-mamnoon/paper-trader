@@ -17,7 +17,9 @@
     "desk_depth": 3,
     "finalists": 8,
     "use_doctor": true,
-    "use_memory": true
+    "use_memory": true,
+    "universe": "equities",
+    "rules_version": 3
   },
   "shadows": [
     {
@@ -39,7 +41,9 @@
         "desk_depth": 3,
         "finalists": 8,
         "use_doctor": true,
-        "use_memory": true
+        "use_memory": true,
+        "universe": "equities",
+        "rules_version": 3
       },
       "kind": "challenger",
       "started_at": 1794162614.1513872
@@ -63,7 +67,9 @@
         "desk_depth": 1,
         "finalists": 8,
         "use_doctor": true,
-        "use_memory": true
+        "use_memory": true,
+        "universe": "equities",
+        "rules_version": 3
       },
       "kind": "ablation",
       "started_at": 1794168988.0907583
@@ -87,7 +93,9 @@
         "desk_depth": 2,
         "finalists": 8,
         "use_doctor": true,
-        "use_memory": true
+        "use_memory": true,
+        "universe": "equities",
+        "rules_version": 3
       },
       "kind": "ablation",
       "started_at": 1794168988.0907583
@@ -111,6 +119,30 @@
       "event": "proposed",
       "id": "depth2-committee",
       "detail": "ablation at desk depth 2"
+    },
+    {
+      "at": 1794408818.3702602,
+      "event": "rules",
+      "id": "baseline",
+      "detail": "Rules version 1 to 3. Before version 2 the universe was all_listed_v1 (any listed symbol, leveraged and inverse ETFs included); leveraged, inverse and unidentified instruments are now refused by a hard gate. From version 3: no company under $2B of market capitalisation, ten positions of at most 10% each instead of five of 20%, and only news the news policy admits. Universe: equities (US-listed common stocks and ADRs with a verified identity). Ledger rows before this entry were made under version 1 and are unchanged."
+    },
+    {
+      "at": 1794408818.3702602,
+      "event": "rules",
+      "id": "control",
+      "detail": "Rules version 1 to 3. Before version 2 the universe was all_listed_v1 (any listed symbol, leveraged and inverse ETFs included); leveraged, inverse and unidentified instruments are now refused by a hard gate. From version 3: no company under $2B of market capitalisation, ten positions of at most 10% each instead of five of 20%, and only news the news policy admits. Universe: equities (US-listed common stocks and ADRs with a verified identity). Ledger rows before this entry were made under version 1 and are unchanged."
+    },
+    {
+      "at": 1794408818.3702602,
+      "event": "rules",
+      "id": "depth1-single-shot",
+      "detail": "Rules version 1 to 3. Before version 2 the universe was all_listed_v1 (any listed symbol, leveraged and inverse ETFs included); leveraged, inverse and unidentified instruments are now refused by a hard gate. From version 3: no company under $2B of market capitalisation, ten positions of at most 10% each instead of five of 20%, and only news the news policy admits. Universe: equities (US-listed common stocks and ADRs with a verified identity). Ledger rows before this entry were made under version 1 and are unchanged."
+    },
+    {
+      "at": 1794408818.3702602,
+      "event": "rules",
+      "id": "depth2-committee",
+      "detail": "Rules version 1 to 3. Before version 2 the universe was all_listed_v1 (any listed symbol, leveraged and inverse ETFs included); leveraged, inverse and unidentified instruments are now refused by a hard gate. From version 3: no company under $2B of market capitalisation, ten positions of at most 10% each instead of five of 20%, and only news the news policy admits. Universe: equities (US-listed common stocks and ADRs with a verified identity). Ledger rows before this entry were made under version 1 and are unchanged."
     }
   ],
   "last_proposed_at": 0.0,
@@ -127,11 +159,12 @@
   ],
   "lessons_cursor": 2,
   "analyst": {
-    "at": 1794349987.3361058,
+    "at": 1794408865.1498635,
     "source": "llm",
     "model": "9 open-weights models from 9 companies",
-    "market_view": "The market regime is risk_off, as evidenced by the negative 20-day S&P 500 return (-3.61%) and only 49.4% of stocks above 50-day average. In this environment, high-volatility, momentum-driven stocks are especially vulnerable to sharp reversals. The system allows only one new position.",
+    "market_view": "risk_off",
     "error": null
   },
-  "schema": 1
+  "schema": 2,
+  "rules_changed_at": 1794408818.3702602
 }
