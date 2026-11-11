@@ -855,6 +855,10 @@ pub struct Technicals {
     pub avg_dollar_volume: f64,
     /// Date of the latest bar, `YYYY-MM-DD`.
     pub bar_date: String,
+    /// Largest peak-to-trough fall of the close over the bars held (about three months),
+    /// as a positive fraction. Zero when not measured.
+    #[serde(default)]
+    pub max_drawdown: f64,
 }
 
 /// Gather every record for one security: its matched news, its filings, its technical
@@ -1135,6 +1139,16 @@ const JUDGEMENT_WORDS: [&str; 17] = [
     "suggest",
     "indicat",
 ];
+const FALL_WORDS: [&str; 8] = [
+    " fell ",
+    " fallen ",
+    " dropped ",
+    " declined ",
+    " plunged ",
+    " lost ",
+    " drop of ",
+    " decline of ",
+];
 const HYPOTHESIS_WORDS: [&str; 10] = [
     " may ",
     " might ",
@@ -1396,6 +1410,42 @@ pub fn audit(text: &str, cited: &[String], ctx: &Context, scoped: bool) -> Vec<E
                 );
             }
         }
+        // "Penny stock" is a statement about price, and the price is known.
+        if lower.contains("penny stock") && ctx.technicals.close >= crate::gates::MIN_PRICE {
+            push!(
+                ClaimType::Technical,
+                VerificationStatus::ContradictedAssertion,
+                vec![],
+                None,
+                format!(
+                    "calls it a penny stock; the last close is ${:.2}",
+                    ctx.technicals.close
+                ),
+            );
+        }
+        // A stated fall larger than anything in the bars did not happen to this stock.
+        if ctx.technicals.max_drawdown > 0.0
+            && let Some(stated) = FALL_WORDS
+                .iter()
+                .find_map(|w| percent_after(&lower, w))
+                .map(f64::abs)
+            && stated > ctx.technicals.max_drawdown + 0.05
+        {
+            push!(
+                ClaimType::Technical,
+                VerificationStatus::ContradictedAssertion,
+                ctx.evidence
+                    .technical()
+                    .map(|r| vec![r.id.clone()])
+                    .unwrap_or_default(),
+                None,
+                format!(
+                    "says the price fell {:.0}%; the largest fall in three months of bars is {:.0}%",
+                    stated * 100.0,
+                    ctx.technicals.max_drawdown * 100.0
+                ),
+            );
+        }
         // Numbers.
         let numbers = [
             ("20-day", ctx.technicals.momentum_20d),
@@ -1526,6 +1576,7 @@ mod tests {
             max_gap_20d: 0.154,
             avg_dollar_volume: 10.2e6,
             bar_date: "2026-11-10".into(),
+            max_drawdown: 0.0,
         }
     }
 
@@ -2036,6 +2087,50 @@ mod tests {
         assert_eq!(
             claims[0].verification_status,
             VerificationStatus::ContradictedAssertion
+        );
+    }
+
+    #[test]
+    fn invented_price_facts_from_week_one_are_contradicted() {
+        // "POOL ... recently fell 58% in a prior report" came from a valuation blog's title.
+        let pool = pinned("POOL");
+        let numbers = Technicals {
+            close: 310.0,
+            max_drawdown: 0.12,
+            ..ramz_numbers()
+        };
+        let evidence = gather(&pool, &numbers, &[], &[], None, today());
+        let ctx = ramz_context(&pool, &evidence, &numbers);
+        let claims = audit(
+            "Despite margin stability, the stock recently fell 58% in a prior report.",
+            &[],
+            &ctx,
+            true,
+        );
+        let fall = claims
+            .iter()
+            .find(|c| c.note.contains("largest fall"))
+            .unwrap();
+        assert_eq!(
+            fall.verification_status,
+            VerificationStatus::ContradictedAssertion
+        );
+        // A fall the bars do show is fine.
+        assert_eq!(
+            problems(&audit("It dropped 10% last week.", &[], &ctx, true)).len(),
+            0
+        );
+        // "SSG ... it's a penny stock" at a $16 close.
+        let claims = audit(
+            "High volatility and penny stock classification indicate risk.",
+            &[],
+            &ctx,
+            true,
+        );
+        assert!(
+            claims
+                .iter()
+                .any(|c| c.note.contains("penny stock; the last close is $310.00"))
         );
     }
 
