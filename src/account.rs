@@ -1,6 +1,6 @@
 //! Isolated stock paper ledger: fractional shares, delayed daily fills and explicit evidence.
 
-use crate::analyst::{Brief, Candidate, Review};
+use crate::analyst::{Brief, Candidate, Pick, Review};
 use crate::gates;
 use crate::ledger::{self, decision, insert_fill};
 use crate::model::{Observation, Order, Position, Quote, State};
@@ -556,6 +556,27 @@ pub fn cycle_with(
             };
             let close = quote.bars.last().unwrap().close;
             let evidence = json!({"assessment": call.assessment, "stop_pct": call.stop_pct});
+            // The doctor advises; the rules decide. Once a sell is queued (by the stop, the
+            // target or the end of the experiment) nothing the doctor says can cancel it,
+            // delay it or move the stop under it.
+            if state
+                .pending
+                .get(&call.symbol)
+                .is_some_and(|o| o.side == "SELL")
+            {
+                decision(
+                    &db,
+                    at,
+                    &call.symbol,
+                    "DOCTOR_IGNORED",
+                    &format!(
+                        "A sell is already queued by rule, so the doctor's \"{}\" was not applied: {}",
+                        call.action, call.assessment
+                    ),
+                    evidence,
+                )?;
+                continue;
+            }
             match call.action.as_str() {
                 "exit" if !state.pending.contains_key(&call.symbol) => {
                     let reason = format!("Position doctor: {}", call.assessment);
@@ -632,8 +653,8 @@ pub fn cycle_with(
     }
     let mut ordered: Vec<scorecard::PickRow> = Vec::new();
     if !state.halted && !locked && missing.is_empty() {
-        // (symbol, conviction, thesis) in the order buys are attempted.
-        let ranked: Vec<(String, f64, String)> = if let Some(review) = review {
+        // The picks in the order buys are attempted.
+        let ranked: Vec<Pick> = if let Some(review) = review {
             for avoided in &review.avoid {
                 decision(
                     &db,
@@ -644,6 +665,30 @@ pub fn cycle_with(
                     json!({"source": review.source}),
                 )?;
             }
+            // Picks the evidence check refused never become orders; the refusal is logged.
+            for refused in &review.rejected {
+                decision(
+                    &db,
+                    at,
+                    &refused.symbol,
+                    "DESK_REJECT",
+                    &format!("[{}] {}", refused.code, refused.reason),
+                    json!({"source": review.source, "code": refused.code}),
+                )?;
+            }
+            if review.source == "llm" && review.picks.is_empty() && slots > 0 {
+                decision(
+                    &db,
+                    at,
+                    "ACCOUNT",
+                    "NO_TRADE",
+                    review.no_trade_reason.as_deref().unwrap_or(
+                        "The desk found no stock with adequate evidence and bought nothing.",
+                    ),
+                    json!({"source": review.source, "open_slots": slots,
+                           "refused": review.rejected.iter().map(|r| r.symbol.clone()).collect::<Vec<_>>()}),
+                )?;
+            }
             review
                 .picks
                 .iter()
@@ -651,7 +696,7 @@ pub fn cycle_with(
                     eligible.contains_key(p.symbol.as_str())
                         && !review.avoid.iter().any(|a| a.symbol == p.symbol)
                 })
-                .map(|p| (p.symbol.clone(), p.conviction, p.thesis.clone()))
+                .cloned()
                 .collect()
         } else {
             let mut by_momentum: Vec<(f64, &str)> = eligible
@@ -661,10 +706,21 @@ pub fn cycle_with(
             by_momentum.sort_by(|a, b| b.partial_cmp(a).unwrap());
             by_momentum
                 .into_iter()
-                .map(|(_, s)| (s.to_string(), 0.0, String::new()))
+                .map(|(_, s)| Pick {
+                    symbol: s.to_string(),
+                    ..Pick::default()
+                })
                 .collect()
         };
-        for (rank, (symbol, conviction, thesis)) in ranked.into_iter().enumerate() {
+        for (rank, pick) in ranked.into_iter().enumerate() {
+            let Pick {
+                symbol,
+                conviction,
+                thesis,
+                basis,
+                evidence_ids,
+                ..
+            } = pick;
             if slots == 0 {
                 break;
             }
@@ -723,12 +779,25 @@ pub fn cycle_with(
                     size_fraction * 100.0
                 )
             } else {
-                format!("Analyst conviction {conviction:.2}: {thesis}")
+                // The model's number is recorded for the scorecard and labelled for what
+                // it is: free output that has never been calibrated against outcomes.
+                format!(
+                    "Desk pick ({}; model score {conviction:.2}, uncalibrated): {thesis}",
+                    if basis.is_empty() {
+                        "basis not stated"
+                    } else {
+                        basis.as_str()
+                    }
+                )
             };
             let candidate = &eligible[symbol.as_str()].candidate;
             let evidence = json!({
                 "source": review.map_or("quant", |r| r.source.as_str()),
                 "conviction": conviction,
+                "score_label": crate::analyst::SCORE_LABEL,
+                "basis": basis,
+                "evidence_ids": evidence_ids,
+                "security": candidate.security,
                 "thesis": thesis,
                 "earnings_date": candidate.earnings_date,
                 "headlines": candidate.headlines.iter().map(|h| h.title.clone()).collect::<Vec<_>>(),
