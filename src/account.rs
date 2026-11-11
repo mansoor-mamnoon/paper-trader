@@ -135,7 +135,9 @@ pub fn entry_gate(
     let before = earlier(&quote.bars);
     let reference = earlier(reference_bars(observation));
     let close = before.last().map_or(0.0, |b| b.close);
-    gates::instrument(&master.identify(symbol), strategy.universe)
+    let identity = master.identify(symbol);
+    gates::instrument(&identity, strategy.universe)
+        .or_else(|| gates::size(&identity, &observation.intel))
         .or_else(|| gates::data_quality(&before, &quote.actions, &reference))
         .or_else(|| {
             gates::liquidity(
@@ -145,7 +147,7 @@ pub fn entry_gate(
                 strategy.min_dollar_volume,
             )
         })
-        .or_else(|| gates::event(&master.identify(symbol), &observation.intel, utc_date(at)))
+        .or_else(|| gates::event(&identity, &observation.intel, utc_date(at)))
 }
 
 /// The hard gate a queued buy fails, judged on the bars before the open it fills at, or on
@@ -1135,6 +1137,10 @@ mod tests {
     }
 
     fn observation(at: f64, quotes: Vec<(&str, Vec<Bar>)>) -> Observation {
+        let market_caps = quotes
+            .iter()
+            .map(|(s, _)| ((*s).to_string(), 5e9))
+            .collect();
         Observation {
             at,
             universe: quotes
@@ -1160,7 +1166,10 @@ mod tests {
             errors: BTreeMap::new(),
             next_cursor: 0,
             coverage: serde_json::Map::new(),
-            intel: crate::model::Intel::default(),
+            intel: crate::model::Intel {
+                market_caps,
+                ..crate::model::Intel::default()
+            },
             securities: BTreeMap::new(),
         }
     }
@@ -2172,5 +2181,40 @@ mod tests {
         cycle(&path, &obs, "stocks-daily").unwrap();
         assert_eq!(snapshot(&path).pending["AAOZ"].side, "SELL");
         assert_eq!(dump(&path), before);
+    }
+
+    #[test]
+    fn small_caps_are_not_bought_and_an_unknown_size_is_not_assumed_large() {
+        let series = bars(60, 50.0, 1.0, None);
+        let at = series.last().unwrap().at + DAY * 0.5;
+        let mut obs = observation(
+            at,
+            vec![
+                ("BIG", series.clone()),
+                ("SMALL", series.clone()),
+                ("NOSIZE", series),
+            ],
+        );
+        obs.intel.market_caps.insert("SMALL".into(), 0.85e9);
+        obs.intel.market_caps.remove("NOSIZE");
+        let rows = screen(&Strategy::default(), &obs, at);
+        let row = |s: &str| rows.iter().find(|r| r.candidate.symbol == s).unwrap();
+        assert!(row("BIG").eligible);
+        assert_eq!(
+            row("SMALL").gate.as_ref().unwrap().code,
+            gates::code::SMALL_CAP
+        );
+        assert!(row("SMALL").reason.starts_with("Hard gate [SMALL_CAP]"));
+        assert_eq!(
+            row("NOSIZE").gate.as_ref().unwrap().code,
+            gates::code::MARKET_CAP_UNKNOWN
+        );
+        // When the size source is down, nothing new is bought at all.
+        obs.intel.market_caps.clear();
+        assert!(
+            screen(&Strategy::default(), &obs, at)
+                .iter()
+                .all(|r| !r.eligible)
+        );
     }
 }

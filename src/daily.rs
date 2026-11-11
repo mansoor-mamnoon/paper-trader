@@ -379,7 +379,13 @@ pub fn run(
         let wanted: Vec<String> = wanted.into_iter().collect();
         {
             let _span = telemetry.span("intel");
+            // The market caps came with the scan; the gather replaces everything else.
+            let sizes = (
+                std::mem::take(&mut observed.intel.market_caps),
+                std::mem::take(&mut observed.intel.sectors),
+            );
             observed.intel = intel::gather(&wanted, today)?;
+            (observed.intel.market_caps, observed.intel.sectors) = sizes;
         }
         record_fetches(telemetry);
         if let Some(edgar) = edgar {
@@ -716,7 +722,13 @@ mod tests {
             errors: BTreeMap::new(),
             next_cursor: 0,
             coverage: serde_json::Map::new(),
-            intel: Intel::default(),
+            intel: Intel {
+                market_caps: ["FAST", "SLOW", "RAMZ"]
+                    .iter()
+                    .map(|s| ((*s).to_string(), 5e9))
+                    .collect(),
+                ..Intel::default()
+            },
             securities: BTreeMap::new(),
         };
         let file = dir.join("obs.json");

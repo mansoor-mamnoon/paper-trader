@@ -101,6 +101,12 @@ pub struct Intel {
     /// Symbol to its SEC industry, `"7372 Services-Prepackaged Software"`.
     #[serde(default)]
     pub industries: BTreeMap<String, String>,
+    /// Symbol to its market capitalisation in dollars, from the Nasdaq stock screener.
+    #[serde(default)]
+    pub market_caps: BTreeMap<String, f64>,
+    /// Symbol to its sector, from the same source.
+    #[serde(default)]
+    pub sectors: BTreeMap<String, String>,
 }
 
 /// One daily scan of the stock universe.

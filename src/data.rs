@@ -69,6 +69,49 @@ pub fn universe() -> Result<BTreeMap<String, Value>> {
     Ok(result)
 }
 
+const SCREENER: &str =
+    "https://api.nasdaq.com/api/screener/stocks?tableonly=true&limit=25000&download=true";
+
+/// Parse the Nasdaq stock screener into market capitalisations (dollars) and sectors by
+/// symbol. Class shares use a dot here as in the directory (`BRK.B`).
+pub fn parse_screener(body: &str) -> (BTreeMap<String, f64>, BTreeMap<String, String>) {
+    let mut caps = BTreeMap::new();
+    let mut sectors = BTreeMap::new();
+    let Ok(value) = serde_json::from_str::<Value>(body) else {
+        return (caps, sectors);
+    };
+    for row in value["data"]["rows"].as_array().into_iter().flatten() {
+        let Some(symbol) = row["symbol"].as_str().map(|s| s.trim().replace('/', ".")) else {
+            continue;
+        };
+        if let Some(cap) = row["marketCap"]
+            .as_str()
+            .and_then(|c| c.trim().parse::<f64>().ok())
+            .filter(|c| c.is_finite() && *c > 0.0)
+        {
+            caps.insert(symbol.clone(), cap);
+        }
+        if let Some(sector) = row["sector"]
+            .as_str()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+        {
+            sectors.insert(symbol, sector.to_string());
+        }
+    }
+    (caps, sectors)
+}
+
+/// Market capitalisations and sectors for every listed stock, in one request. On any
+/// failure both maps are empty, and the size gate then refuses every new buy rather than
+/// guess how large a company is.
+pub fn fundamentals() -> (BTreeMap<String, f64>, BTreeMap<String, String>) {
+    fetch(SCREENER).map_or_else(
+        |_| (BTreeMap::new(), BTreeMap::new()),
+        |body| parse_screener(&body),
+    )
+}
+
 fn number(item: &Value, key: &str) -> Option<f64> {
     item.get(key).and_then(Value::as_f64)
 }
@@ -274,7 +317,14 @@ pub fn observe(state: &State, batch_size: usize, extra: &BTreeSet<String>) -> Re
         errors,
         next_cursor: ((cursor + count) % symbols.len()) as u64,
         coverage,
-        intel: crate::model::Intel::default(),
+        intel: {
+            let (market_caps, sectors) = fundamentals();
+            crate::model::Intel {
+                market_caps,
+                sectors,
+                ..crate::model::Intel::default()
+            }
+        },
         securities: BTreeMap::new(),
     })
 }
@@ -404,6 +454,22 @@ mod tests {
         assert_eq!(evening.bars.last().unwrap().at, monday_open);
         let midday = parse_history(&payload, first_open_day(utc("2026-11-09T17:00:00Z"))).unwrap();
         assert!(midday.bars.last().unwrap().at < monday_open);
+    }
+
+    #[test]
+    fn the_screener_gives_market_caps_and_sectors() {
+        let body = r#"{"data":{"rows":[
+            {"symbol":"POOL","marketCap":"7770985634.00","sector":"Consumer Discretionary"},
+            {"symbol":"BRK/B","marketCap":"1287625379229.00","sector":""},
+            {"symbol":"NOCAP","marketCap":"","sector":"Finance"},
+            {"symbol":"ZERO","marketCap":"0.00","sector":"Finance"}]}}"#;
+        let (caps, sectors) = parse_screener(body);
+        assert!((caps["POOL"] - 7_770_985_634.0).abs() < 1.0);
+        assert!(caps.contains_key("BRK.B"));
+        assert!(!caps.contains_key("NOCAP") && !caps.contains_key("ZERO"));
+        assert_eq!(sectors["POOL"], "Consumer Discretionary");
+        assert!(!sectors.contains_key("BRK.B"));
+        assert_eq!(parse_screener("not json").0.len(), 0);
     }
 
     #[test]

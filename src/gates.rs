@@ -7,6 +7,7 @@
 //! | Gate | Rule |
 //! |---|---|
 //! | Instrument | only verified common stocks and ADRs, plus unleveraged ETFs when the strategy's universe says so; never a leveraged or inverse product, a note, or an unidentified symbol |
+//! | Size | market capitalisation of at least [`MIN_MARKET_CAP`]; unknown is refused |
 //! | Data | the latest session's bar is present, the last 21 sessions are complete, and no split-sized jump is unexplained |
 //! | Price | close at least [`MIN_PRICE`] |
 //! | Liquidity | average daily traded value over [`ADTV_DAYS`] sessions at least [`MIN_ADTV`] |
@@ -32,6 +33,8 @@ pub mod code {
     pub const STALE_DATA: &str = "STALE_DATA";
     pub const MISSING_BARS: &str = "MISSING_BARS";
     pub const CORPORATE_ACTION_CHECK: &str = "CORPORATE_ACTION_CHECK";
+    pub const SMALL_CAP: &str = "SMALL_CAP";
+    pub const MARKET_CAP_UNKNOWN: &str = "MARKET_CAP_UNKNOWN";
     pub const PRICE_FLOOR: &str = "PRICE_FLOOR";
     pub const LIQUIDITY_FLOOR: &str = "LIQUIDITY_FLOOR";
     pub const EVENT_WINDOW: &str = "EVENT_WINDOW";
@@ -55,6 +58,38 @@ impl Block {
     /// The form written to the ledger: `[CODE] reason`.
     pub fn text(&self) -> String {
         format!("[{}] {}", self.code, self.reason)
+    }
+}
+
+/// Smallest company the account buys: $2 billion of market capitalisation, the usual line
+/// between small caps and mid caps. Small and micro caps are where the first week's worst
+/// candidates came from: a $32M company up 432% in a day, a $390M one in a share
+/// consolidation.
+pub const MIN_MARKET_CAP: f64 = 2_000_000_000.0;
+
+/// Why a company is too small to buy, or of unknown size. An unknown size is refused: it
+/// is not assumed to be large. Funds have no market capitalisation and are not judged here.
+pub fn size(identity: &SecurityIdentity, intel: &Intel) -> Option<Block> {
+    if identity.instrument_type.is_fund() {
+        return None;
+    }
+    match intel.market_caps.get(&identity.symbol) {
+        Some(cap) if *cap >= MIN_MARKET_CAP => None,
+        Some(cap) => Some(Block::new(
+            code::SMALL_CAP,
+            format!(
+                "Market capitalisation ${:.2}B is below the ${:.0}B floor (small cap)",
+                cap / 1e9,
+                MIN_MARKET_CAP / 1e9
+            ),
+        )),
+        None => Some(Block::new(
+            code::MARKET_CAP_UNKNOWN,
+            format!(
+                "No market capitalisation is known for {}; it is not assumed to be large",
+                identity.symbol
+            ),
+        )),
     }
 }
 
@@ -741,6 +776,34 @@ mod tests {
         let spy = "State Street SPDR S&P 500 ETF Trust";
         assert_eq!(code_of(spy, true, eq), Some(code::ETF_OUTSIDE_UNIVERSE));
         assert_eq!(code_of(spy, true, Universe::EquitiesAndEtfs), None);
+    }
+
+    #[test]
+    fn small_caps_and_companies_of_unknown_size_are_refused() {
+        let mut intel = Intel::default();
+        // Real values from 10 November 2026.
+        for (symbol, cap) in [("POOL", 7.77e9), ("MAX", 0.85e9), ("OMH", 0.032e9)] {
+            intel.market_caps.insert(symbol.into(), cap);
+        }
+        assert_eq!(size(&identity("POOL"), &intel), None);
+        let small = size(&identity("MAX"), &intel).unwrap();
+        assert_eq!(small.code, code::SMALL_CAP);
+        assert!(small.reason.contains("$0.85B"), "{}", small.reason);
+        let omh = SecurityIdentity {
+            symbol: "OMH".into(),
+            ..identity("POOL")
+        };
+        assert_eq!(size(&omh, &intel).unwrap().code, code::SMALL_CAP);
+        let unknown = SecurityIdentity {
+            symbol: "NEWCO".into(),
+            ..identity("POOL")
+        };
+        assert_eq!(
+            size(&unknown, &intel).unwrap().code,
+            code::MARKET_CAP_UNKNOWN
+        );
+        // A fund has no market capitalisation; the instrument gate decides about funds.
+        assert_eq!(size(&identity("SSG"), &Intel::default()), None);
     }
 
     fn daily(closes: &[f64]) -> Vec<Bar> {
