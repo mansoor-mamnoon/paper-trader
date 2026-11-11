@@ -140,7 +140,7 @@ impl EvidenceRecord {
             && !self.source.is_empty()
             && self
                 .age_days
-                .is_some_and(|d| (-1..=NewsPolicy::current().max_age_days).contains(&d))
+                .is_some_and(|d| (0..=NewsPolicy::current().max_age_days).contains(&d))
     }
 
     /// Whether a model may read this record at all.
@@ -1745,6 +1745,13 @@ mod tests {
             today(),
         );
         assert!(real.verified_event());
+        let mut future = real.clone();
+        future.age_days = Some(-1);
+        assert!(
+            !future.verified_event(),
+            "future news is not known at the session"
+        );
+        assert!(!future.minor_notice());
     }
 
     #[test]
