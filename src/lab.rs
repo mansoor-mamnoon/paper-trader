@@ -767,7 +767,7 @@ mod tests {
             });
         }
         assert!(!registry.set_universe(Universe::Equities, 5.0));
-        assert!(registry.log.is_empty());
+        assert_eq!(registry.log.len(), 0);
         assert!(registry.set_universe(Universe::EquitiesAndEtfs, 9.0));
         assert_eq!(registry.champion.universe, Universe::EquitiesAndEtfs);
         let universe_of = |id: &str| {

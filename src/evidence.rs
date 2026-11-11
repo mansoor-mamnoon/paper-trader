@@ -1464,8 +1464,8 @@ mod tests {
             None,
             today(),
         );
-        assert!(set.verified_events().is_empty());
-        assert!(set.other_accepted().is_empty());
+        assert_eq!(set.verified_events().len(), 0);
+        assert_eq!(set.other_accepted().len(), 0);
         assert_eq!(set.counts()["rejected"], 1);
         assert_eq!(set.counts()["quarantined"], 1);
     }
@@ -1754,7 +1754,7 @@ mod tests {
             &ctx,
             true,
         );
-        assert!(problems(&honest).is_empty(), "{honest:#?}");
+        assert_eq!(problems(&honest).len(), 0, "{honest:#?}");
     }
 
     #[test]
@@ -1906,7 +1906,7 @@ mod tests {
             &ctx,
             true,
         );
-        assert!(problems(&neutral).is_empty());
+        assert_eq!(problems(&neutral).len(), 0);
         // A listed date contradicts "no earnings".
         let dated = Context {
             earnings_date: Some("2026-11-17"),
@@ -1952,7 +1952,7 @@ mod tests {
             VerificationStatus::ContradictedAssertion
         );
         // Unscoped text about another symbol is not read.
-        assert!(audit("POOL is not leveraged.", &[], &ctx, false).is_empty());
+        assert_eq!(audit("POOL is not leveraged.", &[], &ctx, false).len(), 0);
     }
 
     #[test]
@@ -1971,7 +1971,7 @@ mod tests {
             claims[0].verification_status,
             VerificationStatus::Hypothesis
         );
-        assert!(problems(&claims).is_empty());
+        assert_eq!(problems(&claims).len(), 0);
     }
 
     #[test]
@@ -2010,7 +2010,7 @@ mod tests {
                 ("NASDAQ".to_string(), "OMH".to_string())
             ]
         );
-        assert!(listing_tags("Revenue (up 5%: a record)").is_empty());
+        assert_eq!(listing_tags("Revenue (up 5%: a record)").len(), 0);
         assert_eq!(
             sentences("Gain of 35.8% today. Volume rose 2.7x. Done").len(),
             3

@@ -1193,7 +1193,7 @@ mod tests {
             InstrumentType::LeveragedInverseEtf
         );
         assert_eq!(loaded.securities["RAMZ"].verified_as_of, "2026-11-10");
-        assert!(Cache::load(&dir.join("absent")).securities.is_empty());
+        assert_eq!(Cache::load(&dir.join("absent")).securities.len(), 0);
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

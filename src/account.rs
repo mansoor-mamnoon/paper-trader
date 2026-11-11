@@ -1300,7 +1300,7 @@ mod tests {
         );
         cycle(&path, &obs, "stocks-daily").unwrap();
         let state = snapshot(&path);
-        assert!(state.positions.is_empty() && state.pending.is_empty());
+        assert_eq!(state.positions.len() + state.pending.len(), 0);
         let db = ledger::connect(&path).unwrap();
         let reason: String = db
             .query_row(
@@ -1339,7 +1339,7 @@ mod tests {
         assert_eq!(brief(&strategy, &obs, &state).open_slots, MAX_POSITIONS);
         cycle(&path, &obs, "stocks-daily").unwrap();
         let state = snapshot(&path);
-        assert!(state.pending.is_empty() && state.positions.is_empty());
+        assert_eq!(state.pending.len() + state.positions.len(), 0);
         let db = ledger::connect(&path).unwrap();
         let reason: String = db
             .query_row(
@@ -1409,7 +1409,7 @@ mod tests {
             "stocks-daily",
         )
         .unwrap();
-        assert!(snapshot(&path).pending.is_empty());
+        assert_eq!(snapshot(&path).pending.len(), 0);
     }
 
     #[test]
@@ -2151,7 +2151,7 @@ mod tests {
         // The holding is neither force-sold nor re-bought: it is marked and keeps its stop.
         let state = snapshot(&path);
         assert!(state.positions.contains_key("AAOZ"));
-        assert!(state.pending.is_empty());
+        assert_eq!(state.pending.len(), 0);
         let logged = actions_for(&path, "AAOZ");
         assert!(
             logged
