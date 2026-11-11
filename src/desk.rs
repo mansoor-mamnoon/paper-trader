@@ -130,6 +130,9 @@ pub struct Case {
     pub worst_day: f64,
     /// Sessions out of the last 20 that closed down 5% or more.
     pub down_days: usize,
+    /// Days since the latest verified event, and the price move since the close before it.
+    /// A large move after the event means the market has already acted on it.
+    pub since_event: Option<(i64, f64)>,
 }
 
 impl Case {
@@ -200,10 +203,25 @@ pub fn build_case(observation: &Observation, c: &Candidate, filings: &[Filing]) 
         c.earnings_date.as_deref(),
         observed_day(observation),
     );
+    let since_event = evidence
+        .verified_events()
+        .iter()
+        .filter_map(|r| Some((r.age_days?, r.published.parse::<chrono::NaiveDate>().ok()?)))
+        .min_by_key(|(age, _)| *age)
+        .and_then(|(age, date)| {
+            let day =
+                |at: f64| chrono::DateTime::from_timestamp(at as i64, 0).map(|t| t.date_naive());
+            let base = bars
+                .iter()
+                .rev()
+                .find(|b| day(b.at).is_some_and(|d| d < date))?;
+            Some((age, bars.last()?.close / base.close - 1.0))
+        });
     Case {
         identity,
         evidence,
         technicals,
+        since_event,
         earnings_date: c.earnings_date.clone(),
         worst_day: returns.iter().copied().fold(0.0, f64::min),
         down_days: returns.iter().filter(|r| **r <= -0.05).count(),
@@ -263,6 +281,8 @@ pub fn tidy(text: &str) -> String {
         .chars()
         .filter(|c| !matches!(*c as u32, 0x2E80..=0x9FFF | 0xAC00..=0xD7AF | 0xF900..=0xFAFF | 0xFF00..=0xFFEF))
         .collect();
+    // Markdown emphasis has no place in a ledger row.
+    let kept = kept.replace("**", "").replace("__", "");
     let kept = kept.trim().to_string();
     if kept.is_empty() || kept.ends_with(['.', '!', '?', ')', '"', '%']) {
         return kept;
@@ -547,7 +567,7 @@ possible return, the gaps and the stop. hypothesis_survives: yes, weakened or no
 const JUDGE_RULES: &str = "\n\nYou are the portfolio manager. Every finalist comes with the same measured table, its evidence, \
 the bull's hypothesis and the bear's challenge. Write 'reasoning' first, in at most 150 words: compare the finalists with \
 each other on the same criteria (evidence, whether the hypothesis survived the bear, risk against possible return, cost) \
-and name what supports and what contradicts your choice. Then decide. Holding cash is always available and costs nothing: \
+and name what supports and what contradicts your choice. An event that the price has already moved a long way on (see price_move_since_that_event_pct) is old news to the market: say why more should follow, or pass. Then decide. Holding cash is always available and costs nothing: \
 set decision to no_trade and give no_trade_reason when no finalist has adequate evidence. Do not manufacture a reason to \
 buy. For each pick: basis is event_driven only if you cite a verified event id from its evidence, otherwise technical_only; \
 why_over_alternatives says why it beats the other finalists; why_not_cash says why it beats holding cash after costs. \
@@ -741,6 +761,8 @@ fn comparison_row(
             "verified_events": events.len(),
             "event_ids": events.iter().map(|r| r.id.clone()).collect::<Vec<_>>(),
             "completeness": if events.is_empty() { "technical_only" } else { "event_supported" },
+            "days_since_latest_event": case.since_event.map(|(days, _)| days),
+            "price_move_since_that_event_pct": case.since_event.map(|(_, moved)| tenth(moved)),
             "claims_flagged_in_research_and_debate": problems,
         },
         "debate": {
@@ -1533,6 +1555,16 @@ impl<'a> Desk<'a> {
         } else {
             Vec::new()
         };
+        // Vetoes are not enforced, but a veto for a false reason is worth seeing.
+        let avoid_flags: Vec<Value> = review
+            .avoid
+            .iter()
+            .filter_map(|a| {
+                let case = prepared.cases.get(&a.symbol)?;
+                let flags = problem_lines(&evidence::audit(&a.reason, &[], &case.context(), true));
+                (!flags.is_empty()).then(|| json!({"symbol": a.symbol, "flags": flags}))
+            })
+            .collect();
         // The account allows one new position in risk-off; show the capped list so the
         // transcript matches what is actually bought.
         let mut capped = false;
@@ -1548,6 +1580,7 @@ impl<'a> Desk<'a> {
             transcript.judge["picks"] = json!(review.picks);
             transcript.judge["capped_by_risk_off"] = json!(capped);
             transcript.judge["evidence_check"] = json!(checks);
+            transcript.judge["avoid_flags"] = json!(avoid_flags);
             transcript.judge["rejected"] = json!(review.rejected);
             transcript.judge["decision"] = json!(if review.picks.is_empty() {
                 "no_trade"
@@ -1690,6 +1723,14 @@ impl<'a> Desk<'a> {
                         assessment: clip(v["assessment"].as_str().unwrap_or(""), 400),
                         stop_pct: v["stop_pct"].as_f64().unwrap_or(0.0),
                     };
+                    // An answer that argues one way and acts the other is not advice.
+                    if let Some(why) = doctor_inconsistency(&call) {
+                        let mut entry = line("discarded", &call.assessment);
+                        entry["answered"] = json!(call.action);
+                        entry["warnings"] = json!([why]);
+                        shown.push(entry);
+                        continue;
+                    }
                     let mut entry = line(&call.action, &call.assessment);
                     entry["stop_pct"] = json!(call.stop_pct);
                     shown.push(entry);
@@ -1701,6 +1742,61 @@ impl<'a> Desk<'a> {
         }
         (calls, shown)
     }
+}
+
+/// Why a doctor's answer contradicts itself, if it does. On 10 November 2026 it wrote "the
+/// thesis is broken" and answered "hold".
+pub fn doctor_inconsistency(call: &DoctorCall) -> Option<String> {
+    let text = call.assessment.to_lowercase();
+    let says = |list: &[&str]| list.iter().any(|w| text.contains(w));
+    let broken = says(&[
+        "thesis is broken",
+        "thesis broken",
+        "thesis has broken",
+        "no longer intact",
+        "thesis is invalid",
+        "should exit",
+        "should be sold",
+    ]);
+    let intact = says(&[
+        "thesis intact",
+        "thesis remains intact",
+        "thesis is intact",
+        "thesis still holds",
+    ]);
+    match call.action.as_str() {
+        "hold" | "tighten" if broken && !intact => Some(format!(
+            "says the thesis is broken but answers \"{}\"; the answer was discarded",
+            call.action
+        )),
+        "exit" if intact && !broken => Some(
+            "says the thesis is intact but answers \"exit\"; the answer was discarded".to_string(),
+        ),
+        _ => None,
+    }
+}
+
+/// The thesis a position was bought on, without the order row's boilerplate. A position
+/// bought by the momentum ranking has no written thesis, and the doctor is told so rather
+/// than handed a sizing note to interpret.
+pub fn clean_thesis(reason: &str) -> String {
+    let reason = reason.trim();
+    if reason.starts_with("Positive liquid daily trend") || reason.is_empty() {
+        return "No written thesis: bought by the momentum ranking, on trend alone.".into();
+    }
+    for marker in ["uncalibrated): ", "): "] {
+        if reason.starts_with("Desk pick")
+            && let Some(at) = reason.find(marker)
+        {
+            return reason[at + marker.len()..].to_string();
+        }
+    }
+    if let Some(rest) = reason.strip_prefix("Analyst conviction ")
+        && let Some(at) = rest.find(": ")
+    {
+        return rest[at + 2..].to_string();
+    }
+    reason.to_string()
 }
 
 /// What the doctor sees about one holding: one consistent snapshot of the ledger's position
@@ -1747,7 +1843,7 @@ pub fn held_views(
         .map(|p| {
             let mut view = HeldView {
                 symbol: p.symbol.clone(),
-                thesis: theses.get(&p.symbol).cloned().unwrap_or_default(),
+                thesis: clean_thesis(theses.get(&p.symbol).map_or("", String::as_str)),
                 entry: p.entry,
                 stop: p.stop,
                 target: p.target,
