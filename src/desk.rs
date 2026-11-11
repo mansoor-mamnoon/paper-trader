@@ -647,7 +647,7 @@ pub fn enforce(
         };
         let ctx = case.context();
         let mut claims = evidence::audit(
-            &format!("{} {}", pick.thesis, pick.key_risk),
+            &format!("{} {} {}", pick.thesis, pick.key_risk, pick.invalidation),
             &pick.evidence_ids,
             &ctx,
             true,
@@ -2383,6 +2383,17 @@ mod tests {
         };
         enforce(&mut review, "", &three(), &cases);
         assert_eq!(review.picks.len(), 1);
+    }
+
+    #[test]
+    fn invalidation_claims_are_audited_before_a_pick_survives() {
+        let obs = observation();
+        let cases = cases(&obs);
+        let mut review = pick("BBB", "technical_only", "Orderly trend.", &[]);
+        review.picks[0].invalidation = "The verified catalyst is strong earnings growth.".into();
+        enforce(&mut review, "", &three(), &cases);
+        assert!(review.picks.is_empty());
+        assert_eq!(review.rejected[0].code, "UNSUPPORTED_CLAIM");
     }
 
     #[test]
