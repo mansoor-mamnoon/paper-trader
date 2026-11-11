@@ -325,6 +325,18 @@ pub fn run(
     } else {
         ledger::now()
     };
+    // The universe is an explicit setting. Without it the registry's own value stands.
+    if let Some(universe) = std::env::var("PAPER_TRADER_UNIVERSE")
+        .ok()
+        .filter(|v| !v.trim().is_empty())
+    {
+        let universe = crate::strategy::Universe::parse(&universe).ok_or_else(|| {
+            anyhow::anyhow!(
+                "PAPER_TRADER_UNIVERSE must be equities or equities_and_etfs, not {universe:?}"
+            )
+        })?;
+        registry.set_universe(universe, first_at);
+    }
     if llm.is_some() {
         ensure_ladder(&mut registry, first_at);
     }
@@ -676,7 +688,13 @@ mod tests {
         let at = T0 + DAY * 59.5;
         let observation = Observation {
             at,
-            universe: vec![],
+            universe: ["FAST", "SLOW"]
+                .iter()
+                .map(|s| {
+                    json!({"symbol": s, "name": format!("{s} Corp. - Common Stock"),
+                           "exchange": "Q", "etf": false})
+                })
+                .collect(),
             quotes: BTreeMap::from([
                 (
                     "FAST".to_string(),
@@ -786,6 +804,48 @@ mod tests {
         ensure_ladder(&mut registry, 3.0);
         assert_eq!(registry.shadows.len(), 1);
         assert!(!registry.shadows[0].strategy.analyst_enabled);
+    }
+
+    #[test]
+    fn every_rung_of_the_ladder_trades_the_champions_universe() {
+        use crate::strategy::{RULES_VERSION, Universe};
+        for universe in [Universe::Equities, Universe::EquitiesAndEtfs] {
+            let mut registry =
+                Registry::load(&std::env::temp_dir().join("pt-ladder-universe")).unwrap();
+            registry.champion.universe = universe;
+            ensure_ladder(&mut registry, 1.0);
+            assert_eq!(registry.shadows.len(), 3);
+            for shadow in &registry.shadows {
+                // Depth 0 is "the same screen with no AI": same universe, same rules.
+                assert_eq!(shadow.strategy.universe, universe, "{}", shadow.strategy.id);
+                assert_eq!(shadow.strategy.rules_version, RULES_VERSION);
+                assert_eq!(shadow.kind, "ablation");
+            }
+        }
+    }
+
+    #[test]
+    fn depth_zero_ranks_by_momentum_inside_the_universe_and_never_buys_a_geared_fund() {
+        let (mut options, dir) = setup("depth0-universe", 3);
+        // Add the fastest riser of all: a 2x inverse fund.
+        let file = options.replay.clone().unwrap();
+        let mut observation: Observation =
+            serde_json::from_str(&std::fs::read_to_string(&file).unwrap()).unwrap();
+        observation.quotes.insert(
+            "RAMZ".into(),
+            Quote {
+                bars: bars(60, 50.0, 5.0),
+                ..Quote::default()
+            },
+        );
+        observation.universe.push(json!({"symbol": "RAMZ",
+            "name": "T-REX 2X Inverse DRAM Daily Target ETF", "exchange": "Z", "etf": true}));
+        std::fs::write(&file, serde_json::to_string(&observation).unwrap()).unwrap();
+        options.db = dir.join("depth0.sqlite").to_string_lossy().into_owned();
+        let t = telemetry();
+        run(&options, "stocks-replay", None, None, &t).unwrap();
+        let state = state_of(&options.db);
+        assert_eq!(state.pending.keys().collect::<Vec<_>>(), ["FAST", "SLOW"]);
     }
 
     #[test]

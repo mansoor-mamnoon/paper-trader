@@ -83,21 +83,97 @@ pub struct Registry {
     /// Bumped when a stored registry needs a one-time migration.
     #[serde(default)]
     pub schema: u32,
+    /// When the fixed trading rules last changed version (epoch seconds), 0 if never.
+    /// Results before this moment were produced under different rules and are reported
+    /// separately, never blended with later ones.
+    #[serde(default)]
+    pub rules_changed_at: f64,
 }
 
-/// Current registry schema. 1: every strategy researches up to `DEFAULT_FINALISTS` finalists.
-const SCHEMA: u32 = 1;
+/// Current registry schema. 1: every strategy researches up to `DEFAULT_FINALISTS`
+/// finalists. 2: every strategy states its universe and rules version.
+const SCHEMA: u32 = 2;
 
 impl Registry {
     /// One-time upgrades of a registry written by an older version.
-    fn migrate(&mut self) {
+    fn migrate(&mut self, now: f64) {
         if self.schema < 1 {
             self.champion.finalists = crate::strategy::DEFAULT_FINALISTS;
             for shadow in &mut self.shadows {
                 shadow.strategy.finalists = crate::strategy::DEFAULT_FINALISTS;
             }
         }
+        self.adopt_rules(now);
         self.schema = SCHEMA;
+    }
+
+    /// Move every strategy still on an older rules version to the current one, and say so
+    /// in the log. The strategies keep their ids, ledgers and history: only what they may
+    /// buy from now on changes, and the log entry marks where the old results end.
+    fn adopt_rules(&mut self, now: f64) {
+        use crate::strategy::{LEGACY_UNIVERSE, RULES_VERSION};
+        let mut moved = Vec::new();
+        let champion = std::iter::once(&mut self.champion);
+        for strategy in champion.chain(self.shadows.iter_mut().map(|s| &mut s.strategy)) {
+            if strategy.rules_version < RULES_VERSION {
+                moved.push((
+                    strategy.id.clone(),
+                    strategy.rules_version,
+                    strategy.universe,
+                ));
+                strategy.rules_version = RULES_VERSION;
+            }
+        }
+        if moved.is_empty() {
+            return;
+        }
+        self.rules_changed_at = now;
+        for (id, from, universe) in moved {
+            self.record(
+                now,
+                "rules",
+                &id,
+                format!(
+                    "Rules version {from} to {RULES_VERSION}. Universe was {LEGACY_UNIVERSE} (any listed symbol, \
+                     leveraged and inverse ETFs included); it is now {} ({}). Leveraged, inverse and \
+                     unidentified instruments are refused by a hard gate. Ledger rows before this entry \
+                     were made under version {from} and are unchanged.",
+                    universe.label(),
+                    universe.describe()
+                ),
+            );
+        }
+    }
+
+    /// Change the universe of the champion and of its ablation ladder, which always trade
+    /// the champion's universe so that the ladder compares AI depth and nothing else.
+    /// Challengers and previous champions keep the universe they were created with. This is
+    /// an operator's decision (`PAPER_TRADER_UNIVERSE`), logged as a rules change; the lab
+    /// cannot make it.
+    pub fn set_universe(&mut self, universe: crate::strategy::Universe, now: f64) -> bool {
+        if self.champion.universe == universe {
+            return false;
+        }
+        let from = self.champion.universe;
+        self.champion.universe = universe;
+        for shadow in self.shadows.iter_mut().filter(|s| s.kind == "ablation") {
+            shadow.strategy.universe = universe;
+        }
+        self.rules_changed_at = now;
+        let id = self.champion.id.clone();
+        self.record(
+            now,
+            "rules",
+            &id,
+            format!(
+                "Universe changed by the operator from {} to {} ({}). Results before this entry \
+                 were produced under the earlier universe.",
+                from.label(),
+                universe.label(),
+                universe.describe()
+            ),
+        );
+        true
     }
 
     fn path(dir: &Path) -> PathBuf {
@@ -111,7 +187,7 @@ impl Registry {
                 let mut registry: Registry = serde_json::from_str(&text)
                     .map_err(|e| anyhow::anyhow!("registry.json is corrupt: {e}"))?;
                 registry.champion.validate()?;
-                registry.migrate();
+                registry.migrate(ledger::now());
                 Ok(registry)
             }
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(Registry {
@@ -126,6 +202,7 @@ impl Registry {
                 lessons_cursor: 0,
                 analyst: AnalystStatus::default(),
                 schema: SCHEMA,
+                rules_changed_at: 0.0,
             }),
             Err(error) => Err(error.into()),
         }
@@ -554,6 +631,7 @@ pub fn summary(dir: &Path, registry: &Registry, champion_db: &str, now: f64) -> 
                 "id": s.strategy.id, "kind": s.kind, "started_at": s.started_at,
                 "age_days": (now - s.started_at) / DAY,
                 "rationale": s.strategy.rationale, "changes": registry.champion.diff(&s.strategy),
+                "universe": s.strategy.universe.label(),
                 "return_pct": own.as_ref().map(|x| x.return_pct),
                 "champion_return_pct": champ.as_ref().map(|x| x.return_pct),
                 "fills": own.as_ref().map(|x| x.fills),
@@ -564,6 +642,13 @@ pub fn summary(dir: &Path, registry: &Registry, champion_db: &str, now: f64) -> 
     json!({
         "analyst": registry.analyst,
         "champion": registry.champion,
+        "universe": {
+            "id": registry.champion.universe.label(),
+            "description": registry.champion.universe.describe(),
+            "rules_version": registry.champion.rules_version,
+            "rules_changed_at": registry.rules_changed_at,
+            "legacy": crate::strategy::LEGACY_UNIVERSE,
+        },
         "shadows": shadows,
         "log": registry.log.iter().rev().take(20).collect::<Vec<_>>(),
         "rules": {
@@ -591,6 +676,124 @@ mod tests {
         );
         assert_eq!(loaded.schema, SCHEMA);
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_registry_from_before_the_universe_rule_is_moved_and_the_move_is_logged() {
+        let dir = std::env::temp_dir().join(format!("pt-reg-rules-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        // The live registry of 10 November 2026: a champion and three shadows, schema 1.
+        let mut old = Registry::load(&dir).unwrap();
+        for (id, kind) in [
+            ("control", "challenger"),
+            ("depth1-single-shot", "ablation"),
+            ("depth2-committee", "ablation"),
+        ] {
+            old.shadows.push(Shadow {
+                strategy: Strategy {
+                    id: id.into(),
+                    ..Strategy::default()
+                },
+                kind: kind.into(),
+                started_at: 1.0,
+            });
+        }
+        let mut stored = serde_json::to_value(&old).unwrap();
+        stored["schema"] = json!(1);
+        stored.as_object_mut().unwrap().remove("rules_changed_at");
+        let strip = |s: &mut Value| {
+            s.as_object_mut().unwrap().remove("universe");
+            s.as_object_mut().unwrap().remove("rules_version");
+        };
+        strip(&mut stored["champion"]);
+        for shadow in stored["shadows"].as_array_mut().unwrap() {
+            strip(&mut shadow["strategy"]);
+        }
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(Registry::path(&dir), stored.to_string()).unwrap();
+
+        let loaded = Registry::load(&dir).unwrap();
+        assert_eq!(loaded.schema, SCHEMA);
+        assert!(loaded.rules_changed_at > 0.0);
+        let all =
+            std::iter::once(&loaded.champion).chain(loaded.shadows.iter().map(|s| &s.strategy));
+        for strategy in all {
+            assert_eq!(
+                strategy.rules_version,
+                crate::strategy::RULES_VERSION,
+                "{}",
+                strategy.id
+            );
+            assert_eq!(strategy.universe, crate::strategy::Universe::Equities);
+        }
+        // Ids, kinds and start dates are untouched: the same ledgers keep trading.
+        assert_eq!(loaded.champion.id, "baseline");
+        assert_eq!(loaded.shadows.len(), 3);
+        assert!(
+            loaded
+                .shadows
+                .iter()
+                .all(|s| (s.started_at - 1.0).abs() < 1e-9)
+        );
+        let entries: Vec<&LogEntry> = loaded.log.iter().filter(|e| e.event == "rules").collect();
+        assert_eq!(entries.len(), 4);
+        assert!(entries[0].detail.contains("all_listed_v1"));
+        assert!(entries[0].detail.contains("are unchanged"));
+        // Loading again changes nothing more.
+        loaded.save(&dir).unwrap();
+        let again = Registry::load(&dir).unwrap();
+        assert_eq!(again.log.len(), loaded.log.len());
+        assert!((again.rules_changed_at - loaded.rules_changed_at).abs() < 1e-9);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn only_the_operator_changes_the_universe_and_the_ladder_follows_the_champion() {
+        use crate::strategy::Universe;
+        let dir = std::env::temp_dir().join(format!("pt-reg-universe-{}", std::process::id()));
+        let mut registry = Registry::load(&dir).unwrap();
+        for (id, kind) in [
+            ("depth0-no-ai", "ablation"),
+            ("v1", "challenger"),
+            ("old", "previous"),
+        ] {
+            registry.shadows.push(Shadow {
+                strategy: Strategy {
+                    id: id.into(),
+                    ..Strategy::default()
+                },
+                kind: kind.into(),
+                started_at: 0.0,
+            });
+        }
+        assert!(!registry.set_universe(Universe::Equities, 5.0));
+        assert!(registry.log.is_empty());
+        assert!(registry.set_universe(Universe::EquitiesAndEtfs, 9.0));
+        assert_eq!(registry.champion.universe, Universe::EquitiesAndEtfs);
+        let universe_of = |id: &str| {
+            registry
+                .shadows
+                .iter()
+                .find(|s| s.strategy.id == id)
+                .unwrap()
+                .strategy
+                .universe
+        };
+        assert_eq!(universe_of("depth0-no-ai"), Universe::EquitiesAndEtfs);
+        assert_eq!(universe_of("v1"), Universe::Equities);
+        assert_eq!(universe_of("old"), Universe::Equities);
+        assert!((registry.rules_changed_at - 9.0).abs() < 1e-9);
+        assert_eq!(registry.log.last().unwrap().event, "rules");
+        // A proposal cannot do the same.
+        let sneaky = Proposal {
+            rationale: "add ETFs".into(),
+            changes: json!({"universe": "equities_and_etfs"})
+                .as_object()
+                .unwrap()
+                .clone(),
+            playbook: None,
+        };
+        assert!(apply_proposal(&registry.champion, &sneaky, "v9", 10.0).is_err());
     }
 
     fn stats(r: f64, dd: f64, fills: i64) -> Stats {
