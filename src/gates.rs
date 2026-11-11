@@ -385,11 +385,16 @@ fn recent_headline(published: &str, today: NaiveDate) -> bool {
 }
 
 /// Why a stock is blocked by an event within [`EVENT_DAYS`] days, if it is.
-pub fn event(symbol: &str, intel: &Intel, today: NaiveDate) -> Option<Block> {
-    event_reason(symbol, intel, today).map(|reason| Block::new(code::EVENT_WINDOW, reason))
+///
+/// Headlines come from a feed keyed by ticker text. One that names a different listing of
+/// the same ticker (an Australian retailer for a US fund) says nothing about this security
+/// and is skipped; an ambiguous one still counts, because the gate errs toward blocking.
+pub fn event(identity: &SecurityIdentity, intel: &Intel, today: NaiveDate) -> Option<Block> {
+    event_reason(identity, intel, today).map(|reason| Block::new(code::EVENT_WINDOW, reason))
 }
 
-fn event_reason(symbol: &str, intel: &Intel, today: NaiveDate) -> Option<String> {
+fn event_reason(identity: &SecurityIdentity, intel: &Intel, today: NaiveDate) -> Option<String> {
+    let symbol = identity.symbol.as_str();
     for (map, what) in [(&intel.earnings, "upcoming"), (&intel.reported, "recent")] {
         if let Some(date) = map.get(symbol).filter(|d| within(d, today)) {
             return Some(format!(
@@ -422,6 +427,10 @@ fn event_reason(symbol: &str, intel: &Intel, today: NaiveDate) -> Option<String>
     }
     for headline in intel.news.get(symbol).into_iter().flatten() {
         if !recent_headline(&headline.published, today) {
+            continue;
+        }
+        let matched = crate::evidence::news_record(identity, headline, today);
+        if matched.status == crate::evidence::MatchStatus::Rejected {
             continue;
         }
         let text = words(&headline.title);
@@ -462,7 +471,8 @@ mod tests {
     use crate::model::{Filing, Headline};
 
     fn why(symbol: &str, intel: &Intel, today: NaiveDate) -> Option<String> {
-        event(symbol, intel, today).map(|b| {
+        let identity = SecurityIdentity::unknown(symbol, "test");
+        event(&identity, intel, today).map(|b| {
             assert_eq!(b.code, code::EVENT_WINDOW);
             b.reason
         })
@@ -606,6 +616,24 @@ mod tests {
         assert!(why("BIO", &intel, today).unwrap().contains("FDA decision"));
         assert!(why("STALE", &intel, today).is_none());
         assert!(why("WORD", &intel, today).is_none(), "whole words only");
+        // A namesake's event on another exchange does not block the US-listed security.
+        intel.news.insert(
+            "SSG".into(),
+            vec![news(
+                "Shaver Shop Group Ltd (ASX:SSG) agrees merger with rival",
+                "",
+            )],
+        );
+        let ssg = crate::security::resolve("SSG", None, None, "2026-11-10");
+        assert!(event(&ssg, &intel, today).is_none());
+        intel.news.insert(
+            "SSG".into(),
+            vec![news(
+                "ProShares UltraShort Semiconductors to be delisted",
+                "",
+            )],
+        );
+        assert!(event(&ssg, &intel, today).is_some());
     }
 
     #[test]

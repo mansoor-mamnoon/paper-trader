@@ -145,7 +145,7 @@ pub fn entry_gate(
                 strategy.min_dollar_volume,
             )
         })
-        .or_else(|| gates::event(symbol, &observation.intel, utc_date(at)))
+        .or_else(|| gates::event(&master.identify(symbol), &observation.intel, utc_date(at)))
 }
 
 /// The hard gate a queued buy fails, judged on the bars before the open it fills at, or on
@@ -961,15 +961,25 @@ pub fn screen(strategy: &Strategy, observation: &Observation, at: f64) -> Vec<Sc
                 momentum_20d: momentum,
                 avg_dollar_volume: dollar_volume,
                 earnings_date: earnings_date.clone(),
+                // Only items matched to this issuer; the rest of the ticker feed is not
+                // evidence about it.
                 headlines: observation
                     .intel
                     .news
                     .get(symbol)
+                    .into_iter()
+                    .flatten()
+                    .filter(|h| {
+                        let record = crate::evidence::news_record(&identity, h, today);
+                        record.status == crate::evidence::MatchStatus::Accepted
+                    })
                     .cloned()
-                    .unwrap_or_default(),
+                    .collect(),
                 momentum_5d,
                 volatility_20d: volatility,
                 max_gap_20d: max_gap,
+                security: identity.describe(),
+                identity: identity.clone(),
             },
             eligible,
             reason,
