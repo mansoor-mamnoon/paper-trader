@@ -454,9 +454,11 @@ pub fn run(
         let state = state_of(&v.db);
         let brief = account::brief(&v.strategy, &observation, &state);
         let feedback = if v.strategy.use_memory {
-            ledger::connect(&v.db)
-                .ok()
-                .and_then(|db| scorecard::feedback(&db).ok().flatten())
+            ledger::connect(&v.db).ok().and_then(|db| {
+                scorecard::feedback(&db, registry.rules_changed_at)
+                    .ok()
+                    .flatten()
+            })
         } else {
             None
         };
@@ -659,7 +661,7 @@ pub fn run(
         .iter()
         .filter_map(|v| {
             let db = ledger::connect(&v.db).ok()?;
-            Some(json!({"id": v.id, "kind": v.kind, "depth": v.strategy.effective_depth(), "scorecard": scorecard::summary(&db).ok()?}))
+            Some(json!({"id": v.id, "kind": v.kind, "depth": v.strategy.effective_depth(), "scorecard": scorecard::summary(&db, registry.rules_changed_at).ok()?}))
         })
         .collect();
     summary["scorecards"] = json!(scorecards);
