@@ -567,10 +567,10 @@ possible return, the gaps and the stop. hypothesis_survives: yes, weakened or no
 const JUDGE_RULES: &str = "\n\nYou are the portfolio manager. Every finalist comes with the same measured table, its evidence, \
 the bull's hypothesis and the bear's challenge. Write 'reasoning' first, in at most 150 words: compare the finalists with \
 each other on the same criteria (evidence, whether the hypothesis survived the bear, risk against possible return, cost) \
-and name what supports and what contradicts your choice. An event that the price has already moved a long way on (see price_move_since_that_event_pct) is old news to the market: say why more should follow, or pass. Then decide. Holding cash is always available and costs nothing: \
+and name what supports and what contradicts your choice. An event that the price has already moved a long way on (see price_move_since_that_event_pct) is old news to the market: say why more should follow, or pass. Then decide. Declining individual stocks is always available; under the full-investment policy residual capital stays in SPY: \
 set decision to no_trade and give no_trade_reason when no finalist has adequate evidence. Do not manufacture a reason to \
 buy. For each pick: basis is event_driven only if you cite a verified event id from its evidence, otherwise technical_only; \
-why_over_alternatives says why it beats the other finalists; why_not_cash says why it beats holding cash after costs. \
+why_over_alternatives says why it beats the other finalists; why_not_cash says why it beats the passive SPY allocation after costs. \
 conviction is your own score from 0 to 1; it is recorded as an uncalibrated score and is not a probability. Choose only \
 from the finalists and return at most open_slots picks. The account sizes positions itself, so do not size. Call the \
 regime risk_off if breadth is weak; in risk_off the system buys at most one stock, and only an event_driven one.";
@@ -1840,6 +1840,7 @@ pub fn held_views(
     state
         .positions
         .values()
+        .filter(|p| !(state.fully_invested && p.symbol == "SPY"))
         .map(|p| {
             let mut view = HeldView {
                 symbol: p.symbol.clone(),

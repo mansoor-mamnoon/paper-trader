@@ -279,7 +279,10 @@ fn fill(
             .cash
             .min(capital * POSITION_CAP * order.size_fraction.clamp(0.0, 1.0));
         let shares = budget / (price * (1.0 + FEE));
-        if state.halted || state.positions.len() >= MAX_POSITIONS || budget < MIN_ORDER {
+        if state.halted
+            || crate::allocation::stock_count(state) >= MAX_POSITIONS
+            || budget < MIN_ORDER
+        {
             decision(
                 db,
                 at,
@@ -391,6 +394,19 @@ pub fn cycle_with(
     let db = ledger::connect(path)?;
     ledger::begin(&db)?;
     let mut state = ledger::load(&db)?;
+    let activating =
+        !state.fully_invested && std::env::var("PAPER_TRADER_FULLY_INVESTED").as_deref() == Ok("1");
+    if activating {
+        state.fully_invested = true;
+        decision(
+            &db,
+            at,
+            "SPY",
+            "ALLOCATION_POLICY",
+            "Invest residual cash in SPY from the next session open; sell SPY to fund stock picks",
+            json!({}),
+        )?;
+    }
     if at <= state.last_at {
         return ledger::rollback(&db);
     }
@@ -457,8 +473,48 @@ pub fn cycle_with(
             )?;
         }
     }
-    executions.sort_by(|a, b| (a.0, &a.1).partial_cmp(&(b.0, &b.1)).unwrap());
+    // Standing allocation runs after sells and stock buys at each available open.
+    if state.fully_invested
+        && !state.halted
+        && !activating
+        && let Some(spy) = usable.get("SPY")
+    {
+        for bar in spy
+            .bars
+            .iter()
+            .filter(|b| b.at > state.last_at && state.last_at > 0.0)
+        {
+            executions.push((
+                bar.at,
+                "SPY".into(),
+                Order {
+                    side: "SWEEP".into(),
+                    at: state.last_at,
+                    reason: "Standing allocation".into(),
+                    size_fraction: 1.0,
+                    industry: String::new(),
+                },
+                bar.clone(),
+            ));
+        }
+    }
+
+    executions.sort_by(|a, b| {
+        let priority = |o: &Order| match o.side.as_str() {
+            "SELL" => 0,
+            "BUY" => 1,
+            _ => 2,
+        };
+        (a.0, priority(&a.2), &a.1)
+            .partial_cmp(&(b.0, priority(&b.2), &b.1))
+            .unwrap()
+    });
     for (execution_at, symbol, order, bar) in executions {
+        if order.side == "SWEEP" {
+            corporate_actions(&db, &mut state, "SPY", usable["SPY"], bar.at)?;
+            crate::allocation::sweep(&db, &mut state, bar.open, bar.at, order.at)?;
+            continue;
+        }
         state.pending.remove(&symbol);
         let mut unavailable = BTreeSet::new();
         for held in state.positions.keys().cloned().collect::<Vec<_>>() {
@@ -506,6 +562,15 @@ pub fn cycle_with(
             )?;
             continue;
         }
+        if state.fully_invested && order.side == "BUY" {
+            let needed = equity(&state) * POSITION_CAP * order.size_fraction.clamp(0.0, 1.0);
+            if let Some(spy) = usable
+                .get("SPY")
+                .and_then(|q| q.bars.iter().find(|b| b.at == bar.at))
+            {
+                crate::allocation::fund(&db, &mut state, needed, spy.open, bar.at, order.at)?;
+            }
+        }
         fill(
             &db, &mut state, &symbol, &order, bar.at, bar.open, at, strategy,
         )?;
@@ -525,6 +590,9 @@ pub fn cycle_with(
     cash_lock(&db, &mut state, total, at)?;
     let locked = at < state.cash_lock_until;
     for (symbol, position) in state.positions.clone() {
+        if state.fully_invested && symbol == "SPY" && !state.halted {
+            continue;
+        }
         let Some(quote) = usable.get(symbol.as_str()) else {
             continue;
         };
@@ -550,6 +618,9 @@ pub fn cycle_with(
     }
     if let Some(review) = review {
         for call in &review.doctor {
+            if state.fully_invested && call.symbol == "SPY" {
+                continue;
+            }
             let Some(position) = state.positions.get(&call.symbol).cloned() else {
                 continue;
             };
@@ -648,7 +719,8 @@ pub fn cycle_with(
         .map(|r| (r.candidate.symbol.as_str(), r))
         .collect();
     let queued_buys = state.pending.values().filter(|o| o.side == "BUY").count();
-    let mut slots = MAX_POSITIONS.saturating_sub(state.positions.len() + queued_buys);
+    let mut slots =
+        MAX_POSITIONS.saturating_sub(crate::allocation::stock_count(&state) + queued_buys);
     // A risk-off call can only reduce exposure: at most one new position.
     if review.and_then(|r| r.regime.as_deref()) == Some("risk_off") {
         slots = slots.min(1);
@@ -723,6 +795,9 @@ pub fn cycle_with(
                 evidence_ids,
                 ..
             } = pick;
+            if state.fully_invested && symbol == "SPY" {
+                continue;
+            }
             if slots == 0 {
                 break;
             }
@@ -1103,7 +1178,7 @@ pub fn brief(strategy: &Strategy, observation: &Observation, state: &State) -> B
         open_slots: if state.halted || at < state.cash_lock_until {
             0
         } else {
-            MAX_POSITIONS.saturating_sub(state.positions.len() + queued_buys)
+            MAX_POSITIONS.saturating_sub(crate::allocation::stock_count(state) + queued_buys)
         },
         held: state.positions.keys().cloned().collect(),
         candidates,
@@ -1185,6 +1260,62 @@ mod tests {
     fn snapshot(path: &str) -> State {
         let db = ledger::connect(path).unwrap();
         ledger::load(&db).unwrap()
+    }
+
+    #[test]
+    fn standing_allocation_invests_at_next_open_and_retry_does_not_duplicate() {
+        let path = temp_db("standing-allocation");
+        let series = bars(60, 50.0, 1.0, None);
+        let at = series.last().unwrap().at + DAY * 0.5;
+        let no_picks = Review {
+            source: "llm".into(),
+            ..Review::default()
+        };
+        cycle_with(
+            &path,
+            &observation(at, vec![("SPY", series.clone())]),
+            "stocks-daily",
+            &Strategy::default(),
+            Some(&no_picks),
+        )
+        .unwrap();
+        let db = ledger::connect(&path).unwrap();
+        let mut state = ledger::load(&db).unwrap();
+        state.fully_invested = true;
+        ledger::save(&db, &state).unwrap();
+        let mut next = series;
+        next.push(Bar {
+            at: T0 + DAY * 60.0,
+            open: 120.0,
+            close: 121.0,
+            volume: 1_000_000.0,
+        });
+        let obs = observation(at + DAY, vec![("SPY", next)]);
+        cycle_with(
+            &path,
+            &obs,
+            "stocks-daily",
+            &Strategy::default(),
+            Some(&no_picks),
+        )
+        .unwrap();
+        let state = snapshot(&path);
+        assert_eq!(state.cash, 0.0);
+        assert!((state.positions["SPY"].cost - 1000.0).abs() < 1e-8);
+        assert_eq!(state.positions["SPY"].opened_at, T0 + DAY * 60.0);
+        assert!(!state.pending.contains_key("SPY"));
+        cycle_with(
+            &path,
+            &obs,
+            "stocks-daily",
+            &Strategy::default(),
+            Some(&no_picks),
+        )
+        .unwrap();
+        let count: i64 = db
+            .query_row("SELECT COUNT(*) FROM fills", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(count, 1);
     }
 
     #[test]

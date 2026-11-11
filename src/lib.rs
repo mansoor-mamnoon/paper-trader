@@ -29,3 +29,5 @@ pub mod scorecard;
 pub mod security;
 pub mod strategy;
 pub mod telemetry;
+
+pub mod allocation;

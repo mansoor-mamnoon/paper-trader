@@ -182,6 +182,8 @@ fn full_size() -> f64 {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct State {
+    #[serde(default)]
+    pub fully_invested: bool,
     pub mode: Option<String>,
     pub cash: f64,
     pub positions: BTreeMap<String, Position>,
@@ -223,6 +225,7 @@ impl Default for State {
         State {
             mode: None,
             cash: 1000.0,
+            fully_invested: false,
             positions: BTreeMap::new(),
             pending: BTreeMap::new(),
             cooldown: BTreeMap::new(),

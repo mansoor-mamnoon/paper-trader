@@ -46,6 +46,9 @@ pub fn export(path: &str, output: &str, strategy: Option<&Value>) -> Result<Valu
     let mut report = report(path)?;
     let db = ledger::connect(path)?;
     let state = ledger::load(&db)?;
+    report["allocation_policy"] = json!({"fully_invested": state.fully_invested,
+        "residual_holding": if state.fully_invested { "SPY" } else { "cash" },
+        "execution": "next observed session open; fees and slippage apply"});
     report["coverage"] = json!(state.coverage);
     report["data_errors"] = json!(state.data_errors);
     report["source"] = json!(SOURCE);
