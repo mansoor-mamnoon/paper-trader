@@ -279,7 +279,12 @@ pub fn item_meaning(code: &str) -> &'static str {
 /// One compact line for a filing, for prompts and the dashboard.
 pub fn describe(f: &Filing) -> String {
     let what = match f.form.as_str() {
-        "4" => "insider transaction (Form 4)".to_string(),
+        // A Form 4 reports a transaction in either direction, or a grant, a gift or a tax
+        // withholding. Until the document is read, all that is known is that one was filed.
+        "4" if f.detail.is_empty() => {
+            "Form 4 filed (an insider transaction; direction not extracted)".to_string()
+        }
+        "4" => format!("Form 4: {}", f.detail),
         "10-Q" => "quarterly report".to_string(),
         "10-K" => "annual report".to_string(),
         "8-K" => {
@@ -378,7 +383,7 @@ mod tests {
         );
         assert_eq!(
             describe(&filings[1]),
-            "2026-11-03 4: insider transaction (Form 4)"
+            "2026-11-03 4: Form 4 filed (an insider transaction; direction not extracted)"
         );
         assert_eq!(describe(&filings[2]), "2026-10-30 10-Q: quarterly report");
         assert_eq!(

@@ -11,6 +11,7 @@ pub mod daily;
 pub mod data;
 pub mod desk;
 pub mod edgar;
+pub mod evidence;
 pub mod export;
 pub mod gates;
 pub mod http;
