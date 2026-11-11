@@ -1040,7 +1040,7 @@ pub fn screen(strategy: &Strategy, observation: &Observation, at: f64) -> Vec<Sc
                     .flatten()
                     .filter(|h| {
                         let record = crate::evidence::news_record(&identity, h, today);
-                        record.status == crate::evidence::MatchStatus::Accepted
+                        record.status == crate::evidence::MatchStatus::Accepted && record.shown()
                     })
                     .cloned()
                     .collect(),

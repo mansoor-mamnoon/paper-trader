@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<rss version="2.0">
+    <channel>
+        <copyright>Copyright (c) 2026 Yahoo Inc. All rights reserved.</copyright>
+        <description>Latest Financial News for SSG</description>
+        <image>
+            <height>45</height>
+            <link>http://finance.yahoo.com/q/h?s=SSG</link>
+            <title>Yahoo! Finance: SSG News</title>
+            <url>https://s.yimg.com/rz/stage/p/yahoo_finance_en-US_h_p_finance_2.png</url>
+            <width>144</width>
+        </image>
+        <item>
+            <description>Shaver Shop Group Ltd (ASX:SSG) posts record revenue and gross profit margin for FY26, but flags softer-than-anticipated trading in the first seven weeks of FY27.</description>
+            <guid isPermaLink="false">79fa9bc5-8d4a-32e6-a590-c4baaba8c8b8</guid>
+            <link>https://finance.yahoo.com/markets/stocks/articles/shaver-shop-group-ltd-asx-010056192.html?.tsrc=rss</link>
+            <pubDate>Tue, 01 Sep 2026 01:00:56 +0000</pubDate>
+            <title>Shaver Shop Group Ltd (ASX:SSG) (FY 2026) Earnings Call Highlights: Record Sales and Margins ...</title>
+        </item>
+        <item>
+            <description>As the Australian market reacts positively to the recent geopolitical developments, with shares advancing and energy stocks gaining attention, investors are keenly observing opportunities across various sectors. Though the term 'penny stock' might sound like a relic of past trading days, these smaller or newer companies can still present significant opportunities for growth when built on solid financials. In this article, we explore several high-quality penny stocks that stand out as hidden...</description>
+            <guid isPermaLink="false">88a4491b-1685-3b18-bbb3-1447ba90da45</guid>
+            <link>https://finance.yahoo.com/markets/stocks/articles/asx-penny-stocks-market-caps-200226037.html?.tsrc=rss</link>
+            <pubDate>Mon, 15 Jun 2026 20:02:26 +0000</pubDate>
+            <title>ASX Penny Stocks With Market Caps Over A$100M To Consider</title>
+        </item>
+        <language>en-US</language>
+        <lastBuildDate>Tue, 10 Nov 2026 23:59:25 +0000</lastBuildDate>
+        <link>http://finance.yahoo.com/q/h?s=SSG</link>
+        <title>Yahoo! Finance: SSG News</title>
+    </channel>
+</rss>

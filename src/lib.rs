@@ -20,6 +20,7 @@ pub mod lab;
 pub mod ledger;
 pub mod model;
 pub mod models;
+pub mod news;
 pub mod pool;
 pub mod progress;
 pub mod scorecard;

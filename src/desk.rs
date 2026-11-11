@@ -319,6 +319,7 @@ pub fn dossier(case: &Case, filings: &[Filing]) -> String {
         .iter()
         .map(|f| evidence::filing_record(&case.identity, f, chrono::NaiveDate::default()).id)
         .collect();
+    let policy = crate::news::NewsPolicy::current();
     let all_events = case.evidence.verified_events();
     let events: Vec<&&evidence::EvidenceRecord> = all_events
         .iter()
@@ -329,9 +330,37 @@ pub fn dossier(case: &Case, filings: &[Filing]) -> String {
             "Verified events about this security: NONE. No news, catalyst or insider activity is known.\n",
         );
     } else {
-        out.push_str("Verified events about this security (sourced, last 30 days):\n");
-        for record in events.iter().take(NEWS_SHOWN) {
-            let _ = writeln!(out, "- {}", clip(&record.line(), 190));
+        let _ = writeln!(
+            out,
+            "Verified events about this security (the issuer's own announcements, SEC filings or listed newsrooms; last {} days):",
+            policy.max_age_days
+        );
+        for record in events.iter().take(policy.max_items_per_stock) {
+            let _ = writeln!(
+                out,
+                "- {} ({})",
+                clip(&record.line(), 190),
+                record.kind.label()
+            );
+        }
+    }
+    let minor = case.evidence.minor_notices();
+    let minor: Vec<&&evidence::EvidenceRecord> = minor
+        .iter()
+        .filter(|r| !filing_ids.contains(&r.id))
+        .take(3)
+        .collect();
+    if !minor.is_empty() {
+        out.push_str(
+            "Minor notices (real, but not catalysts; do not cite them as a reason to buy):\n",
+        );
+        for record in minor {
+            let _ = writeln!(
+                out,
+                "- {} ({})",
+                clip(&record.line(), 170),
+                record.kind.label()
+            );
         }
     }
     let other = case.evidence.other_accepted();
@@ -341,7 +370,7 @@ pub fn dossier(case: &Case, filings: &[Filing]) -> String {
         .take(3)
         .collect();
     if !other.is_empty() {
-        out.push_str("Other matched items (old, opinion or price commentary; not events):\n");
+        out.push_str("Older announcements (history, not current events):\n");
         for record in other {
             let _ = writeln!(out, "- {}", clip(&record.line(), 170));
         }
@@ -355,14 +384,7 @@ pub fn dossier(case: &Case, filings: &[Filing]) -> String {
         );
     }
     let context = case.evidence.context().len();
-    let withheld = case
-        .evidence
-        .with_status(evidence::MatchStatus::Quarantined)
-        .len()
-        + case
-            .evidence
-            .with_status(evidence::MatchStatus::Rejected)
-            .len();
+    let withheld = case.evidence.withheld().len();
     if context > 0 {
         let _ = writeln!(
             out,
@@ -372,7 +394,7 @@ pub fn dossier(case: &Case, filings: &[Filing]) -> String {
     if withheld > 0 {
         let _ = writeln!(
             out,
-            "{withheld} feed item(s) could not be matched to this security and are withheld."
+            "{withheld} feed item(s) are withheld: not matched to this security, or commentary the news policy does not admit."
         );
     }
     out
@@ -1629,8 +1651,8 @@ impl<'a> Desk<'a> {
                 .into_iter()
                 .flatten()
                 .filter(|x| {
-                    evidence::news_record(&identity, x, today).status
-                        == evidence::MatchStatus::Accepted
+                    let record = evidence::news_record(&identity, x, today);
+                    record.status == evidence::MatchStatus::Accepted && record.shown()
                 })
                 .take(NEWS_SHOWN)
                 .map(|x| clip(&x.title, 140))

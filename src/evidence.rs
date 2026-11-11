@@ -18,6 +18,7 @@
 //! not a check. Where a rule cannot decide, the claim is left unverified.
 
 use crate::model::{Filing, Headline};
+use crate::news::{EventKind, NewsPolicy, Quality};
 use crate::security::{SecurityIdentity, company_name};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -109,19 +110,47 @@ pub struct EvidenceRecord {
     /// Why the record has the status it has.
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub note: String,
+    /// The news policy's grade of the source.
+    #[serde(default)]
+    pub quality: Quality,
+    /// What kind of corporate event it describes.
+    #[serde(default)]
+    pub kind: EventKind,
 }
 
 impl EvidenceRecord {
     /// A sourced, recent company event about this security itself. Nothing else may be
     /// called a verified catalyst.
     pub fn verified_event(&self) -> bool {
+        self.sourced_notice() && self.kind.material()
+    }
+
+    /// A sourced, recent notice from the issuer that cannot by itself move the stock's
+    /// value: a board appointment, a conference slot, an insider form. Shown, never citable
+    /// as a catalyst.
+    pub fn minor_notice(&self) -> bool {
+        self.sourced_notice() && !self.kind.material()
+    }
+
+    fn sourced_notice(&self) -> bool {
         self.status == MatchStatus::Accepted
             && matches!(self.relation, Relation::Issuer | Relation::Fund)
             && self.class == EvidenceClass::CompanyEvent
+            && matches!(self.quality, Quality::Primary | Quality::Reporting)
             && !self.source.is_empty()
             && self
                 .age_days
-                .is_some_and(|d| (-1..=RECENT_DAYS).contains(&d))
+                .is_some_and(|d| (-1..=NewsPolicy::current().max_age_days).contains(&d))
+    }
+
+    /// Whether a model may read this record at all.
+    pub fn shown(&self) -> bool {
+        matches!(self.status, MatchStatus::Accepted | MatchStatus::Context)
+            && match self.quality {
+                Quality::Primary | Quality::Reporting => true,
+                Quality::Commentary => NewsPolicy::current().allow_commentary,
+                Quality::Blocked => false,
+            }
     }
 
     /// One line for a prompt.
@@ -151,17 +180,29 @@ impl EvidenceSet {
         self.records.iter().filter(|r| r.verified_event()).collect()
     }
 
-    /// Accepted news and filings about the security that are not verified events: old
-    /// items, opinion pieces, price-move stories.
+    /// Matched items a model may read that are neither verified events nor minor notices:
+    /// older announcements, and commentary when the policy allows it.
     pub fn other_accepted(&self) -> Vec<&EvidenceRecord> {
         self.records
             .iter()
             .filter(|r| {
                 r.status == MatchStatus::Accepted
+                    && r.shown()
                     && !r.verified_event()
+                    && !r.minor_notice()
                     && !matches!(r.relation, Relation::Market)
             })
             .collect()
+    }
+
+    pub fn minor_notices(&self) -> Vec<&EvidenceRecord> {
+        self.records.iter().filter(|r| r.minor_notice()).collect()
+    }
+
+    /// Items kept from the models: unmatched, about another issuer, or refused by the
+    /// news policy.
+    pub fn withheld(&self) -> Vec<&EvidenceRecord> {
+        self.records.iter().filter(|r| !r.shown()).collect()
     }
 
     pub fn context(&self) -> Vec<&EvidenceRecord> {
@@ -182,7 +223,9 @@ impl EvidenceSet {
     pub fn counts(&self) -> serde_json::Value {
         serde_json::json!({
             "verified_events": self.verified_events().len(),
+            "minor_notices": self.minor_notices().len(),
             "other_accepted": self.other_accepted().len(),
+            "withheld_by_news_policy": self.records.iter().filter(|r| r.status == MatchStatus::Accepted && !r.shown()).count(),
             "context": self.context().len(),
             "quarantined": self.with_status(MatchStatus::Quarantined).len(),
             "rejected": self.with_status(MatchStatus::Rejected).len(),
@@ -636,7 +679,33 @@ pub fn news_record(
     } else {
         item.guid.clone()
     };
+    // The news policy grades only items already matched to this security.
+    let (quality, policy_note) = if matched.status == MatchStatus::Accepted {
+        let title = normalized(&item.title);
+        let names = [
+            normalized(&identity.canonical_name),
+            normalized(&company_name(&identity.canonical_name)),
+            core_name(&identity.canonical_name),
+        ];
+        let after = names
+            .iter()
+            .filter(|n| !n.is_empty() && title.starts_with(n))
+            .map(|n| &title[n.len()..])
+            .min_by_key(|rest| rest.len());
+        NewsPolicy::current().grade(
+            &item.title,
+            &item.link,
+            after,
+            &identity.symbol.to_lowercase(),
+        )
+    } else {
+        (Quality::Commentary, String::new())
+    };
     let mut class = classify(&item.title);
+    if matches!(quality, Quality::Primary | Quality::Reporting) {
+        // An issuer's release or a newsroom report is an event, whatever words it uses.
+        class = EvidenceClass::CompanyEvent;
+    }
     if matches!(
         matched.relation,
         Relation::IndexOrSector | Relation::FundSponsor
@@ -664,7 +733,49 @@ pub fn news_record(
         relation: matched.relation,
         class,
         age_days: published.map(|d| (today - d).num_days()),
-        note: matched.note,
+        note: if policy_note.is_empty() {
+            matched.note
+        } else {
+            format!("{}; {policy_note}", matched.note)
+        },
+        quality,
+        kind: crate::news::event_kind(&item.title),
+    }
+}
+
+/// The kind of event a filing reports, from its form type and 8-K items.
+fn filing_kind(filing: &Filing) -> EventKind {
+    match filing.form.as_str() {
+        "8-K" => {
+            let kinds: Vec<EventKind> = filing
+                .items
+                .split(',')
+                .map(|item| match item.trim() {
+                    "2.02" => EventKind::Results,
+                    "1.01" => EventKind::Product,
+                    "2.01" | "5.01" => EventKind::Deal,
+                    "1.03" | "3.01" | "4.01" | "4.02" => EventKind::Regulatory,
+                    "2.03" | "3.02" | "2.05" | "2.06" => EventKind::Financing,
+                    "5.02" => EventKind::Personnel,
+                    "5.07" => EventKind::Administrative,
+                    _ => EventKind::Other,
+                })
+                .collect();
+            kinds
+                .iter()
+                .copied()
+                .find(|k| k.material())
+                .or_else(|| kinds.first().copied())
+                .unwrap_or_default()
+        }
+        "10-Q" | "10-K" => EventKind::Results,
+        "4" => EventKind::Insider,
+        "S-3" | "424B5" => EventKind::Financing,
+        "S-4" | "DEFM14A" | "PREM14A" | "425" | "SC TO-T" | "SC 13E3" => EventKind::Deal,
+        "15-12B" | "15-12G" | "25-NSE" => EventKind::Regulatory,
+        "DEF 14A" => EventKind::Administrative,
+        form if form.starts_with("SC 13") => EventKind::Holder,
+        _ => EventKind::Other,
     }
 }
 
@@ -728,6 +839,8 @@ pub fn filing_record(
         } else {
             String::new()
         },
+        quality: Quality::Primary,
+        kind: filing_kind(filing),
     }
 }
 
@@ -785,6 +898,8 @@ pub fn gather(
         class,
         age_days: Some(0),
         note: note.to_string(),
+        quality: Quality::Primary,
+        kind: EventKind::Other,
     };
     records.push(market(
         format!("T-{}-{}", identity.symbol, technicals.bar_date),
@@ -2020,5 +2135,112 @@ mod tests {
                 < 1e-9
         );
         assert!((percent_after(" 20d -3.6% ", "20d").unwrap() + 0.036).abs() < 1e-9);
+    }
+
+    fn feed(xml: &str) -> Vec<Headline> {
+        crate::intel::parse_rss(xml, 40)
+    }
+
+    #[test]
+    fn the_real_feed_of_10_november_is_reduced_to_what_the_issuers_announced() {
+        // The RealReal: the desk bought it citing a board appointment as "a clear
+        // governance upgrade" and an "analyst upside of 25.28%".
+        let real = listed("REAL", "The RealReal, Inc. - Common Stock", false);
+        let set = gather(
+            &real,
+            &Technicals::default(),
+            &feed(include_str!(
+                "../tests/fixtures/incident-2026-11-10/rss_REAL.xml"
+            )),
+            &[],
+            None,
+            today(),
+        );
+        let events: Vec<&str> = set
+            .verified_events()
+            .iter()
+            .map(|r| r.excerpt.as_str())
+            .collect();
+        assert_eq!(
+            events,
+            ["THE REALREAL ANNOUNCES THIRD QUARTER 2026 RESULTS"]
+        );
+        let minor: Vec<&str> = set
+            .minor_notices()
+            .iter()
+            .map(|r| r.excerpt.as_str())
+            .collect();
+        assert_eq!(
+            minor,
+            [
+                "The RealReal Appoints Shar Dubey to Board of Directors",
+                "The RealReal Appoints Alexis Hoopes as Chief Merchandising Officer"
+            ]
+        );
+        for hidden in [
+            "25.28%",
+            "Great Momentum Stock",
+            "Time to Buy",
+            "What’s Changed",
+            "Transcript",
+        ] {
+            let record = set
+                .records
+                .iter()
+                .find(|r| r.excerpt.contains(hidden))
+                .unwrap();
+            assert!(
+                !record.shown(),
+                "{hidden} must be withheld: {}",
+                record.note
+            );
+        }
+        assert!(set.withheld().len() >= 12, "{}", set.withheld().len());
+        // Replimune: "could rally 26.8%" and "soars 17%" went into the buy thesis.
+        let repl = listed("REPL", "Replimune Group, Inc. - Common Stock", false);
+        let set = gather(
+            &repl,
+            &Technicals::default(),
+            &feed(include_str!(
+                "../tests/fixtures/incident-2026-11-10/rss_REPL.xml"
+            )),
+            &[],
+            None,
+            today(),
+        );
+        let events: Vec<&str> = set
+            .verified_events()
+            .iter()
+            .map(|r| r.excerpt.as_str())
+            .collect();
+        assert_eq!(
+            events,
+            [
+                "Replimune Reports Fiscal Second Quarter 2027 Financial Results and Provides Corporate Update"
+            ]
+        );
+        assert!(set.records.iter().filter(|r| r.shown()).all(|r| {
+            !r.excerpt.contains("26.8%")
+                && !r.excerpt.contains("Soars")
+                && !r.excerpt.contains("52-Week")
+        }));
+        // Pool: a valuation blog's "Shares Fell 58%" became "the stock recently fell 58%".
+        let set = gather(
+            &pinned("POOL"),
+            &Technicals::default(),
+            &feed(include_str!(
+                "../tests/fixtures/incident-2026-11-10/rss_POOL.xml"
+            )),
+            &[],
+            None,
+            today(),
+        );
+        assert!(
+            set.records
+                .iter()
+                .filter(|r| r.shown())
+                .all(|r| !r.excerpt.contains("58%"))
+        );
+        assert_eq!(set.verified_events().len(), 0);
     }
 }
