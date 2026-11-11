@@ -22,5 +22,6 @@ pub mod models;
 pub mod pool;
 pub mod progress;
 pub mod scorecard;
+pub mod security;
 pub mod strategy;
 pub mod telemetry;

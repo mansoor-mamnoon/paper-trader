@@ -1042,6 +1042,7 @@ mod tests {
             headlines: vec![Headline {
                 title: format!("{symbol} raises guidance"),
                 published: String::new(),
+                ..Headline::default()
             }],
             ..Candidate::default()
         }
@@ -1065,6 +1066,7 @@ mod tests {
                     Quote {
                         bars: bars.clone(),
                         actions: vec![],
+                        ..Quote::default()
                     },
                 ),
                 (
@@ -1072,6 +1074,7 @@ mod tests {
                     Quote {
                         bars,
                         actions: vec![],
+                        ..Quote::default()
                     },
                 ),
             ]),
@@ -1079,6 +1082,7 @@ mod tests {
             next_cursor: 0,
             coverage: serde_json::Map::new(),
             intel: Intel::default(),
+            securities: BTreeMap::new(),
         }
     }
 
@@ -1301,6 +1305,7 @@ mod tests {
             description: String::new(),
             accession: "0001".into(),
             document: "x.htm".into(),
+            ..Filing::default()
         };
         let text = dossier(&candidate("AAA", 0.1), &[filing], &obs);
         assert!(text.contains("filing #0"));

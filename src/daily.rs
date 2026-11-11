@@ -683,6 +683,7 @@ mod tests {
                     Quote {
                         bars: bars(60, 50.0, 2.0),
                         actions: vec![],
+                        ..Quote::default()
                     },
                 ),
                 (
@@ -690,6 +691,7 @@ mod tests {
                     Quote {
                         bars: bars(60, 50.0, 1.0),
                         actions: vec![],
+                        ..Quote::default()
                     },
                 ),
             ]),
@@ -697,6 +699,7 @@ mod tests {
             next_cursor: 0,
             coverage: serde_json::Map::new(),
             intel: Intel::default(),
+            securities: BTreeMap::new(),
         };
         let file = dir.join("obs.json");
         std::fs::write(&file, serde_json::to_string(&observation).unwrap()).unwrap();

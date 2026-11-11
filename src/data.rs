@@ -181,7 +181,14 @@ pub fn parse_history(payload: &Value, open_day: chrono::NaiveDate) -> Result<Quo
             }
         }
     }
-    Ok(Quote { bars, actions })
+    let meta = &result["meta"];
+    let text = |key: &str| meta[key].as_str().map(str::to_string);
+    Ok(Quote {
+        bars,
+        actions,
+        name: text("longName").or_else(|| text("shortName")),
+        instrument_type: text("instrumentType"),
+    })
 }
 
 pub fn history(symbol: &str) -> Result<Quote> {
@@ -268,6 +275,7 @@ pub fn observe(state: &State, batch_size: usize, extra: &BTreeSet<String>) -> Re
         next_cursor: ((cursor + count) % symbols.len()) as u64,
         coverage,
         intel: crate::model::Intel::default(),
+        securities: BTreeMap::new(),
     })
 }
 

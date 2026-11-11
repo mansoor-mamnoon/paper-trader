@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::collections::BTreeMap;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Bar {
     pub at: f64,
     pub open: f64,
@@ -26,23 +26,41 @@ pub struct Action {
     pub denominator: Option<f64>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Quote {
     pub bars: Vec<Bar>,
     #[serde(default)]
     pub actions: Vec<Action>,
+    /// The price provider's own name for the security, when it reports one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    /// The price provider's instrument type (`EQUITY`, `ETF`), a second source for the
+    /// security master.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub instrument_type: Option<String>,
 }
 
-/// A news headline attached to a stock.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+/// A news item returned by the provider's per-ticker feed. The feed is keyed by ticker
+/// text only, so an item is not evidence about a security until [`crate::evidence`] has
+/// matched it to the issuer.
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Headline {
     pub title: String,
     #[serde(default)]
     pub published: String,
+    /// Article URL.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub link: String,
+    /// The feed's own id for the item.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub guid: String,
+    /// The feed's summary of the article.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub summary: String,
 }
 
 /// One SEC filing, from the EDGAR submissions feed.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Filing {
     /// Form type, for example `8-K`, `10-Q`, `4`.
     pub form: String,
@@ -57,6 +75,13 @@ pub struct Filing {
     /// Primary document file name inside the accession folder.
     #[serde(default)]
     pub document: String,
+    /// Structured facts extracted from the document, for example a Form 4's transactions.
+    /// Empty until extracted; an empty detail means "not read", never "nothing happened".
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub detail: String,
+    /// The filer's CIK, so the source document can be located again.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub cik: String,
 }
 
 /// Earnings dates and headlines gathered for one scan.
@@ -79,7 +104,7 @@ pub struct Intel {
 }
 
 /// One daily scan of the stock universe.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Observation {
     pub at: f64,
     #[serde(default)]
@@ -93,6 +118,10 @@ pub struct Observation {
     pub coverage: Map<String, Value>,
     #[serde(default)]
     pub intel: Intel,
+    /// Security identities frozen with the observation, so a replay resolves each symbol
+    /// exactly as the live run did. Symbols missing here are resolved from `universe`.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub securities: BTreeMap<String, crate::security::SecurityIdentity>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]

@@ -45,8 +45,19 @@ pub fn parse_earnings(body: &str, day: NaiveDate) -> Vec<(String, String)> {
         .collect()
 }
 
+/// The text of the first `<name>` element, with or without attributes.
 fn tag<'a>(block: &'a str, name: &str) -> Option<&'a str> {
-    let start = block.find(&format!("<{name}>"))? + name.len() + 2;
+    let open = format!("<{name}");
+    let mut from = 0;
+    let start = loop {
+        let at = block[from..].find(&open)? + from;
+        let after = at + open.len();
+        match block[after..].chars().next()? {
+            '>' => break after + 1,
+            c if c.is_whitespace() => break block[after..].find('>')? + after + 1,
+            _ => from = after,
+        }
+    };
     let end = block[start..].find(&format!("</{name}>"))? + start;
     Some(block[start..end].trim())
 }
@@ -71,7 +82,14 @@ pub fn parse_rss(xml: &str, limit: usize) -> Vec<Headline> {
         .filter_map(|item| {
             let title = unwrap_text(tag(item, "title")?);
             let published = tag(item, "pubDate").map(unwrap_text).unwrap_or_default();
-            (!title.is_empty()).then_some(Headline { title, published })
+            let field = |name: &str| tag(item, name).map(unwrap_text).unwrap_or_default();
+            (!title.is_empty()).then_some(Headline {
+                title,
+                published,
+                link: field("link"),
+                guid: field("guid"),
+                summary: field("description"),
+            })
         })
         .take(limit)
         .collect()

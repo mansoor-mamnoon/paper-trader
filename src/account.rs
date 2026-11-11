@@ -1025,6 +1025,7 @@ mod tests {
                         Quote {
                             bars: b,
                             actions: vec![],
+                            ..Quote::default()
                         },
                     )
                 })
@@ -1033,6 +1034,7 @@ mod tests {
             next_cursor: 0,
             coverage: serde_json::Map::new(),
             intel: crate::model::Intel::default(),
+            securities: BTreeMap::new(),
         }
     }
 
@@ -1112,6 +1114,7 @@ mod tests {
             vec![crate::model::Headline {
                 title: "Board approves 1-for-10 reverse stock split".into(),
                 published: String::new(),
+                ..crate::model::Headline::default()
             }],
         );
         let loose = Strategy {
@@ -1157,6 +1160,7 @@ mod tests {
             vec![crate::model::Headline {
                 title: "UpCo files for Chapter 11 protection".into(),
                 published: String::new(),
+                ..crate::model::Headline::default()
             }],
         );
         cycle(&path, &obs, "stocks-daily").unwrap();
@@ -1193,6 +1197,7 @@ mod tests {
             vec![crate::model::Headline {
                 title: "UpCo announces 1-for-10 reverse stock split".into(),
                 published: String::new(),
+                ..crate::model::Headline::default()
             }],
         );
         let strategy = Strategy::default();

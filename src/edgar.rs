@@ -91,6 +91,7 @@ pub fn parse_submissions(json: &str, limit: usize) -> Vec<Filing> {
             description: column("primaryDocDescription", i),
             accession: column("accessionNumber", i),
             document: column("primaryDocument", i),
+            ..Filing::default()
         })
         .collect()
 }

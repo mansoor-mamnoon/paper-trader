@@ -295,6 +295,7 @@ mod tests {
             description: String::new(),
             accession: String::new(),
             document: String::new(),
+            ..Filing::default()
         };
         let mut intel = Intel::default();
         intel
@@ -322,6 +323,7 @@ mod tests {
         let news = |title: &str, published: &str| Headline {
             title: title.into(),
             published: published.into(),
+            ..Headline::default()
         };
         let mut intel = Intel::default();
         intel.news.insert(

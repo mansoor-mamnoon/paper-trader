@@ -243,6 +243,7 @@ mod tests {
                     Quote {
                         bars: bars(stock),
                         actions: vec![],
+                        ..Quote::default()
                     },
                 ),
                 (
@@ -250,6 +251,7 @@ mod tests {
                     Quote {
                         bars: bars(spy),
                         actions: vec![],
+                        ..Quote::default()
                     },
                 ),
             ]),
@@ -257,6 +259,7 @@ mod tests {
             next_cursor: 0,
             coverage: serde_json::Map::new(),
             intel: Intel::default(),
+            securities: BTreeMap::new(),
         }
     }
 
