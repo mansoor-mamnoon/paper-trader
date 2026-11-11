@@ -6,6 +6,8 @@
 //!
 //! | Gate | Rule |
 //! |---|---|
+//! | Instrument | only verified common stocks and ADRs, plus unleveraged ETFs when the strategy's universe says so; never a leveraged or inverse product, a note, or an unidentified symbol |
+//! | Data | the latest session's bar is present, the last 21 sessions are complete, and no split-sized jump is unexplained |
 //! | Price | close at least [`MIN_PRICE`] |
 //! | Liquidity | average daily traded value over [`ADTV_DAYS`] sessions at least [`MIN_ADTV`] |
 //! | Events | no earnings report, FDA decision or restructuring within [`EVENT_DAYS`] days |
@@ -13,8 +15,235 @@
 //! | Industry | at most [`INDUSTRY_CAP`] of equity in one SEC industry |
 //! | Drawdown | down [`DRAWDOWN_HALT`] from the high over [`DRAWDOWN_SESSIONS`] sessions: a [`CASH_LOCK_HOURS`]-hour cash lock |
 
-use crate::model::{Bar, Intel};
+use crate::model::{Action, Bar, Intel};
+use crate::security::{InstrumentType, SecurityIdentity};
+use crate::strategy::Universe;
 use chrono::NaiveDate;
+use serde::Serialize;
+
+/// Reason codes written to the ledger with every hard-gate rejection.
+pub mod code {
+    pub const LEVERAGED_ETF: &str = "LEVERAGED_ETF";
+    pub const INVERSE_ETF: &str = "INVERSE_ETF";
+    pub const LEVERAGED_INVERSE_ETF: &str = "LEVERAGED_INVERSE_ETF";
+    pub const UNSUPPORTED_INSTRUMENT: &str = "UNSUPPORTED_INSTRUMENT";
+    pub const UNVERIFIED_SECURITY_IDENTITY: &str = "UNVERIFIED_SECURITY_IDENTITY";
+    pub const ETF_OUTSIDE_UNIVERSE: &str = "ETF_OUTSIDE_UNIVERSE";
+    pub const STALE_DATA: &str = "STALE_DATA";
+    pub const MISSING_BARS: &str = "MISSING_BARS";
+    pub const CORPORATE_ACTION_CHECK: &str = "CORPORATE_ACTION_CHECK";
+    pub const PRICE_FLOOR: &str = "PRICE_FLOOR";
+    pub const LIQUIDITY_FLOOR: &str = "LIQUIDITY_FLOOR";
+    pub const EVENT_WINDOW: &str = "EVENT_WINDOW";
+}
+
+/// A hard gate's refusal: a stable code and a sentence a person can read.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct Block {
+    pub code: &'static str,
+    pub reason: String,
+}
+
+impl Block {
+    pub fn new(code: &'static str, reason: impl Into<String>) -> Self {
+        Block {
+            code,
+            reason: reason.into(),
+        }
+    }
+
+    /// The form written to the ledger: `[CODE] reason`.
+    pub fn text(&self) -> String {
+        format!("[{}] {}", self.code, self.reason)
+    }
+}
+
+/// Sessions that must be present, without a gap, before a stock may be bought. The screen
+/// measures 20-day momentum as the last close over the close 20 sessions earlier, which is
+/// only a 20-day return when all 21 bars are there.
+pub const COMPLETE_SESSIONS: usize = 21;
+/// Share-count ratios a split usually takes. A one-day price move within
+/// [`SPLIT_TOLERANCE`] of one of these (or its inverse) with no reported split is treated
+/// as a possible unadjusted corporate action, not as a return.
+pub const SPLIT_RATIOS: [f64; 13] = [
+    2.0, 3.0, 4.0, 5.0, 8.0, 10.0, 15.0, 20.0, 25.0, 30.0, 40.0, 50.0, 100.0,
+];
+pub const SPLIT_TOLERANCE: f64 = 0.015;
+
+/// Why this instrument may not be bought under `universe`, if it may not.
+///
+/// Leveraged products, inverse products, notes, unsupported classes and unidentified
+/// symbols are refused under every universe: there is no setting that lets them in. An
+/// unleveraged ETF is refused unless the strategy's universe explicitly includes ETFs.
+/// The decision reads the security master and never asks a model.
+pub fn instrument(identity: &SecurityIdentity, universe: Universe) -> Option<Block> {
+    let name = if identity.canonical_name.is_empty() {
+        identity.symbol.as_str()
+    } else {
+        identity.canonical_name.as_str()
+    };
+    let exposure = identity.signed_multiple().map_or(String::new(), |m| {
+        format!(
+            ", which seeks {m:+}x the {} return of {}",
+            if identity.daily_reset {
+                "daily"
+            } else {
+                "stated"
+            },
+            identity
+                .underlying_symbol
+                .as_deref()
+                .or(identity.underlying_name.as_deref())
+                .unwrap_or("its reference")
+        )
+    });
+    let block = |code, what: &str| Some(Block::new(code, format!("{name} is {what}{exposure}")));
+    if !identity.verified {
+        return Some(Block::new(
+            code::UNVERIFIED_SECURITY_IDENTITY,
+            format!(
+                "The identity of {} is not verified ({}); it is not assumed to be a stock",
+                identity.symbol,
+                identity
+                    .notes
+                    .first()
+                    .map_or("no source resolved it", String::as_str)
+            ),
+        ));
+    }
+    match identity.instrument_type {
+        InstrumentType::CommonStock | InstrumentType::Adr => None,
+        InstrumentType::OrdinaryEtf if universe == Universe::EquitiesAndEtfs => None,
+        InstrumentType::OrdinaryEtf => Some(Block::new(
+            code::ETF_OUTSIDE_UNIVERSE,
+            format!("{name} is an ETF and this strategy's universe is equities only"),
+        )),
+        InstrumentType::LeveragedEtf => block(code::LEVERAGED_ETF, "a leveraged ETF"),
+        InstrumentType::InverseEtf => block(code::INVERSE_ETF, "an inverse ETF"),
+        InstrumentType::LeveragedInverseEtf => {
+            block(code::LEVERAGED_INVERSE_ETF, "a leveraged inverse ETF")
+        }
+        InstrumentType::Etn => Some(Block::new(
+            code::UNSUPPORTED_INSTRUMENT,
+            format!("{name} is an exchange-traded note, which the account does not trade"),
+        )),
+        InstrumentType::Other => Some(Block::new(
+            code::UNSUPPORTED_INSTRUMENT,
+            format!(
+                "{name} is not a common stock, ADR or supported fund{}",
+                identity
+                    .notes
+                    .first()
+                    .map_or(String::new(), |n| format!(" ({n})"))
+            ),
+        )),
+        InstrumentType::Unknown => Some(Block::new(
+            code::UNVERIFIED_SECURITY_IDENTITY,
+            format!("{} could not be classified", identity.symbol),
+        )),
+    }
+}
+
+fn session(at: f64) -> NaiveDate {
+    chrono::DateTime::from_timestamp(at as i64, 0)
+        .unwrap_or_default()
+        .date_naive()
+}
+
+/// The split ratio a one-day price ratio looks like, if it looks like one.
+fn split_like(ratio: f64) -> Option<f64> {
+    SPLIT_RATIOS.iter().copied().find(|k| {
+        (ratio / k - 1.0).abs() <= SPLIT_TOLERANCE || (ratio * k - 1.0).abs() <= SPLIT_TOLERANCE
+    })
+}
+
+/// Why a stock's price history is not fit to buy on, if it is not.
+///
+/// `reference` is the benchmark's bars (SPY), which define which sessions exist. The checks:
+/// the stock has a bar for the benchmark's latest session; it has a bar for each of the last
+/// [`COMPLETE_SESSIONS`] sessions; a reported split is not still visible as a price step
+/// (which would mean the bars are not adjusted); and no unexplained one-day move in that
+/// window is the size of a split. A large move that is not split-sized is a real return and
+/// passes: the gate does not discard extreme days.
+pub fn data_quality(bars: &[Bar], actions: &[Action], reference: &[Bar]) -> Option<Block> {
+    let last = bars.last()?;
+    if let Some(latest) = reference.last() {
+        if session(last.at) < session(latest.at) {
+            return Some(Block::new(
+                code::STALE_DATA,
+                format!(
+                    "Latest bar is from {}, but the latest completed session is {}",
+                    session(last.at),
+                    session(latest.at)
+                ),
+            ));
+        }
+        let have: std::collections::BTreeSet<NaiveDate> =
+            bars.iter().map(|b| session(b.at)).collect();
+        let window = &reference[reference.len().saturating_sub(COMPLETE_SESSIONS)..];
+        let missing: Vec<String> = window
+            .iter()
+            .map(|b| session(b.at))
+            .filter(|d| !have.contains(d))
+            .map(|d| d.to_string())
+            .collect();
+        if !missing.is_empty() {
+            return Some(Block::new(
+                code::MISSING_BARS,
+                format!(
+                    "No bar for {} of the last {COMPLETE_SESSIONS} sessions ({}), so 20-day figures are not comparable",
+                    missing.len(),
+                    missing
+                        .iter()
+                        .take(3)
+                        .cloned()
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ),
+            ));
+        }
+    }
+    let splits: Vec<(NaiveDate, f64)> = actions
+        .iter()
+        .filter(|a| a.kind == "splits")
+        .filter_map(|a| {
+            let ratio = a.numerator? / a.denominator?;
+            (ratio.is_finite() && ratio > 0.0).then(|| (session(a.date), ratio))
+        })
+        .collect();
+    let recent = &bars[bars.len().saturating_sub(COMPLETE_SESSIONS + 1)..];
+    for pair in bars.windows(2) {
+        let day = session(pair[1].at);
+        let step = pair[1].open / pair[0].close;
+        // A reported split: adjusted bars are continuous across it. A step the size of
+        // the split means the provider's history was not adjusted.
+        if let Some((_, ratio)) = splits.iter().find(|(d, _)| *d == day) {
+            let expected = 1.0 / ratio;
+            if (ratio - 1.0).abs() > 1e-9 && (step / expected - 1.0).abs() <= 0.15 {
+                return Some(Block::new(
+                    code::CORPORATE_ACTION_CHECK,
+                    format!(
+                        "Bars are not adjusted for the {ratio}-for-1 split on {day}: the open is {step:.2}x the prior close"
+                    ),
+                ));
+            }
+        }
+    }
+    for pair in recent.windows(2) {
+        let day = session(pair[1].at);
+        let move_ = pair[1].close / pair[0].close;
+        let near_split = splits.iter().any(|(d, _)| (*d - day).num_days().abs() <= 3);
+        if let Some(k) = split_like(move_).filter(|_| !near_split) {
+            return Some(Block::new(
+                code::CORPORATE_ACTION_CHECK,
+                format!(
+                    "The close on {day} is {move_:.3}x the prior close, the size of a {k}-for-1 split, and no split is reported"
+                ),
+            ));
+        }
+    }
+    None
+}
 
 /// Lowest close a stock may have when it is bought.
 pub const MIN_PRICE: f64 = 5.0;
@@ -101,17 +330,21 @@ pub fn volatility_scale(sigma: Option<f64>) -> f64 {
 
 /// Why a stock fails the price or liquidity floor, if it does. `min_price` and `min_adtv`
 /// are a strategy's own floors; the hard ones apply when they are lower.
-pub fn liquidity(close: f64, adtv: f64, min_price: f64, min_adtv: f64) -> Option<String> {
+pub fn liquidity(close: f64, adtv: f64, min_price: f64, min_adtv: f64) -> Option<Block> {
     let (price_floor, adtv_floor) = (min_price.max(MIN_PRICE), min_adtv.max(MIN_ADTV));
     if close < price_floor {
-        Some(format!(
-            "Price ${close:.2} is below the ${price_floor:.2} floor"
+        Some(Block::new(
+            code::PRICE_FLOOR,
+            format!("Price ${close:.2} is below the ${price_floor:.2} floor"),
         ))
     } else if adtv < adtv_floor {
-        Some(format!(
-            "Average daily traded value ${:.1}M over {ADTV_DAYS} sessions is below ${:.1}M",
-            adtv / 1e6,
-            adtv_floor / 1e6
+        Some(Block::new(
+            code::LIQUIDITY_FLOOR,
+            format!(
+                "Average daily traded value ${:.1}M over {ADTV_DAYS} sessions is below ${:.1}M",
+                adtv / 1e6,
+                adtv_floor / 1e6
+            ),
         ))
     } else {
         None
@@ -152,7 +385,11 @@ fn recent_headline(published: &str, today: NaiveDate) -> bool {
 }
 
 /// Why a stock is blocked by an event within [`EVENT_DAYS`] days, if it is.
-pub fn event(symbol: &str, intel: &Intel, today: NaiveDate) -> Option<String> {
+pub fn event(symbol: &str, intel: &Intel, today: NaiveDate) -> Option<Block> {
+    event_reason(symbol, intel, today).map(|reason| Block::new(code::EVENT_WINDOW, reason))
+}
+
+fn event_reason(symbol: &str, intel: &Intel, today: NaiveDate) -> Option<String> {
     for (map, what) in [(&intel.earnings, "upcoming"), (&intel.reported, "recent")] {
         if let Some(date) = map.get(symbol).filter(|d| within(d, today)) {
             return Some(format!(
@@ -224,6 +461,13 @@ mod tests {
     use super::*;
     use crate::model::{Filing, Headline};
 
+    fn why(symbol: &str, intel: &Intel, today: NaiveDate) -> Option<String> {
+        event(symbol, intel, today).map(|b| {
+            assert_eq!(b.code, code::EVENT_WINDOW);
+            b.reason
+        })
+    }
+
     fn bar(close: f64, volume: f64) -> Bar {
         Bar {
             at: 0.0,
@@ -250,11 +494,20 @@ mod tests {
 
     #[test]
     fn price_and_liquidity_floors_cannot_be_loosened() {
-        assert!(liquidity(4.99, 1e9, 1.0, 0.0).unwrap().contains("$5.00"));
-        assert!(liquidity(20.0, 4.9e6, 1.0, 1e6).unwrap().contains("$5.0M"));
+        let low = liquidity(4.99, 1e9, 1.0, 0.0).unwrap();
+        assert!(low.reason.contains("$5.00"));
+        assert_eq!(low.code, code::PRICE_FLOOR);
+        let thin = liquidity(20.0, 4.9e6, 1.0, 1e6).unwrap();
+        assert!(thin.reason.contains("$5.0M"));
+        assert_eq!(thin.code, code::LIQUIDITY_FLOOR);
         assert!(liquidity(20.0, 5e6, 1.0, 1e6).is_none());
         // A stricter strategy floor wins.
-        assert!(liquidity(8.0, 9e6, 10.0, 1e6).unwrap().contains("$10.00"));
+        assert!(
+            liquidity(8.0, 9e6, 10.0, 1e6)
+                .unwrap()
+                .reason
+                .contains("$10.00")
+        );
     }
 
     #[test]
@@ -280,9 +533,9 @@ mod tests {
         intel.earnings.insert("UP".into(), "2026-11-17".into());
         intel.earnings.insert("FAR".into(), "2026-11-18".into());
         intel.reported.insert("PAST".into(), "2026-11-03".into());
-        assert!(event("UP", &intel, today).unwrap().contains("2026-11-17"));
-        assert!(event("PAST", &intel, today).unwrap().contains("recent"));
-        assert!(event("FAR", &intel, today).is_none());
+        assert!(why("UP", &intel, today).unwrap().contains("2026-11-17"));
+        assert!(why("PAST", &intel, today).unwrap().contains("recent"));
+        assert!(why("FAR", &intel, today).is_none());
     }
 
     #[test]
@@ -311,10 +564,10 @@ mod tests {
             "EARN".into(),
             vec![filing("8-K", "2.02,9.01", "2026-11-09")],
         );
-        assert!(event("RS", &intel, today).unwrap().contains("item 5.03"));
-        assert!(event("MERGE", &intel, today).unwrap().contains("S-4"));
-        assert!(event("OLD", &intel, today).is_none());
-        assert!(event("EARN", &intel, today).is_none());
+        assert!(why("RS", &intel, today).unwrap().contains("item 5.03"));
+        assert!(why("MERGE", &intel, today).unwrap().contains("S-4"));
+        assert!(why("OLD", &intel, today).is_none());
+        assert!(why("EARN", &intel, today).is_none());
     }
 
     #[test]
@@ -346,17 +599,13 @@ mod tests {
             vec![news("Fdaxx Corp ships new laptops", "")],
         );
         assert!(
-            event("GIBO", &intel, today)
+            why("GIBO", &intel, today)
                 .unwrap()
                 .contains("share consolidation")
         );
-        assert!(
-            event("BIO", &intel, today)
-                .unwrap()
-                .contains("FDA decision")
-        );
-        assert!(event("STALE", &intel, today).is_none());
-        assert!(event("WORD", &intel, today).is_none(), "whole words only");
+        assert!(why("BIO", &intel, today).unwrap().contains("FDA decision"));
+        assert!(why("STALE", &intel, today).is_none());
+        assert!(why("WORD", &intel, today).is_none(), "whole words only");
     }
 
     #[test]
@@ -374,5 +623,167 @@ mod tests {
         assert!(drawdown_breach(1000.0, 901.0).is_none());
         assert!(drawdown_breach(800.0, 900.0).is_none());
         assert!((drawdown_breach(1100.0, 950.0).unwrap() - (1.0 - 950.0 / 1100.0)).abs() < 1e-12);
+    }
+
+    fn identity(symbol: &str) -> SecurityIdentity {
+        crate::security::resolve(symbol, None, None, "2026-11-10")
+    }
+
+    #[test]
+    fn ramz_is_rejected_by_the_default_equity_gate() {
+        let block = instrument(&identity("RAMZ"), Universe::Equities).unwrap();
+        assert_eq!(block.code, code::LEVERAGED_INVERSE_ETF);
+        assert!(
+            block.reason.contains("-2x the daily return of DRAM"),
+            "{}",
+            block.reason
+        );
+        assert!(block.text().starts_with("[LEVERAGED_INVERSE_ETF] "));
+        // No universe setting lets a geared product in.
+        assert_eq!(
+            instrument(&identity("RAMZ"), Universe::EquitiesAndEtfs)
+                .unwrap()
+                .code,
+            code::LEVERAGED_INVERSE_ETF
+        );
+    }
+
+    #[test]
+    fn every_geared_fund_in_the_incident_is_rejected_and_the_stocks_pass() {
+        for symbol in ["SOXS", "SNDQ", "NVDS", "SSG"] {
+            for universe in [Universe::Equities, Universe::EquitiesAndEtfs] {
+                assert_eq!(
+                    instrument(&identity(symbol), universe).unwrap().code,
+                    code::LEVERAGED_INVERSE_ETF,
+                    "{symbol}"
+                );
+            }
+        }
+        for symbol in ["MAX", "POOL"] {
+            assert_eq!(instrument(&identity(symbol), Universe::Equities), None);
+        }
+    }
+
+    #[test]
+    fn each_instrument_class_has_its_own_reason_code() {
+        let listed = |name: &str, etf: bool| {
+            crate::security::resolve(
+                "X",
+                Some(
+                    &serde_json::json!({"symbol": "X", "name": name, "exchange": "P", "etf": etf}),
+                ),
+                None,
+                "2026-11-10",
+            )
+        };
+        let code_of = |name: &str, etf: bool, universe| {
+            instrument(&listed(name, etf), universe).map(|b| b.code)
+        };
+        let eq = Universe::Equities;
+        assert_eq!(code_of("Acme Corp. - Common Stock", false, eq), None);
+        assert_eq!(
+            code_of("Acme S.A. American Depositary Shares", false, eq),
+            None
+        );
+        assert_eq!(
+            code_of("Direxion Daily S&P 500 Bull 2X ETF", true, eq),
+            Some(code::LEVERAGED_ETF)
+        );
+        assert_eq!(
+            code_of("ProShares Short S&P500", true, eq),
+            Some(code::INVERSE_ETF)
+        );
+        assert_eq!(
+            code_of("iPath Select MLP ETN", true, eq),
+            Some(code::UNSUPPORTED_INSTRUMENT)
+        );
+        assert_eq!(
+            code_of("Acme Corp. - Warrant", false, eq),
+            Some(code::UNSUPPORTED_INSTRUMENT)
+        );
+        assert_eq!(
+            code_of("Acme Corporation", false, eq),
+            Some(code::UNVERIFIED_SECURITY_IDENTITY)
+        );
+        assert_eq!(
+            instrument(&identity("NOT_LISTED"), eq).unwrap().code,
+            code::UNVERIFIED_SECURITY_IDENTITY
+        );
+        // An unleveraged ETF is a universe decision, stated in the strategy.
+        let spy = "State Street SPDR S&P 500 ETF Trust";
+        assert_eq!(code_of(spy, true, eq), Some(code::ETF_OUTSIDE_UNIVERSE));
+        assert_eq!(code_of(spy, true, Universe::EquitiesAndEtfs), None);
+    }
+
+    fn daily(closes: &[f64]) -> Vec<Bar> {
+        closes
+            .iter()
+            .enumerate()
+            .map(|(i, c)| Bar {
+                at: 1_700_000_000.0 + 86400.0 * i as f64,
+                open: *c,
+                close: *c,
+                volume: 1e6,
+            })
+            .collect()
+    }
+
+    #[test]
+    fn stale_market_data_blocks_new_purchases() {
+        let reference = daily(&[100.0; 30]);
+        let mut stock = daily(&[20.0; 30]);
+        assert_eq!(data_quality(&stock, &[], &reference), None);
+        stock.pop();
+        let block = data_quality(&stock, &[], &reference).unwrap();
+        assert_eq!(block.code, code::STALE_DATA);
+    }
+
+    #[test]
+    fn a_gap_in_the_last_twenty_one_sessions_blocks_a_buy() {
+        let reference = daily(&[100.0; 30]);
+        let mut stock = daily(&[20.0; 30]);
+        stock.remove(20);
+        let block = data_quality(&stock, &[], &reference).unwrap();
+        assert_eq!(block.code, code::MISSING_BARS);
+        // A gap before the window does not matter.
+        let mut older = daily(&[20.0; 30]);
+        older.remove(2);
+        assert_eq!(data_quality(&older, &[], &reference), None);
+    }
+
+    #[test]
+    fn split_sized_steps_need_a_corporate_action_check_but_real_moves_pass() {
+        let reference = daily(&[100.0; 30]);
+        let split = |index: usize, numerator: f64, denominator: f64| Action {
+            kind: "splits".into(),
+            date: 1_700_000_000.0 + 86400.0 * index as f64,
+            amount: None,
+            numerator: Some(numerator),
+            denominator: Some(denominator),
+        };
+        // An unreported 1-for-50 reverse split: the price is suddenly 50 times higher.
+        let mut closes = vec![0.07; 30];
+        for c in closes.iter_mut().skip(25) {
+            *c = 3.5;
+        }
+        let unreported = data_quality(&daily(&closes), &[], &reference).unwrap();
+        assert_eq!(unreported.code, code::CORPORATE_ACTION_CHECK);
+        assert!(unreported.reason.contains("50-for-1"));
+        // The same step with the split reported means the bars were never adjusted.
+        let unadjusted =
+            data_quality(&daily(&closes), &[split(25, 1.0, 50.0)], &reference).unwrap();
+        assert_eq!(unadjusted.code, code::CORPORATE_ACTION_CHECK);
+        assert!(unadjusted.reason.contains("not adjusted"));
+        // Properly adjusted bars are continuous across a reported split: nothing to block.
+        assert_eq!(
+            data_quality(&daily(&[3.5; 30]), &[split(25, 1.0, 50.0)], &reference),
+            None
+        );
+        // OMH on 4 November 2026: +432% on real volume. Not split-sized, so not discarded.
+        let mut omh = vec![2.92; 30];
+        for c in omh.iter_mut().skip(26) {
+            *c = 15.55;
+        }
+        assert_eq!(data_quality(&daily(&omh), &[], &reference), None);
     }
 }

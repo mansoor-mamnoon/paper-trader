@@ -21,6 +21,57 @@ and a trend that the news supports. Avoid stocks with a pending earnings report 
 is unusually strong, stocks whose news is mostly negative, legal trouble, dilution or a recent \
 spike on thin news. Be selective: choosing no stock is a valid answer when nothing is convincing.";
 
+/// Which instruments a strategy may buy. This is part of the experiment's definition and is
+/// stated in the strategy, never left to a model's taste.
+///
+/// Leveraged ETFs, inverse ETFs, exchange-traded notes, unsupported classes and symbols
+/// whose identity is not verified are refused by the hard gates under both settings; a
+/// strategy for those products would need its own risk rules and does not exist.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Universe {
+    /// Verified common stocks and ADRs. The default.
+    #[default]
+    Equities,
+    /// The above plus unleveraged, long-only ETFs.
+    EquitiesAndEtfs,
+}
+
+impl Universe {
+    pub fn label(self) -> &'static str {
+        match self {
+            Universe::Equities => "equities",
+            Universe::EquitiesAndEtfs => "equities_and_etfs",
+        }
+    }
+
+    pub fn describe(self) -> &'static str {
+        match self {
+            Universe::Equities => "US-listed common stocks and ADRs with a verified identity",
+            Universe::EquitiesAndEtfs => {
+                "US-listed common stocks, ADRs and unleveraged ETFs with a verified identity"
+            }
+        }
+    }
+
+    /// Parse a setting such as `PAPER_TRADER_UNIVERSE=equities_and_etfs`.
+    pub fn parse(text: &str) -> Option<Self> {
+        match text.trim().to_lowercase().as_str() {
+            "equities" => Some(Universe::Equities),
+            "equities_and_etfs" => Some(Universe::EquitiesAndEtfs),
+            _ => None,
+        }
+    }
+}
+
+/// The universe rules every strategy ran under before [`RULES_VERSION`] 2: any symbol in
+/// the exchange directory, including leveraged and inverse ETFs. Kept as a label so old
+/// ledger rows can be described accurately; no strategy can select it.
+pub const LEGACY_UNIVERSE: &str = "all_listed_v1";
+/// Version of the fixed trading rules a strategy runs under. 1: any listed symbol could be
+/// bought. 2: the instrument and data gates, and the desk's evidence contract.
+pub const RULES_VERSION: u32 = 2;
+
 /// A named, bounded set of rules the account trades by.
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -55,6 +106,13 @@ pub struct Strategy {
     /// Lessons from closed trades and the pick scorecard are shown to the judge.
     #[serde(default = "yes")]
     pub use_memory: bool,
+    /// Which instruments may be bought. Not a tunable: the lab cannot change it.
+    #[serde(default)]
+    pub universe: Universe,
+    /// The fixed-rules version this strategy last traded under. A stored strategy without
+    /// the field traded under version 1.
+    #[serde(default = "first_rules")]
+    pub rules_version: u32,
 }
 
 fn default_depth() -> u8 {
@@ -67,6 +125,9 @@ fn default_finalists() -> usize {
 }
 fn yes() -> bool {
     true
+}
+fn first_rules() -> u32 {
+    1
 }
 
 impl Strategy {
@@ -102,6 +163,8 @@ impl Default for Strategy {
             finalists: default_finalists(),
             use_doctor: true,
             use_memory: true,
+            universe: Universe::Equities,
+            rules_version: RULES_VERSION,
         }
     }
 }
@@ -219,6 +282,7 @@ impl Strategy {
             "analyst_enabled",
             "shortlist_size",
             "playbook",
+            "universe",
         ]
         .iter()
         .filter(|k| a[**k] != b[**k])
@@ -268,5 +332,34 @@ mod tests {
             .with_changes(json!({"stop_pct": 0.05}).as_object().unwrap())
             .unwrap();
         assert_eq!(s.diff(&t), vec!["stop_pct"]);
+    }
+
+    #[test]
+    fn the_universe_is_explicit_and_no_proposal_can_change_it() {
+        let s = Strategy::default();
+        assert_eq!(s.universe, Universe::Equities);
+        assert_eq!(s.rules_version, RULES_VERSION);
+        for bad in [
+            json!({"universe": "equities_and_etfs"}),
+            json!({"rules_version": 1}),
+        ] {
+            assert!(s.with_changes(bad.as_object().unwrap()).is_err(), "{bad}");
+        }
+        assert_eq!(
+            Universe::parse(" Equities_And_ETFs "),
+            Some(Universe::EquitiesAndEtfs)
+        );
+        assert_eq!(Universe::parse("all"), None);
+        assert_eq!(Universe::parse(LEGACY_UNIVERSE), None);
+    }
+
+    #[test]
+    fn a_strategy_stored_before_the_universe_rule_reads_as_rules_version_one() {
+        let mut stored = serde_json::to_value(Strategy::default()).unwrap();
+        stored.as_object_mut().unwrap().remove("universe");
+        stored.as_object_mut().unwrap().remove("rules_version");
+        let old: Strategy = serde_json::from_value(stored).unwrap();
+        assert_eq!(old.rules_version, 1);
+        assert_eq!(old.universe, Universe::Equities);
     }
 }

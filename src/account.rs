@@ -5,6 +5,7 @@ use crate::gates;
 use crate::ledger::{self, decision, insert_fill};
 use crate::model::{Observation, Order, Position, Quote, State};
 use crate::scorecard;
+use crate::security::Master;
 use crate::strategy::{MAX_POSITIONS, POSITION_CAP, Strategy};
 use anyhow::{Result, anyhow, bail};
 use rusqlite::Connection;
@@ -98,31 +99,53 @@ fn cash_lock(db: &Connection, state: &mut State, total: f64, at: f64) -> Result<
     Ok(())
 }
 
-/// Why a queued buy may no longer fill, if a hard gate now blocks it. Price and traded value
-/// use only sessions before the fill's open, so the check cannot see the fill bar; events use
-/// this run's news and filings.
-fn fill_gate(
+/// The bars that say which sessions exist: SPY's, or the longest recent history when the
+/// observation has no SPY.
+pub fn reference_bars(observation: &Observation) -> &[crate::model::Bar] {
+    observation
+        .quotes
+        .get("SPY")
+        .or_else(|| {
+            observation.quotes.values().max_by(|a, b| {
+                let key = |q: &Quote| (q.bars.last().map_or(0.0, |x| x.at), q.bars.len() as f64);
+                key(a)
+                    .partial_cmp(&key(b))
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
+        })
+        .map_or(&[], |q| q.bars.as_slice())
+}
+
+/// Every hard gate a new buy must pass, in order: what the instrument is, whether its
+/// price history can be trusted, price and liquidity floors, then nearby events. `open_at`
+/// limits the bars to those before a fill's open (pass infinity to use them all), so a
+/// re-check cannot see the bar it is about to fill at.
+pub fn entry_gate(
     symbol: &str,
     quote: &Quote,
     open_at: f64,
     observation: &Observation,
+    master: &Master,
     strategy: &Strategy,
     at: f64,
-) -> Option<String> {
-    let before: Vec<crate::model::Bar> = quote
-        .bars
-        .iter()
-        .filter(|b| b.at < open_at)
-        .cloned()
-        .collect();
+) -> Option<gates::Block> {
+    let earlier = |bars: &[crate::model::Bar]| -> Vec<crate::model::Bar> {
+        bars.iter().filter(|b| b.at < open_at).cloned().collect()
+    };
+    let before = earlier(&quote.bars);
+    let reference = earlier(reference_bars(observation));
     let close = before.last().map_or(0.0, |b| b.close);
-    gates::liquidity(
-        close,
-        gates::adtv(&before, gates::ADTV_DAYS),
-        strategy.min_price,
-        strategy.min_dollar_volume,
-    )
-    .or_else(|| gates::event(symbol, &observation.intel, utc_date(at)))
+    gates::instrument(&master.identify(symbol), strategy.universe)
+        .or_else(|| gates::data_quality(&before, &quote.actions, &reference))
+        .or_else(|| {
+            gates::liquidity(
+                close,
+                gates::adtv(&before, gates::ADTV_DAYS),
+                strategy.min_price,
+                strategy.min_dollar_volume,
+            )
+        })
+        .or_else(|| gates::event(symbol, &observation.intel, utc_date(at)))
 }
 
 /// The hard gate a queued buy fails, judged on the bars before the open it fills at, or on
@@ -132,9 +155,10 @@ fn queued_gate(
     symbol: &str,
     order: &Order,
     observation: &Observation,
+    master: &Master,
     strategy: &Strategy,
     at: f64,
-) -> Option<String> {
+) -> Option<gates::Block> {
     if order.side != "BUY" {
         return None;
     }
@@ -144,7 +168,7 @@ fn queued_gate(
         .iter()
         .find(|b| b.at > order.at)
         .map_or(f64::INFINITY, |b| b.at);
-    fill_gate(symbol, quote, open_at, observation, strategy, at)
+    entry_gate(symbol, quote, open_at, observation, master, strategy, at)
 }
 
 /// Dollars held or queued in `industry`: held positions at their marks, queued buys at the
@@ -408,6 +432,7 @@ pub fn cycle_with(
             json!({"symbols": missing}),
         )?;
     }
+    let master = Master::new(observation);
     let mut executions = Vec::new();
     for (symbol, order) in state.pending.clone() {
         let Some(quote) = usable.get(symbol.as_str()) else {
@@ -417,15 +442,16 @@ pub fn cycle_with(
         // later open than the one the order was queued for.
         if let Some(bar) = quote.bars.iter().find(|b| b.at > order.at) {
             executions.push((bar.at, symbol, order, bar.clone()));
-        } else if let Some(gate) = queued_gate(&symbol, &order, observation, strategy, at) {
+        } else if let Some(gate) = queued_gate(&symbol, &order, observation, &master, strategy, at)
+        {
             state.pending.remove(&symbol);
             decision(
                 &db,
                 at,
                 &symbol,
                 "CANCELLED",
-                &format!("Hard gate while queued: {gate}"),
-                json!({"signal_at": order.at}),
+                &format!("Hard gate while queued: {}", gate.text()),
+                json!({"signal_at": order.at, "gate_code": gate.code}),
             )?;
         }
     }
@@ -458,11 +484,12 @@ pub fn cycle_with(
             continue;
         }
         if order.side == "BUY"
-            && let Some(gate) = fill_gate(
+            && let Some(gate) = entry_gate(
                 &symbol,
                 usable[symbol.as_str()],
                 bar.at,
                 observation,
+                &master,
                 strategy,
                 at,
             )
@@ -472,8 +499,8 @@ pub fn cycle_with(
                 at,
                 &symbol,
                 "CANCELLED",
-                &format!("Hard gate before the fill: {gate}"),
-                json!({"signal_at": order.at, "bar_at": bar.at}),
+                &format!("Hard gate before the fill: {}", gate.text()),
+                json!({"signal_at": order.at, "bar_at": bar.at, "gate_code": gate.code}),
             )?;
             continue;
         }
@@ -841,6 +868,8 @@ pub struct Screened {
     pub eligible: bool,
     pub reason: String,
     pub evidence: Value,
+    /// The hard gate that refused the stock, if one did.
+    pub gate: Option<gates::Block>,
 }
 
 fn utc_date(at: f64) -> chrono::NaiveDate {
@@ -852,6 +881,7 @@ fn utc_date(at: f64) -> chrono::NaiveDate {
 /// Apply `strategy`'s screen to every stock with a recent, complete history.
 pub fn screen(strategy: &Strategy, observation: &Observation, at: f64) -> Vec<Screened> {
     let today = utc_date(at);
+    let master = Master::new(observation);
     let mut rows = Vec::new();
     for (symbol, quote) in &observation.quotes {
         let bars = &quote.bars;
@@ -891,17 +921,20 @@ pub fn screen(strategy: &Strategy, observation: &Observation, at: f64) -> Vec<Sc
         });
         let trend = !strategy.require_trend || (close > sma20 && sma20 > sma50);
         // Hard gates first: no strategy or model can loosen these.
-        let gate = gates::liquidity(
-            close,
-            dollar_volume,
-            strategy.min_price,
-            strategy.min_dollar_volume,
-        )
-        .or_else(|| gates::event(symbol, &observation.intel, today));
+        let identity = master.identify(symbol);
+        let gate = entry_gate(
+            symbol,
+            quote,
+            f64::INFINITY,
+            observation,
+            &master,
+            strategy,
+            at,
+        );
         let eligible =
             gate.is_none() && momentum > strategy.min_momentum && trend && blackout.is_none();
         let reason = match (&gate, blackout) {
-            (Some(gate), _) => format!("Hard gate: {gate}"),
+            (Some(gate), _) => format!("Hard gate {}", gate.text()),
             (None, Some(date)) => format!(
                 "Earnings report on {date} falls inside the {}-day blackout",
                 strategy.earnings_blackout_days
@@ -940,10 +973,16 @@ pub fn screen(strategy: &Strategy, observation: &Observation, at: f64) -> Vec<Sc
             },
             eligible,
             reason,
+            gate: gate.clone(),
             evidence: json!({
                 "sma20": sma20, "sma50": sma50, "momentum20d": momentum,
                 "average_dollar_volume": dollar_volume, "price_at": bars[n - 1].at,
-                "earnings_date": earnings_date, "hard_gate": gate,
+                "earnings_date": earnings_date,
+                "hard_gate": gate.as_ref().map(|g| g.reason.clone()),
+                "gate_code": gate.as_ref().map(|g| g.code),
+                "security": identity.describe(),
+                "instrument_type": identity.instrument_type,
+                "universe": strategy.universe.label(),
             }),
         });
     }
@@ -968,10 +1007,13 @@ pub fn brief(strategy: &Strategy, observation: &Observation, state: &State) -> B
     candidates.truncate(strategy.shortlist_size);
     // The desk is briefed before this cycle's fills, so a queued buy that the hard gates are
     // about to cancel must not hold a slot.
+    let master = Master::new(observation);
     let queued_buys = state
         .pending
         .iter()
-        .filter(|(s, o)| o.side == "BUY" && queued_gate(s, o, observation, strategy, at).is_none())
+        .filter(|(s, o)| {
+            o.side == "BUY" && queued_gate(s, o, observation, &master, strategy, at).is_none()
+        })
         .count();
     Brief {
         date: utc_date(at).to_string(),
@@ -1016,7 +1058,13 @@ mod tests {
     fn observation(at: f64, quotes: Vec<(&str, Vec<Bar>)>) -> Observation {
         Observation {
             at,
-            universe: quotes.iter().map(|(s, _)| json!({"symbol": s})).collect(),
+            universe: quotes
+                .iter()
+                .map(|(s, _)| {
+                    json!({"symbol": s, "name": format!("{s} Corp. - Common Stock"),
+                           "exchange": "Q", "etf": false})
+                })
+                .collect(),
             quotes: quotes
                 .into_iter()
                 .map(|(s, b)| {
@@ -1129,7 +1177,15 @@ mod tests {
         assert!(
             row("THIN")
                 .reason
-                .starts_with("Hard gate: Average daily traded value")
+                .starts_with("Hard gate [LIQUIDITY_FLOOR] Average daily traded value")
+        );
+        assert_eq!(
+            row("THIN").gate.as_ref().unwrap().code,
+            gates::code::LIQUIDITY_FLOOR
+        );
+        assert_eq!(
+            row("SPLIT").gate.as_ref().unwrap().code,
+            gates::code::EVENT_WINDOW
         );
         assert!(!row("SPLIT").eligible);
         assert!(row("SPLIT").reason.contains("reverse stock split"));
@@ -1698,5 +1754,344 @@ mod tests {
                 ("CCC".into(), "candidate".into())
             ]
         );
+    }
+
+    /// Replace a symbol's directory record, as the exchange lists it.
+    fn list(obs: &mut Observation, symbol: &str, name: &str, exchange: &str, etf: bool) {
+        obs.universe.retain(|r| r["symbol"] != symbol);
+        obs.universe
+            .push(json!({"symbol": symbol, "name": name, "exchange": exchange, "etf": etf}));
+    }
+
+    fn incident(at: f64, series: &[Bar]) -> Observation {
+        let mut obs = observation(
+            at,
+            vec![
+                ("RAMZ", series.to_vec()),
+                ("UP", bars(series.len(), 50.0, 0.5, None)),
+            ],
+        );
+        list(
+            &mut obs,
+            "RAMZ",
+            "T-REX 2X Inverse DRAM Daily Target ETF",
+            "Z",
+            true,
+        );
+        obs
+    }
+
+    fn pick(symbol: &str, conviction: f64) -> Review {
+        Review {
+            picks: vec![crate::analyst::Pick {
+                symbol: symbol.into(),
+                conviction,
+                thesis: "Only RAMZ has a tangible catalyst without being a leveraged play".into(),
+                ..crate::analyst::Pick::default()
+            }],
+            source: "llm".into(),
+            regime: Some("risk_off".into()),
+            ..Review::default()
+        }
+    }
+
+    fn actions_for(path: &str, symbol: &str) -> Vec<(String, String)> {
+        let db = ledger::connect(path).unwrap();
+        ledger::rows(
+            &db,
+            &format!("SELECT action, reason FROM decisions WHERE symbol='{symbol}' ORDER BY id"),
+        )
+        .unwrap()
+        .iter()
+        .map(|r| {
+            (
+                r["action"].as_str().unwrap().to_string(),
+                r["reason"].as_str().unwrap().to_string(),
+            )
+        })
+        .collect()
+    }
+
+    #[test]
+    fn a_leveraged_inverse_etf_is_never_bought_whatever_a_model_says() {
+        let path = temp_db("ramz");
+        let series = bars(60, 20.0, 0.5, None);
+        let at = series.last().unwrap().at + DAY * 0.5;
+        let obs = incident(at, &series);
+        // The screen refuses it before any model is asked.
+        let rows = screen(&Strategy::default(), &obs, at);
+        let ramz = rows.iter().find(|r| r.candidate.symbol == "RAMZ").unwrap();
+        assert!(!ramz.eligible);
+        assert_eq!(
+            ramz.gate.as_ref().unwrap().code,
+            gates::code::LEVERAGED_INVERSE_ETF
+        );
+        assert_eq!(ramz.evidence["instrument_type"], "leveraged_inverse_etf");
+        let offered = brief(&Strategy::default(), &obs, &State::default());
+        assert!(offered.candidates.iter().all(|c| c.symbol != "RAMZ"));
+        // And if a model picks it anyway, with the incident's own words, no order is made.
+        cycle_with(
+            &path,
+            &obs,
+            "stocks-daily",
+            &Strategy::default(),
+            Some(&pick("RAMZ", 0.9)),
+        )
+        .unwrap();
+        let state = snapshot(&path);
+        assert!(!state.pending.contains_key("RAMZ"));
+        let logged = actions_for(&path, "RAMZ");
+        assert!(logged.iter().all(|(a, _)| a != "BUY_SIGNAL"), "{logged:?}");
+        assert!(logged[0].1.starts_with("Hard gate [LEVERAGED_INVERSE_ETF]"));
+        // The ETF-inclusive universe does not let it in either.
+        let with_etfs = Strategy {
+            universe: crate::strategy::Universe::EquitiesAndEtfs,
+            ..Strategy::default()
+        };
+        assert!(
+            brief(&with_etfs, &obs, &State::default())
+                .candidates
+                .iter()
+                .all(|c| c.symbol != "RAMZ")
+        );
+    }
+
+    #[test]
+    fn a_buy_queued_under_the_old_rules_is_cancelled_before_it_fills() {
+        // The live ledger on 10 November 2026: a RAMZ buy queued by the old pipeline.
+        let path = temp_db("ramz-queued");
+        let series = bars(60, 20.0, 0.5, None);
+        let signal_at = series.last().unwrap().at + DAY * 0.5;
+        reserve(&path, "stocks-daily").unwrap();
+        {
+            let db = ledger::connect(&path).unwrap();
+            let mut state = ledger::load(&db).unwrap();
+            state.last_at = signal_at;
+            state.started_at = Some(signal_at);
+            state.pending.insert(
+                "RAMZ".into(),
+                Order {
+                    side: "BUY".into(),
+                    at: signal_at,
+                    reason: "Analyst conviction 0.90: RAMZ has shown strong momentum".into(),
+                    size_fraction: 0.313,
+                    industry: String::new(),
+                },
+            );
+            ledger::save(&db, &state).unwrap();
+        }
+        // Before the open prints, the re-check already frees the slot.
+        let early = incident(signal_at + 3600.0, &series);
+        assert_eq!(
+            brief(&Strategy::default(), &early, &snapshot(&path)).open_slots,
+            MAX_POSITIONS
+        );
+        // The next session opens: the order is cancelled with its reason code, not filled.
+        let mut longer = series;
+        longer.push(Bar {
+            at: T0 + DAY * 60.0,
+            open: 50.0,
+            close: 51.0,
+            volume: 1_000_000.0,
+        });
+        cycle(&path, &incident(T0 + DAY * 61.5, &longer), "stocks-daily").unwrap();
+        let state = snapshot(&path);
+        assert!(state.positions.is_empty() && !state.pending.contains_key("RAMZ"));
+        let logged = actions_for(&path, "RAMZ");
+        let cancelled = logged.iter().find(|(a, _)| a == "CANCELLED").unwrap();
+        assert!(
+            cancelled.1.contains("[LEVERAGED_INVERSE_ETF]") && cancelled.1.contains("-2x"),
+            "{cancelled:?}"
+        );
+        assert!(logged.iter().all(|(a, _)| a != "BUY_FILLED"));
+    }
+
+    #[test]
+    fn an_unidentified_symbol_is_refused_and_not_assumed_to_be_a_stock() {
+        let series = bars(60, 50.0, 1.0, None);
+        let at = series.last().unwrap().at + DAY * 0.5;
+        let mut obs = observation(at, vec![("UP", series.clone()), ("MYST", series)]);
+        obs.universe.retain(|r| r["symbol"] != "MYST");
+        let rows = screen(&Strategy::default(), &obs, at);
+        let row = |s: &str| rows.iter().find(|r| r.candidate.symbol == s).unwrap();
+        assert!(row("UP").eligible);
+        assert_eq!(
+            row("MYST").gate.as_ref().unwrap().code,
+            gates::code::UNVERIFIED_SECURITY_IDENTITY
+        );
+        // A record with no share-class words and no second source is not verified either.
+        list(&mut obs, "MYST", "Mystery Holdings", "Q", false);
+        let rows = screen(&Strategy::default(), &obs, at);
+        assert!(
+            !rows
+                .iter()
+                .find(|r| r.candidate.symbol == "MYST")
+                .unwrap()
+                .eligible
+        );
+        obs.quotes.get_mut("MYST").unwrap().instrument_type = Some("EQUITY".into());
+        let rows = screen(&Strategy::default(), &obs, at);
+        assert!(
+            rows.iter()
+                .find(|r| r.candidate.symbol == "MYST")
+                .unwrap()
+                .eligible
+        );
+    }
+
+    #[test]
+    fn an_etf_is_bought_only_when_the_strategy_universe_says_so() {
+        let series = bars(60, 50.0, 1.0, None);
+        let at = series.last().unwrap().at + DAY * 0.5;
+        let mut obs = observation(at, vec![("FUND", series)]);
+        list(&mut obs, "FUND", "Acme Total Market ETF", "P", true);
+        let equities = screen(&Strategy::default(), &obs, at);
+        assert_eq!(
+            equities[0].gate.as_ref().unwrap().code,
+            gates::code::ETF_OUTSIDE_UNIVERSE
+        );
+        assert_eq!(equities[0].evidence["universe"], "equities");
+        let with_etfs = Strategy {
+            universe: crate::strategy::Universe::EquitiesAndEtfs,
+            ..Strategy::default()
+        };
+        let rows = screen(&with_etfs, &obs, at);
+        assert!(rows[0].eligible);
+        assert_eq!(rows[0].evidence["universe"], "equities_and_etfs");
+    }
+
+    #[test]
+    fn a_stock_missing_the_latest_session_is_not_bought() {
+        let fresh = bars(60, 50.0, 1.0, None);
+        let mut stale = fresh.clone();
+        stale.pop();
+        let at = fresh.last().unwrap().at + DAY * 0.5;
+        let obs = observation(
+            at,
+            vec![("SPY", fresh.clone()), ("OLD", stale), ("NEW", fresh)],
+        );
+        let rows = screen(&Strategy::default(), &obs, at);
+        let row = |s: &str| rows.iter().find(|r| r.candidate.symbol == s).unwrap();
+        assert!(row("NEW").eligible);
+        let gate = row("OLD").gate.as_ref().unwrap();
+        assert_eq!(gate.code, gates::code::STALE_DATA);
+        assert!(row("OLD").reason.starts_with("Hard gate [STALE_DATA]"));
+    }
+
+    #[test]
+    fn the_new_rules_leave_every_earlier_ledger_row_as_it_was() {
+        // A ledger written under rules version 1: it bought a 2x inverse fund (AAOZ, the
+        // account's real first trade) and logged the decisions around it.
+        let path = temp_db("legacy");
+        let series = bars(60, 20.0, 0.2, None);
+        let first = series.last().unwrap().at + DAY * 0.5;
+        reserve(&path, "stocks-daily").unwrap();
+        {
+            let db = ledger::connect(&path).unwrap();
+            let mut state = ledger::load(&db).unwrap();
+            state.started_at = Some(first - DAY);
+            state.last_at = first;
+            let entry = series.last().unwrap().close;
+            state.cash = 800.0;
+            state.positions.insert(
+                "AAOZ".into(),
+                Position {
+                    symbol: "AAOZ".into(),
+                    quantity: 200.0 / entry,
+                    entry,
+                    cost: 200.0,
+                    stop: entry * 0.96,
+                    target: entry * 1.08,
+                    opened_at: series.last().unwrap().at,
+                    market_value: 200.0,
+                    ..Position::default()
+                },
+            );
+            ledger::save(&db, &state).unwrap();
+            insert_fill(
+                &db,
+                first,
+                first - DAY,
+                "AAOZ",
+                "BUY",
+                200.0 / entry,
+                entry,
+                0.2,
+                0.0,
+                "Positive liquid daily trend; whole shares capped at 20% of equity",
+            )
+            .unwrap();
+            decision(
+                &db,
+                first - DAY,
+                "AAOZ",
+                "CANDIDATE",
+                "20/50-day trend, 20-day momentum, price >= $5, liquidity >= $1M/day",
+                json!({}),
+            )
+            .unwrap();
+            decision(
+                &db,
+                first - DAY,
+                "AAOZ",
+                "BUY_SIGNAL",
+                "Positive liquid daily trend; whole shares capped at 20% of equity",
+                json!({}),
+            )
+            .unwrap();
+            db.execute(
+                "INSERT INTO picks(at,symbol,kind,rank,conviction,price,spy_price) VALUES(?,?,?,?,?,?,?)",
+                rusqlite::params![first - DAY, "AAOZ", "pick", 1, 0.0, entry, 400.0],
+            ).unwrap();
+        }
+        let dump = |path: &str| -> Vec<Vec<Value>> {
+            let db = ledger::connect(path).unwrap();
+            [
+                "SELECT * FROM fills WHERE id <= 1",
+                "SELECT * FROM decisions WHERE id <= 2",
+                "SELECT * FROM picks WHERE id <= 1",
+            ]
+            .iter()
+            .map(|sql| ledger::rows(&db, sql).unwrap())
+            .collect()
+        };
+        let before = dump(&path);
+        // The next session under the new rules: AAOZ is still rising.
+        let mut longer = series;
+        let last = longer.last().unwrap().close;
+        longer.push(Bar {
+            at: T0 + DAY * 60.0,
+            open: last + 0.2,
+            close: last + 0.4,
+            volume: 1_000_000.0,
+        });
+        let mut obs = observation(T0 + DAY * 61.5, vec![("AAOZ", longer.clone())]);
+        list(&mut obs, "AAOZ", "Tradr 2X Short AAOI Daily ETF", "Z", true);
+        cycle(&path, &obs, "stocks-daily").unwrap();
+        assert_eq!(dump(&path), before, "history must not be rewritten");
+        // The holding is neither force-sold nor re-bought: it is marked and keeps its stop.
+        let state = snapshot(&path);
+        assert!(state.positions.contains_key("AAOZ"));
+        assert!(state.pending.is_empty());
+        let logged = actions_for(&path, "AAOZ");
+        assert!(
+            logged
+                .last()
+                .unwrap()
+                .1
+                .starts_with("Hard gate [LEVERAGED_INVERSE_ETF]")
+        );
+        // Its stop still works: the exit rules never depend on the instrument gate.
+        longer.push(Bar {
+            at: T0 + DAY * 61.0,
+            open: last * 0.9,
+            close: last * 0.9,
+            volume: 1_000_000.0,
+        });
+        let mut obs = observation(T0 + DAY * 62.5, vec![("AAOZ", longer)]);
+        list(&mut obs, "AAOZ", "Tradr 2X Short AAOI Daily ETF", "Z", true);
+        cycle(&path, &obs, "stocks-daily").unwrap();
+        assert_eq!(snapshot(&path).pending["AAOZ"].side, "SELL");
+        assert_eq!(dump(&path), before);
     }
 }
