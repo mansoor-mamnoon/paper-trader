@@ -10,19 +10,19 @@ A $1,000 simulated account. Nine local models research US stocks, debate the evi
 
 ## Allocation
 
-The account invests available capital in individual stocks and SPY, a broad US stock fund. The desk can choose up to five stocks. SPY holds the remaining allocation, including when the desk finds no suitable stock. Stock purchases sell enough SPY to cover their cost. Sale proceeds return to SPY at the session open after stock orders execute.
+The account invests available cash in up to five individual US-listed stocks. Mutual funds, ETFs and index funds are excluded. Model picks receive priority. If they leave slots available, a quantitative momentum ranking supplies eligible stocks. The journal distinguishes those allocations from model recommendations.
 
-This policy is enabled in the account workflow with `PAPER_TRADER_FULLY_INVESTED=1`. It takes effect at the next observed session open. A rerun does not backdate new trades. Fees, price changes, unavailable quotes and the experiment's end mean invested value can differ from the original $1,000.
+At execution, cash is divided among the queued purchases, including fees. Existing stock positions can receive additional cash. Full-investment mode removes the position-size, industry and volatility reductions and the drawdown cash lock. It can put all capital in one stock when only one is eligible.
 
-Individual stocks retain the 20% position cap, 30% industry cap, volatility sizing and stop rules. The drawdown lock blocks new individual-stock purchases while SPY stays invested. SPY has no trading stop or industry cap. The account remains exposed to market declines.
+The account workflow sets `PAPER_TRADER_FULLY_INVESTED=1` and `PAPER_TRADER_UNIVERSE=equities`. Orders execute at the next observed session open. Invalid prices, failed eligibility checks, no eligible stocks or the experiment ending can leave cash temporarily. A rerun cannot backdate purchases. SPY is used only as a performance benchmark and trading-calendar reference.
 
 ## Architecture
 
-<img src="docs/architecture.svg" alt="Market data and identity checks feed research and debate, then audited decisions and the SPY allocation enter the ledger and dashboard" width="100%">
+<img src="docs/architecture.svg" alt="Market data and identity checks feed research and debate, then audited decisions and stock allocation enter the ledger and dashboard" width="100%">
 
 The Rust program reads daily prices, issuer-matched news, an earnings calendar and optional SEC filings. The screen checks identity, liquidity, corporate events and price history. Research models inspect the survivors. A bull proposes a mechanism; a bear challenges it; the judge compares the candidates. Claim checks reject defined classes of unsupported assertions before orders enter SQLite.
 
-Price spikes alone are technical signals. A risk-off stock purchase needs a cited company event. Missing earnings data remains unknown. Model conviction is an uncalibrated score. The November 10 journal contains errors that prompted the [incident repairs](docs/AUDIT-2026-11.md); saved-provider tests cover those examples.
+Price spikes alone are technical signals. The model needs a cited company event for a risk-off recommendation. Full-investment mode can allocate by the quantitative ranking when the model abstains. Missing earnings data remains unknown. Model conviction is an uncalibrated score. The November 10 journal contains errors that prompted the [incident repairs](docs/AUDIT-2026-11.md); saved-provider tests cover those examples.
 
 GitHub Actions runs the desk after a completed US session. Orders fill at a later observed session open with a 0.10% fee and 0.20% adverse slippage per side. The `account` branch stores the database and exported dashboard data. GitHub Pages publishes the dashboard. No broker is connected.
 

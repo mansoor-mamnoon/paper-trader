@@ -23,7 +23,7 @@ text{font-family:'Helvetica Neue',Arial,sans-serif;fill:#0f1115}
 <rect class="sh" x="336" y="96" width="282" height="196" rx="12"/><rect class="y" x="330" y="90" width="282" height="196" rx="12"/>
 <text class="t" x="352" y="122">Stock account + desk</text><text class="s" x="352" y="146">1. screen: trend + momentum</text>
 <text class="s" x="352" y="166">2. triage, research agents</text><text class="s" x="352" y="186">   with SEC filing tools</text>
-<text class="s" x="352" y="206">3. bull vs bear, then judge</text><text class="s" x="352" y="226">4. doctor, memory, scorecard</text><text class="s" x="352" y="246">5. stock slots + residual SPY</text>
+<text class="s" x="352" y="206">3. bull vs bear, then judge</text><text class="s" x="352" y="226">4. doctor, memory, scorecard</text><text class="s" x="352" y="246">5. stocks only, all cash allocated</text>
 <text class="s" x="352" y="270">daily, after the close</text>
 
 <rect class="sh" x="336" y="326" width="282" height="76" rx="12"/><rect class="b" x="330" y="320" width="282" height="76" rx="12" stroke-dasharray="7 5"/>
