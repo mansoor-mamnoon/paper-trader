@@ -275,13 +275,25 @@ fn fill(
     let pnl;
     if side == "BUY" {
         let capital = equity(state);
-        let budget = state
-            .cash
-            .min(capital * POSITION_CAP * order.size_fraction.clamp(0.0, 1.0));
+        let budget = if state.fully_invested {
+            // The current order has already been removed. Divide remaining cash among
+            // this and the remaining buys; the final valid buy consumes the remainder.
+            state.cash / (1 + state.pending.values().filter(|o| o.side == "BUY").count()) as f64
+        } else {
+            state
+                .cash
+                .min(capital * POSITION_CAP * order.size_fraction.clamp(0.0, 1.0))
+        };
         let shares = budget / (price * (1.0 + FEE));
         if state.halted
-            || crate::allocation::stock_count(state) >= MAX_POSITIONS
-            || budget < MIN_ORDER
+            || (state.positions.len() >= MAX_POSITIONS
+                && !(state.fully_invested && state.positions.contains_key(symbol)))
+            || budget
+                < if state.fully_invested {
+                    0.000_001
+                } else {
+                    MIN_ORDER
+                }
         {
             decision(
                 db,
@@ -296,6 +308,11 @@ fn fill(
         quantity = shares;
         let cost = quantity * price * (1.0 + FEE);
         state.cash -= cost;
+        let previous = if state.fully_invested {
+            state.positions.remove(symbol)
+        } else {
+            None
+        };
         state.positions.insert(
             symbol.to_string(),
             Position {
@@ -315,6 +332,17 @@ fn fill(
                 industry: order.industry.clone(),
             },
         );
+        if let Some(old) = previous {
+            let p = state.positions.get_mut(symbol).unwrap();
+            p.quantity += old.quantity;
+            p.cost += old.cost;
+            p.entry = p.cost / p.quantity / (1.0 + FEE);
+            p.opened_at = old.opened_at;
+            p.stop = old.stop;
+            p.target = old.target;
+            p.planned_risk += old.planned_risk;
+            p.market_value = p.quantity * price * (1.0 - SLIP) * (1.0 - FEE);
+        }
         pnl = 0.0;
     } else {
         let position = state
@@ -394,19 +422,14 @@ pub fn cycle_with(
     let db = ledger::connect(path)?;
     ledger::begin(&db)?;
     let mut state = ledger::load(&db)?;
-    let activating =
-        !state.fully_invested && std::env::var("PAPER_TRADER_FULLY_INVESTED").as_deref() == Ok("1");
-    if activating {
+    if std::env::var("PAPER_TRADER_FULLY_INVESTED").as_deref() == Ok("1") {
         state.fully_invested = true;
-        decision(
-            &db,
-            at,
-            "SPY",
-            "ALLOCATION_POLICY",
-            "Invest residual cash in SPY from the next session open; sell SPY to fund stock picks",
-            json!({}),
-        )?;
     }
+    let mut effective = strategy.clone();
+    if state.fully_invested {
+        effective.universe = crate::strategy::Universe::Equities;
+    }
+    let strategy = &effective;
     if at <= state.last_at {
         return ledger::rollback(&db);
     }
@@ -473,48 +496,12 @@ pub fn cycle_with(
             )?;
         }
     }
-    // Standing allocation runs after sells and stock buys at each available open.
-    if state.fully_invested
-        && !state.halted
-        && !activating
-        && let Some(spy) = usable.get("SPY")
-    {
-        for bar in spy
-            .bars
-            .iter()
-            .filter(|b| b.at > state.last_at && state.last_at > 0.0)
-        {
-            executions.push((
-                bar.at,
-                "SPY".into(),
-                Order {
-                    side: "SWEEP".into(),
-                    at: state.last_at,
-                    reason: "Standing allocation".into(),
-                    size_fraction: 1.0,
-                    industry: String::new(),
-                },
-                bar.clone(),
-            ));
-        }
-    }
-
     executions.sort_by(|a, b| {
-        let priority = |o: &Order| match o.side.as_str() {
-            "SELL" => 0,
-            "BUY" => 1,
-            _ => 2,
-        };
-        (a.0, priority(&a.2), &a.1)
-            .partial_cmp(&(b.0, priority(&b.2), &b.1))
+        (a.0, a.2.side != "SELL", &a.1)
+            .partial_cmp(&(b.0, b.2.side != "SELL", &b.1))
             .unwrap()
     });
     for (execution_at, symbol, order, bar) in executions {
-        if order.side == "SWEEP" {
-            corporate_actions(&db, &mut state, "SPY", usable["SPY"], bar.at)?;
-            crate::allocation::sweep(&db, &mut state, bar.open, bar.at, order.at)?;
-            continue;
-        }
         state.pending.remove(&symbol);
         let mut unavailable = BTreeSet::new();
         for held in state.positions.keys().cloned().collect::<Vec<_>>() {
@@ -562,15 +549,6 @@ pub fn cycle_with(
             )?;
             continue;
         }
-        if state.fully_invested && order.side == "BUY" {
-            let needed = equity(&state) * POSITION_CAP * order.size_fraction.clamp(0.0, 1.0);
-            if let Some(spy) = usable
-                .get("SPY")
-                .and_then(|q| q.bars.iter().find(|b| b.at == bar.at))
-            {
-                crate::allocation::fund(&db, &mut state, needed, spy.open, bar.at, order.at)?;
-            }
-        }
         fill(
             &db, &mut state, &symbol, &order, bar.at, bar.open, at, strategy,
         )?;
@@ -587,12 +565,13 @@ pub fn cycle_with(
         position.price_at = Some(last.at);
     }
     let (total, drawdown) = update_risk(&mut state);
-    cash_lock(&db, &mut state, total, at)?;
+    if state.fully_invested {
+        state.cash_lock_until = 0.0;
+    } else {
+        cash_lock(&db, &mut state, total, at)?;
+    }
     let locked = at < state.cash_lock_until;
     for (symbol, position) in state.positions.clone() {
-        if state.fully_invested && symbol == "SPY" && !state.halted {
-            continue;
-        }
         let Some(quote) = usable.get(symbol.as_str()) else {
             continue;
         };
@@ -600,9 +579,27 @@ pub fn cycle_with(
             continue;
         }
         let close = quote.bars.last().unwrap().close;
-        if state.halted || close <= position.stop || close >= position.target {
-            let reason =
-                "Close crossed stop/target or the experiment ended; later observed session open";
+        if state.halted
+            || close <= position.stop
+            || close >= position.target
+            || (state.fully_invested
+                && gates::instrument(
+                    &master.identify(&symbol),
+                    crate::strategy::Universe::Equities,
+                )
+                .is_some())
+        {
+            let reason = if state.fully_invested
+                && gates::instrument(
+                    &master.identify(&symbol),
+                    crate::strategy::Universe::Equities,
+                )
+                .is_some()
+            {
+                "Instrument excluded by individual-stock allocation policy; later observed session open"
+            } else {
+                "Close crossed stop/target or the experiment ended; later observed session open"
+            };
             state.pending.insert(
                 symbol.clone(),
                 Order {
@@ -618,9 +615,6 @@ pub fn cycle_with(
     }
     if let Some(review) = review {
         for call in &review.doctor {
-            if state.fully_invested && call.symbol == "SPY" {
-                continue;
-            }
             let Some(position) = state.positions.get(&call.symbol).cloned() else {
                 continue;
             };
@@ -719,16 +713,19 @@ pub fn cycle_with(
         .map(|r| (r.candidate.symbol.as_str(), r))
         .collect();
     let queued_buys = state.pending.values().filter(|o| o.side == "BUY").count();
-    let mut slots =
-        MAX_POSITIONS.saturating_sub(crate::allocation::stock_count(&state) + queued_buys);
+    let mut slots = MAX_POSITIONS.saturating_sub(state.positions.len() + queued_buys);
     // A risk-off call can only reduce exposure: at most one new position.
-    if review.and_then(|r| r.regime.as_deref()) == Some("risk_off") {
+    if !state.fully_invested && review.and_then(|r| r.regime.as_deref()) == Some("risk_off") {
         slots = slots.min(1);
+    }
+    if state.fully_invested {
+        // Held stocks can receive residual cash without consuming another position slot.
+        slots = MAX_POSITIONS.saturating_sub(queued_buys);
     }
     let mut ordered: Vec<scorecard::PickRow> = Vec::new();
     if !state.halted && !locked && missing.is_empty() {
         // The picks in the order buys are attempted.
-        let ranked: Vec<Pick> = if let Some(review) = review {
+        let mut ranked: Vec<Pick> = if let Some(review) = review {
             for avoided in &review.avoid {
                 decision(
                     &db,
@@ -750,7 +747,11 @@ pub fn cycle_with(
                     json!({"source": review.source, "code": refused.code}),
                 )?;
             }
-            if review.source == "llm" && review.picks.is_empty() && slots > 0 {
+            if !state.fully_invested
+                && review.source == "llm"
+                && review.picks.is_empty()
+                && slots > 0
+            {
                 decision(
                     &db,
                     at,
@@ -786,6 +787,27 @@ pub fn cycle_with(
                 })
                 .collect()
         };
+        if state.fully_invested {
+            if state.cash < 0.000_001 && !state.pending.values().any(|o| o.side == "SELL") {
+                ranked.clear();
+            } else {
+                let mut fallback: Vec<_> = eligible.values().collect();
+                fallback.sort_by(|a, b| {
+                    b.candidate
+                        .momentum_20d
+                        .total_cmp(&a.candidate.momentum_20d)
+                        .then_with(|| a.candidate.symbol.cmp(&b.candidate.symbol))
+                });
+                for row in fallback {
+                    let symbol = &row.candidate.symbol;
+                    if !ranked.iter().any(|p| &p.symbol == symbol) {
+                        ranked.push(Pick { symbol: symbol.clone(),
+                            thesis: "Quantitative allocation: eligible individual stock ranked by momentum; no model endorsement implied".into(),
+                            ..Pick::default() });
+                    }
+                }
+            }
+        }
         for (rank, pick) in ranked.into_iter().enumerate() {
             let Pick {
                 symbol,
@@ -795,13 +817,19 @@ pub fn cycle_with(
                 evidence_ids,
                 ..
             } = pick;
-            if state.fully_invested && symbol == "SPY" {
-                continue;
-            }
             if slots == 0 {
                 break;
             }
-            if state.positions.contains_key(&symbol)
+            if (!state.fully_invested && state.positions.contains_key(&symbol))
+                || (state.fully_invested
+                    && !state.positions.contains_key(&symbol)
+                    && state.positions.len()
+                        + state
+                            .pending
+                            .iter()
+                            .filter(|(s, o)| o.side == "BUY" && !state.positions.contains_key(*s))
+                            .count()
+                        >= MAX_POSITIONS)
                 || state.pending.contains_key(&symbol)
                 || state.cooldown.get(&symbol).copied().unwrap_or(0.0) > at
             {
@@ -829,13 +857,18 @@ pub fn cycle_with(
             } else {
                 gates::industry_room(exposure, capital, slot)
             };
-            let size_fraction = (regime * vol_scale).min(room);
+            let size_fraction = if state.fully_invested {
+                1.0
+            } else {
+                (regime * vol_scale).min(room)
+            };
             let sizing = json!({
                 "regime": regime, "sigma_14d": sigma, "volatility_scale": vol_scale,
                 "industry": industry, "industry_exposure": exposure, "industry_room": room,
                 "size_fraction": size_fraction,
+                "allocation_policy": if state.fully_invested { "all_cash_across_individual_stocks" } else { "capped_slots" },
             });
-            if size_fraction * slot < MIN_ORDER {
+            if !state.fully_invested && size_fraction * slot < MIN_ORDER {
                 decision(
                     &db,
                     at,
@@ -1178,7 +1211,7 @@ pub fn brief(strategy: &Strategy, observation: &Observation, state: &State) -> B
         open_slots: if state.halted || at < state.cash_lock_until {
             0
         } else {
-            MAX_POSITIONS.saturating_sub(crate::allocation::stock_count(state) + queued_buys)
+            MAX_POSITIONS.saturating_sub(state.positions.len() + queued_buys)
         },
         held: state.positions.keys().cloned().collect(),
         candidates,
@@ -1263,59 +1296,77 @@ mod tests {
     }
 
     #[test]
-    fn standing_allocation_invests_at_next_open_and_retry_does_not_duplicate() {
-        let path = temp_db("standing-allocation");
-        let series = bars(60, 50.0, 1.0, None);
-        let at = series.last().unwrap().at + DAY * 0.5;
-        let no_picks = Review {
-            source: "llm".into(),
-            ..Review::default()
-        };
-        cycle_with(
-            &path,
-            &observation(at, vec![("SPY", series.clone())]),
-            "stocks-daily",
-            &Strategy::default(),
-            Some(&no_picks),
-        )
-        .unwrap();
+    fn full_allocation_uses_only_stocks_even_when_model_abstains() {
+        let path = temp_db("full-stocks");
         let db = ledger::connect(&path).unwrap();
         let mut state = ledger::load(&db).unwrap();
         state.fully_invested = true;
         ledger::save(&db, &state).unwrap();
-        let mut next = series;
-        next.push(Bar {
-            at: T0 + DAY * 60.0,
-            open: 120.0,
-            close: 121.0,
-            volume: 1_000_000.0,
-        });
-        let obs = observation(at + DAY, vec![("SPY", next)]);
+        let no_picks = Review {
+            source: "llm".into(),
+            ..Review::default()
+        };
+        let make = |count| {
+            let series = bars(count, 50.0, 1.0, None);
+            let at = series.last().unwrap().at + DAY * 0.5;
+            let mut obs = observation(
+                at,
+                vec![
+                    ("AAA", series.clone()),
+                    ("BBB", series.clone()),
+                    ("SPY", series),
+                ],
+            );
+            obs.universe[2] = json!({"symbol":"SPY", "name":"SPDR S&P 500 ETF Trust", "exchange":"P", "etf":true});
+            obs
+        };
         cycle_with(
             &path,
-            &obs,
+            &make(60),
             "stocks-daily",
             &Strategy::default(),
             Some(&no_picks),
         )
         .unwrap();
         let state = snapshot(&path);
-        assert_eq!(state.cash, 0.0);
-        assert!((state.positions["SPY"].cost - 1000.0).abs() < 1e-8);
-        assert_eq!(state.positions["SPY"].opened_at, T0 + DAY * 60.0);
+        assert_eq!(state.pending.len(), 2);
         assert!(!state.pending.contains_key("SPY"));
         cycle_with(
             &path,
-            &obs,
+            &make(61),
             "stocks-daily",
             &Strategy::default(),
             Some(&no_picks),
         )
         .unwrap();
-        let count: i64 = db
-            .query_row("SELECT COUNT(*) FROM fills", [], |r| r.get(0))
-            .unwrap();
-        assert_eq!(count, 1);
+        let mut state = snapshot(&path);
+        assert!(state.cash.abs() < 1e-8);
+        assert_eq!(state.positions.len(), 2);
+        assert!(!state.positions.contains_key("SPY"));
+        assert!((state.positions["AAA"].cost - 500.0).abs() < 1e-8);
+        assert!((state.positions["BBB"].cost - 500.0).abs() < 1e-8);
+        let old_quantity = state.positions["AAA"].quantity;
+        state.cash = 20.0;
+        fill(
+            &db,
+            &mut state,
+            "AAA",
+            &Order {
+                side: "BUY".into(),
+                at: 1.0,
+                reason: "top up".into(),
+                size_fraction: 1.0,
+                industry: String::new(),
+            },
+            2.0,
+            110.0,
+            3.0,
+            &Strategy::default(),
+        )
+        .unwrap();
+        assert!(state.cash.abs() < 1e-8);
+        assert!(state.positions["AAA"].quantity > old_quantity);
+        assert!((state.positions["AAA"].cost - 520.0).abs() < 1e-8);
     }
 
     #[test]

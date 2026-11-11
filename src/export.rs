@@ -47,7 +47,8 @@ pub fn export(path: &str, output: &str, strategy: Option<&Value>) -> Result<Valu
     let db = ledger::connect(path)?;
     let state = ledger::load(&db)?;
     report["allocation_policy"] = json!({"fully_invested": state.fully_invested,
-        "residual_holding": if state.fully_invested { "SPY" } else { "cash" },
+        "universe": "individual stocks only", "residual_holding": "eligible individual stocks",
+        "fallback": "quantitative momentum ranking when model picks leave slots",
         "execution": "next observed session open; fees and slippage apply"});
     report["coverage"] = json!(state.coverage);
     report["data_errors"] = json!(state.data_errors);
@@ -61,7 +62,14 @@ pub fn export(path: &str, output: &str, strategy: Option<&Value>) -> Result<Valu
          missed runs skip sessions; not real-time execution"
     );
     let rules = report["rules"].as_object_mut().unwrap();
-    rules.insert("position_cap".into(), json!(crate::strategy::POSITION_CAP));
+    rules.insert(
+        "position_cap".into(),
+        json!(if state.fully_invested {
+            1.0
+        } else {
+            crate::strategy::POSITION_CAP
+        }),
+    );
     rules.insert(
         "max_positions".into(),
         json!(crate::strategy::MAX_POSITIONS),
@@ -76,9 +84,9 @@ pub fn export(path: &str, output: &str, strategy: Option<&Value>) -> Result<Valu
             "min_price": gates::MIN_PRICE, "min_adtv": gates::MIN_ADTV, "adtv_days": gates::ADTV_DAYS,
             "min_market_cap": gates::MIN_MARKET_CAP,
             "event_days": gates::EVENT_DAYS, "vol_days": gates::VOL_DAYS,
-            "vol_reference": gates::VOL_REFERENCE, "industry_cap": gates::INDUSTRY_CAP,
+            "vol_reference": gates::VOL_REFERENCE, "industry_cap": if state.fully_invested { 1.0 } else { gates::INDUSTRY_CAP },
             "drawdown_halt": gates::DRAWDOWN_HALT, "drawdown_sessions": gates::DRAWDOWN_SESSIONS,
-            "cash_lock_hours": gates::CASH_LOCK_HOURS, "cash_lock_until": state.cash_lock_until,
+            "cash_lock_hours": if state.fully_invested { 0.0 } else { gates::CASH_LOCK_HOURS }, "cash_lock_until": state.cash_lock_until,
         }),
     );
     report["health"]["age_seconds"] = json!((ledger::now() - state.last_at).max(0.0));
