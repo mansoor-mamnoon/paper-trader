@@ -2392,7 +2392,7 @@ mod tests {
         let mut review = pick("BBB", "technical_only", "Orderly trend.", &[]);
         review.picks[0].invalidation = "The verified catalyst is strong earnings growth.".into();
         enforce(&mut review, "", &three(), &cases);
-        assert!(review.picks.is_empty());
+        assert_eq!(review.picks.len(), 0);
         assert_eq!(review.rejected[0].code, "UNSUPPORTED_CLAIM");
     }
 
