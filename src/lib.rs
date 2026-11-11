@@ -24,6 +24,7 @@ pub mod models;
 pub mod news;
 pub mod pool;
 pub mod progress;
+pub mod replay;
 pub mod scorecard;
 pub mod security;
 pub mod strategy;

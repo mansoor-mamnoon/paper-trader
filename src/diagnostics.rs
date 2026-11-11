@@ -18,7 +18,7 @@ use std::fmt::Write as _;
 
 /// How many gate-refused stocks, ranked by 20-day gain, are traced beside the finalists.
 /// These are the ones a pure momentum ranking would have reached for first.
-pub const REFUSED_SHOWN: usize = 12;
+pub const REFUSED_SHOWN: usize = 20;
 
 fn stage(pass: Option<bool>, detail: impl Into<String>) -> Value {
     json!({"status": match pass {
