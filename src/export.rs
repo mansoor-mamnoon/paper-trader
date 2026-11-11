@@ -58,7 +58,11 @@ pub fn export(path: &str, output: &str, strategy: Option<&Value>) -> Result<Valu
          missed runs skip sessions; not real-time execution"
     );
     let rules = report["rules"].as_object_mut().unwrap();
-    rules.insert("position_cap".into(), json!(0.20));
+    rules.insert("position_cap".into(), json!(crate::strategy::POSITION_CAP));
+    rules.insert(
+        "max_positions".into(),
+        json!(crate::strategy::MAX_POSITIONS),
+    );
     rules.insert("fee".into(), json!(crate::account::FEE));
     rules.insert("slippage".into(), json!(crate::account::SLIP));
     rules.insert("cycle_seconds".into(), json!(86400));
@@ -67,6 +71,7 @@ pub fn export(path: &str, output: &str, strategy: Option<&Value>) -> Result<Valu
         "hard_gates".into(),
         json!({
             "min_price": gates::MIN_PRICE, "min_adtv": gates::MIN_ADTV, "adtv_days": gates::ADTV_DAYS,
+            "min_market_cap": gates::MIN_MARKET_CAP,
             "event_days": gates::EVENT_DAYS, "vol_days": gates::VOL_DAYS,
             "vol_reference": gates::VOL_REFERENCE, "industry_cap": gates::INDUSTRY_CAP,
             "drawdown_halt": gates::DRAWDOWN_HALT, "drawdown_sessions": gates::DRAWDOWN_SESSIONS,

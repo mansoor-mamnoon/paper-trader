@@ -8,9 +8,12 @@ use anyhow::{Result, anyhow, bail};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
-/// Five equal slots of 20% each, so a full book is 100% invested.
-pub const MAX_POSITIONS: usize = 5;
-pub const POSITION_CAP: f64 = 0.20;
+/// Ten equal slots of 10% each, so a full book is 100% invested and no single stock is
+/// more than a tenth of the account. Charles Schwab's guidance for individual investors is
+/// that one company's stock should be no more than 10% of a portfolio; the account started
+/// with five slots of 20% and moved to this limit with rules version 3.
+pub const MAX_POSITIONS: usize = 10;
+pub const POSITION_CAP: f64 = 0.10;
 pub const MAX_PLAYBOOK_CHARS: usize = 4000;
 
 pub const DEFAULT_PLAYBOOK: &str = "You are the portfolio analyst for a $1,000 long-only US-stock paper account. \
@@ -69,8 +72,10 @@ impl Universe {
 /// ledger rows can be described accurately; no strategy can select it.
 pub const LEGACY_UNIVERSE: &str = "all_listed_v1";
 /// Version of the fixed trading rules a strategy runs under. 1: any listed symbol could be
-/// bought. 2: the instrument and data gates, and the desk's evidence contract.
-pub const RULES_VERSION: u32 = 2;
+/// bought. 2: the instrument and data gates, and the desk's evidence contract. 3: no small
+/// caps (a $2B market-capitalisation floor), ten positions of at most 10% each instead of
+/// five of 20%, and the news policy.
+pub const RULES_VERSION: u32 = 3;
 
 /// A named, bounded set of rules the account trades by.
 #[allow(clippy::struct_excessive_bools)]

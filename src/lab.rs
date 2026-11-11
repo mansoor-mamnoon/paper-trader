@@ -134,10 +134,18 @@ impl Registry {
                 "rules",
                 &id,
                 format!(
-                    "Rules version {from} to {RULES_VERSION}. Universe was {LEGACY_UNIVERSE} (any listed symbol, \
-                     leveraged and inverse ETFs included); it is now {} ({}). Leveraged, inverse and \
-                     unidentified instruments are refused by a hard gate. Ledger rows before this entry \
-                     were made under version {from} and are unchanged.",
+                    "Rules version {from} to {RULES_VERSION}. {} Universe: {} ({}). Ledger rows before \
+                     this entry were made under version {from} and are unchanged.",
+                    if from < 2 {
+                        format!(
+                            "Before version 2 the universe was {LEGACY_UNIVERSE} (any listed symbol, leveraged \
+                             and inverse ETFs included); leveraged, inverse and unidentified instruments are \
+                             now refused by a hard gate."
+                        )
+                    } else {
+                        String::new()
+                    } + " From version 3: no company under $2B of market capitalisation, ten positions of \
+                         at most 10% each instead of five of 20%, and only news the news policy admits.",
                     universe.label(),
                     universe.describe()
                 ),

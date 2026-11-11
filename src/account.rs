@@ -777,7 +777,7 @@ pub fn cycle_with(
             }
             let reason = if thesis.is_empty() {
                 format!(
-                    "Positive liquid daily trend; {:.0}% of a 20% slot",
+                    "Positive liquid daily trend; {:.0}% of a 10% slot",
                     size_fraction * 100.0
                 )
             } else {
@@ -1218,16 +1218,16 @@ mod tests {
         let state = snapshot(&path);
         let position = &state.positions["UP"];
         let price = 120.0 * (1.0 + SLIP);
-        // Fractional shares: the whole 20% budget is invested, not a rounded-down share count.
+        // Fractional shares: the whole 10% budget is invested, not a rounded-down share count.
         assert!(
-            (position.cost - 200.0).abs() < 1e-6,
+            (position.cost - 100.0).abs() < 1e-6,
             "cost {}",
             position.cost
         );
         assert!(position.quantity.fract() > 0.0);
         assert!((position.entry - price).abs() < 1e-9);
         assert!((position.stop - price * 0.96).abs() < 1e-9);
-        assert!(state.cash < 1000.0 - price);
+        assert!((state.cash - 900.0).abs() < 1e-6);
     }
 
     #[test]
@@ -1392,7 +1392,10 @@ mod tests {
         let obs = observation(at, vec![("UP", bars(60, 50.0, 1.0, None))]);
         assert_eq!(brief(&Strategy::default(), &obs, &state).open_slots, 0);
         let later = observation(at + 49.0 * 3600.0, vec![]);
-        assert_eq!(brief(&Strategy::default(), &later, &state).open_slots, 5);
+        assert_eq!(
+            brief(&Strategy::default(), &later, &state).open_slots,
+            MAX_POSITIONS
+        );
         // A fall older than the five-session window does not count.
         let mut fresh = State::default();
         cash_lock(&db, &mut fresh, 900.0, at + 8.0 * DAY).unwrap();
@@ -1453,17 +1456,18 @@ mod tests {
     fn one_industry_never_takes_more_than_thirty_percent() {
         let path = temp_db("industry");
         let at = bars(60, 50.0, 1.0, None).last().unwrap().at + DAY * 0.5;
-        // Momentum ranks A, then B, then C; all three are in one industry, D in another.
+        // Momentum ranks A, B, C, then E; all four are in one industry, D in another.
         let mut obs = observation(
             at,
             vec![
                 ("A", bars(60, 50.0, 1.5, None)),
                 ("B", bars(60, 50.0, 1.2, None)),
                 ("C", bars(60, 50.0, 1.0, None)),
+                ("E", bars(60, 50.0, 0.9, None)),
                 ("D", bars(60, 50.0, 0.8, None)),
             ],
         );
-        for s in ["A", "B", "C"] {
+        for s in ["A", "B", "C", "E"] {
             obs.intel
                 .industries
                 .insert(s.into(), "7372 Services-Prepackaged Software".into());
@@ -1473,10 +1477,11 @@ mod tests {
             .insert("D".into(), "2834 Pharmaceutical Preparations".into());
         cycle(&path, &obs, "stocks-daily").unwrap();
         let state = snapshot(&path);
-        assert!((state.pending["A"].size_fraction - 1.0).abs() < 1e-9);
-        // $200 already queued in software: $100 of room left under the $300 cap.
-        assert!((state.pending["B"].size_fraction - 0.5).abs() < 1e-9);
-        assert!(!state.pending.contains_key("C"), "software is full");
+        // Three $100 slots fill the $300 software cap; the fourth has no room.
+        for s in ["A", "B", "C"] {
+            assert!((state.pending[s].size_fraction - 1.0).abs() < 1e-9, "{s}");
+        }
+        assert!(!state.pending.contains_key("E"), "software is full");
         assert!((state.pending["D"].size_fraction - 1.0).abs() < 1e-9);
     }
 
@@ -1513,9 +1518,11 @@ mod tests {
     }
 
     #[test]
-    fn five_slots_of_twenty_percent_invest_the_whole_account() {
+    fn ten_slots_of_ten_percent_invest_the_whole_account_and_no_stock_exceeds_a_tenth() {
         let path = temp_db("full");
-        let names = ["AAA", "BBB", "CCC", "DDD", "EEE", "FFF"];
+        let names = [
+            "AAA", "BBB", "CCC", "DDD", "EEE", "FFF", "GGG", "HHH", "III", "JJJ", "KKK", "LLL",
+        ];
         let series = bars(60, 50.0, 1.0, None);
         let at = series.last().unwrap().at + DAY * 0.5;
         let quotes = |extra: Option<Bar>| -> Vec<(&str, Vec<Bar>)> {
@@ -1546,6 +1553,15 @@ mod tests {
         assert_eq!(state.positions.len(), MAX_POSITIONS);
         let invested = 1.0 - state.cash / equity(&state);
         assert!(invested > 0.98, "only {invested:.3} invested");
+        let total = equity(&state);
+        for position in state.positions.values() {
+            assert!(
+                position.cost <= total * 0.10 + 1.0,
+                "{} is {:.1}% of the account",
+                position.symbol,
+                position.cost / total * 100.0
+            );
+        }
     }
 
     #[test]
