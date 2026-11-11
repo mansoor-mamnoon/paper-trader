@@ -30,13 +30,13 @@ The question is whether this beats buying SPY after fees and slippage over 60 da
 
 <div align="center">
 <img src="docs/dashboard.gif" alt="A tour through the dashboard tabs: overview, the desk, strategy lab, ops, journal and how it works" width="760">
-<br><sub>A real run from 8 November 2026. No trades have closed yet, so the portfolio tabs are still empty.</sub>
+<br><sub>A real run from 8 November 2026. Historical capture; consult the live dashboard for current holdings and closed trades.</sub>
 </div>
 
 | Setting | Value |
 |---|---|
-| Starting capital | $1,000, long only, fractional shares, fully invested across five slots |
-| Universe | US exchange-listed symbols from the Nasdaq directory, ETFs included, that pass the hard gates ($5, $5M a day, no event within 7 days) |
+| Starting capital | $1,000, long only, fractional shares, up to five slots; cash is allowed |
+| Universe | Verified US-listed common stocks and ADRs (default; unleveraged ETFs are opt-in), that pass the hard gates ($5, $5M a day, no event within 7 days) |
 | Schedule | Each weekday session once it settles at 16:30 ET, started by an outside trigger every 30 minutes, with three GitHub cron backups and a watchdog |
 | Costs | 0.10% fee per side and 0.20% slippage against each fill |
 | Benchmark | SPY, price only |
@@ -53,12 +53,12 @@ One prompt that asks a small model to rank a dozen headlines wastes most of what
 
 1. **Screen.** About 13,000 tickers go in. The hard gates remove anything under $5, under $5M a day of trading, or within a week of earnings, an FDA decision or a restructuring, and the stocks left in an uptrend come out.
 2. **Triage.** A model scores the survivors from 0 to 10 for catalyst quality, eight at a time, and the best few become finalists.
-3. **Research agents.** Each finalist gets its own research loop. The agent picks its next tool: read the start of an SEC filing, pull older headlines, or inspect the last 15 sessions. It stops when it knows enough or after four steps, and it cannot repeat a call.
+3. **Research agents.** Each finalist gets its own research loop. The agent picks its next tool: read tagged figures and substantive SEC filing sections, pull older headlines, or inspect the last 15 sessions. It stops when it knows enough or after four steps, and it cannot repeat a call.
 4. **Bull and bear.** Two arguments per finalist, one told to make the case for buying and one told to find the flaw.
-5. **The judge.** The portfolio manager writes its reasoning first, then picks stocks for the open slots and calls the market regime from breadth and trend. A formula sizes each slot (volatility and the industry cap), not the judge. A risk-off call allows one new position at half size. Choosing nothing is a valid answer.
+5. **The judge.** The portfolio manager writes its reasoning first, then picks stocks for the open slots and calls the market regime from breadth and trend. A formula sizes each slot (volatility and the industry cap), not the judge. A risk-off call allows one new position at half size, backed by a verified company event. Choosing nothing is a valid answer.
 6. **Position doctor.** Every day it re-reads each holding against the news since entry and answers hold, exit, or tighten the stop. It can raise a stop and never lower one.
 7. **Memory.** When a trade closes, a post-mortem writes a one-sentence lesson. The latest lessons go into the judge's prompt.
-8. **Scorecard.** Every pick, veto and near-miss is scored against SPY after 1, 3, 5 and 10 trading days. That gives hundreds of samples where three trades give none, plus a calibration curve of conviction against outcome. The judge reads its own track record.
+8. **Scorecard.** Every pick, veto and near-miss is scored against SPY after 1, 3, 5 and 10 trading days. That gives hundreds of samples where three trades give none, plus descriptive buckets of uncalibrated model scores. The judge reads its own track record.
 
 Replies are constrained to JSON schemas with length limits, so a small model cannot return malformed or runaway answers. Text from news and filings is treated as untrusted data. The hard gates, position size, the five-slot cap, the industry cap, the circuit breaker, costs, the 60-day end and the direction of stop changes are written in code, and nothing a model says can change them. Every stage has a wall-clock budget and falls back to the stage before it when it fails or runs out of time.
 
@@ -310,3 +310,22 @@ The crate is a library plus a thin binary on edition 2024 with 109 unit tests, a
 This is a simulation and not financial advice.
 
 If you find it interesting, a star helps other people find it. Issues and critiques of the strategy are welcome.
+
+## Journal review and reruns
+
+The November 10 transcript predates the security and evidence repairs. RAMZ was
+incorrectly called unleveraged; price spikes were treated as catalysts; MAX Form 4
+filings were interpreted as positive insider activity without transaction evidence.
+See [the incident audit](docs/AUDIT-2026-11.md) and the saved-provider regression in
+`tests/incident.rs`. Current gates reject leveraged/inverse products, match news to
+issuers, distinguish missing information from facts, and require cited events for
+risk-off buys. The bear now challenges the bull's mechanism directly.
+
+The November 11 follow-up excludes future-dated notices from verified catalysts
+and checks the judge's invalidation text as well as its thesis and risk claims.
+These checks catch defined classes of errors; they do not establish profitability
+or verify every natural-language assertion.
+
+A manual `Stock paper account` dispatch with `force=true` recomputes the latest
+completed session. It preserves executed fills and rechecks pending orders against
+current gates; it is not a historical rollback and does not guarantee different picks.
