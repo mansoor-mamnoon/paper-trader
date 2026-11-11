@@ -2233,4 +2233,158 @@ mod tests {
                 .all(|r| !r.eligible)
         );
     }
+
+    #[test]
+    fn a_no_trade_decision_and_refused_picks_are_written_to_the_journal() {
+        let path = temp_db("no-trade");
+        let series = bars(60, 50.0, 1.0, None);
+        let at = series.last().unwrap().at + DAY * 0.5;
+        let obs = observation(at, vec![("UP", series)]);
+        let review = Review {
+            source: "llm".into(),
+            regime: Some("risk_off".into()),
+            rejected: vec![crate::analyst::Rejected {
+                symbol: "UP".into(),
+                code: "UNSUPPORTED_CLAIM".into(),
+                reason: "says \"catalyst\" on the strength of price or volume".into(),
+            }],
+            no_trade_reason: Some(
+                "Insufficient evidence: every proposed pick failed the evidence check (UP UNSUPPORTED_CLAIM).".into(),
+            ),
+            ..Review::default()
+        };
+        cycle_with(
+            &path,
+            &obs,
+            "stocks-daily",
+            &Strategy::default(),
+            Some(&review),
+        )
+        .unwrap();
+        let state = snapshot(&path);
+        assert_eq!(state.pending.len() + state.positions.len(), 0);
+        assert!((state.cash - 1000.0).abs() < 1e-9);
+        let refused = actions_for(&path, "UP");
+        let refused = refused.iter().find(|(a, _)| a == "DESK_REJECT").unwrap();
+        assert!(refused.1.starts_with("[UNSUPPORTED_CLAIM] "));
+        let account = actions_for(&path, "ACCOUNT");
+        let no_trade = account.iter().find(|(a, _)| a == "NO_TRADE").unwrap();
+        assert!(no_trade.1.starts_with("Insufficient evidence"));
+    }
+
+    #[test]
+    fn a_model_score_is_recorded_as_uncalibrated_and_never_as_a_probability() {
+        let path = temp_db("score-label");
+        let series = bars(60, 50.0, 1.0, None);
+        let at = series.last().unwrap().at + DAY * 0.5;
+        let obs = observation(at, vec![("UP", series)]);
+        let review = Review {
+            picks: vec![Pick {
+                symbol: "UP".into(),
+                conviction: 0.9,
+                thesis: "Orderly trend.".into(),
+                basis: "technical_only".into(),
+                ..Pick::default()
+            }],
+            source: "llm".into(),
+            ..Review::default()
+        };
+        cycle_with(
+            &path,
+            &obs,
+            "stocks-daily",
+            &Strategy::default(),
+            Some(&review),
+        )
+        .unwrap();
+        let reason = snapshot(&path).pending["UP"].reason.clone();
+        assert_eq!(
+            reason,
+            "Desk pick (technical_only; model score 0.90, uncalibrated): Orderly trend."
+        );
+        for word in [
+            "conviction",
+            "probab",
+            "90%",
+            "confidence",
+            "chance",
+            "likel",
+        ] {
+            assert!(!reason.to_lowercase().contains(word), "{word} in {reason}");
+        }
+        let db = ledger::connect(&path).unwrap();
+        let evidence: String = db
+            .query_row(
+                "SELECT evidence FROM decisions WHERE symbol='UP' AND action='BUY_SIGNAL'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        let evidence: Value = serde_json::from_str(&evidence).unwrap();
+        assert_eq!(
+            evidence["score_label"],
+            "uncalibrated model score, not a probability"
+        );
+        assert_eq!(evidence["basis"], "technical_only");
+    }
+
+    #[test]
+    fn the_doctor_cannot_cancel_delay_or_loosen_a_mandatory_exit() {
+        for (action, stop_pct) in [("hold", 0.0), ("tighten", 0.10), ("exit", 0.0)] {
+            let path = temp_db(&format!("doctor-mandatory-{action}"));
+            let (mut series, _) = held_position(&path);
+            let stop = snapshot(&path).positions["UP"].stop;
+            // The next session closes far below the stop.
+            series.push(Bar {
+                at: T0 + DAY * 61.0,
+                open: 90.0,
+                close: 80.0,
+                volume: 1_000_000.0,
+            });
+            cycle_with(
+                &path,
+                &observation(T0 + DAY * 62.5, vec![("UP", series.clone())]),
+                "stocks-daily",
+                &Strategy::default(),
+                Some(&doctor(action, stop_pct)),
+            )
+            .unwrap();
+            let state = snapshot(&path);
+            assert_eq!(state.pending["UP"].side, "SELL", "{action}");
+            assert!(
+                state.pending["UP"].reason.starts_with("Close crossed stop"),
+                "{action}"
+            );
+            assert!(
+                (state.positions["UP"].stop - stop).abs() < 1e-9,
+                "{action} moved the stop"
+            );
+            let logged = actions_for(&path, "UP");
+            assert!(
+                logged.iter().any(|(a, _)| a == "DOCTOR_IGNORED"),
+                "{action}: {logged:?}"
+            );
+            assert!(
+                logged.iter().all(|(a, _)| a != "DOCTOR_HOLD"
+                    && a != "DOCTOR_TIGHTEN"
+                    && a != "DOCTOR_EXIT")
+            );
+            // The next open sells, whatever the doctor says again.
+            series.push(Bar {
+                at: T0 + DAY * 63.0,
+                open: 79.0,
+                close: 85.0,
+                volume: 1_000_000.0,
+            });
+            cycle_with(
+                &path,
+                &observation(T0 + DAY * 64.5, vec![("UP", series)]),
+                "stocks-daily",
+                &Strategy::default(),
+                Some(&doctor("hold", 0.0)),
+            )
+            .unwrap();
+            assert_eq!(snapshot(&path).positions.len(), 0, "{action}");
+        }
+    }
 }
