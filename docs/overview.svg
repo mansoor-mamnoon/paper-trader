@@ -23,7 +23,7 @@ text{font-family:'Helvetica Neue',Arial,sans-serif;fill:#0f1115}
 <rect class="sh" x="336" y="96" width="282" height="196" rx="12"/><rect class="y" x="330" y="90" width="282" height="196" rx="12"/>
 <text class="t" x="352" y="122">Stock account + desk</text><text class="s" x="352" y="146">1. screen: trend + momentum</text>
 <text class="s" x="352" y="166">2. triage, research agents</text><text class="s" x="352" y="186">   with SEC filing tools</text>
-<text class="s" x="352" y="206">3. bull vs bear, then judge</text><text class="s" x="352" y="226">4. doctor, memory, scorecard</text><text class="s" x="352" y="246">5. 5 slots, limits in code</text>
+<text class="s" x="352" y="206">3. bull vs bear, then judge</text><text class="s" x="352" y="226">4. doctor, memory, scorecard</text><text class="s" x="352" y="246">5. stock slots + residual SPY</text>
 <text class="s" x="352" y="270">daily, after the close</text>
 
 <rect class="sh" x="336" y="326" width="282" height="76" rx="12"/><rect class="b" x="330" y="320" width="282" height="76" rx="12" stroke-dasharray="7 5"/>
@@ -45,8 +45,8 @@ text{font-family:'Helvetica Neue',Arial,sans-serif;fill:#0f1115}
 <text class="t" x="948" y="334">GitHub Pages</text><text class="s" x="948" y="358">read-only dashboard,</text><text class="s" x="948" y="376">rebuilt by Actions</text><text class="s" x="948" y="394">no server to run</text>
 
 <rect class="sh" x="686" y="526" width="486" height="86" rx="12"/><rect class="b" x="680" y="520" width="486" height="86" rx="12"/>
-<text class="t" x="700" y="552">Free runner, free model</text>
-<text class="s" x="700" y="574">Qwen3 4B (Apache-2.0) on llama.cpp, inside the job.</text><text class="s" x="700" y="592">A schedule or webhook starts it. No key, no server.</text>
+<text class="t" x="700" y="552">Local models on a runner</text>
+<text class="s" x="700" y="574">Nine model roles on llama.cpp, inside the job.</text><text class="s" x="700" y="592">A schedule or webhook starts it. No key, no server.</text>
 
 <g class="a"><path d="M266 113H298V188H330"/><path d="M266 219H298V188"/><path d="M612 190H646V300H680"/><path d="M612 364H646V300"/><path d="M612 466H646V380H680"/><path d="M270 443H330"/><path d="M870 316H900V176H930"/><path d="M1048 260V300"/></g>
 <g fill="#ffe14d" stroke="#0f1115" stroke-width="2"><circle r="6"><animateMotion dur="5s" repeatCount="indefinite" path="M266 113H298V188H330"/></circle>
