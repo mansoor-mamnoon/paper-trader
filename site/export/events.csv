@@ -165,3 +165,6 @@ id,run_id,at,kind,subject,detail
 164,43147476340,1794453810.3105488,download,ministral-3-3b,"2147 MB, sha256 verified, attempt 1 (7611 ms)"
 165,43147476340,1794453810.3134434,model_load,ministral-3-3b,Ministral 3 3B Instruct 2512 (Mistral AI) ready (4506 ms)
 166,43147476340,1794453810.3185077,determinism,ministral-3-3b,hash c2d5f58bfe758864 stable (5705 ms)
+167,43316542147,1794521364.8453858,download,ministral-3-3b,"2147 MB, sha256 verified, attempt 1 (17048 ms)"
+168,43316542147,1794521364.8467379,model_load,ministral-3-3b,Ministral 3 3B Instruct 2512 (Mistral AI) ready (3002 ms)
+169,43316542147,1794521364.8485622,determinism,ministral-3-3b,hash c2d5f58bfe758864 stable (5747 ms)
