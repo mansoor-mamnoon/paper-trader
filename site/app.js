@@ -303,7 +303,33 @@ function renderHoldings(s) {
   }
 }
 
+function allocationOrder(order) {
+  return (order.reason || "").includes("Quantitative allocation:");
+}
+
 function renderTrades(s) {
+  let queue = $("queued-orders");
+  if (!queue) {
+    queue = h("section", {id: "queued-orders", class: "card"});
+    $("trades").querySelector(".page-head").after(queue);
+  }
+  const orders = Object.entries(s.pending ?? {}).sort((a, b) => b[1].at - a[1].at || a[0].localeCompare(b[0]));
+  queue.replaceChildren(h("h2", {}, `Pending orders (${orders.length})`),
+    h("p", {class: "muted"}, orders.length
+      ? "These signals are queued for the next session’s open. Prices, shares and fees appear in the completed trades below once a daily run records the fills."
+      : "No orders are waiting to fill."));
+  const allocation = orders.filter(([, order]) => allocationOrder(order));
+  if (allocation.length) queue.append(h("p", {},
+    `${allocation.length} orders came from the full-investment policy, which ranks eligible individual stocks by momentum. These are allocation decisions, not AI judge endorsements.`));
+  const list = h("ol", {class: "timeline"});
+  for (const [symbol, order] of orders) list.append(h("li", {},
+    h("span", {class: `badge ${order.side === "BUY" ? "buy" : "sell"}`}, `Pending ${order.side.toLowerCase()}`),
+    h("time", {}, `${symbol} · ${when(order.at)}`),
+    h("p", {}, allocationOrder(order)
+      ? "Selected by the full-investment policy: eligible individual stock ranked by momentum."
+      : order.reason || "Queued for the next session’s open.")));
+  queue.append(list);
+
   const body = $("fills"); body.replaceChildren();
   $("fills-empty").hidden = s.fills.length > 0;
   text("fills-empty", "No trades yet. An order fills at the next session's open, and that evening's run records it.");
@@ -528,7 +554,8 @@ function renderDesk(s) {
     [s.last_scan?.candidates ?? "?", "passed the screen"],
     [(d.triage ?? []).length, "triaged"],
     [(d.finalists ?? []).length, "finalists"],
-    [picks, "picked"],
+    [picks, "judge picks"],
+    [Object.keys(s.pending ?? {}).length, "pending orders"],
   ];
   funnel.forEach(([n, name], i) => $("desk-funnel").append(h("li", {}, h("span", {class: "n"}, `0${i + 1}`), h("strong", {}, String(n ?? "?")), h("span", {}, name))));
 
@@ -537,6 +564,10 @@ function renderDesk(s) {
   for (const f of d.finalists ?? []) box.append(finalistCard(f, d, s));
 
   const jb = $("desk-judge");
+  const allocationCount = Object.values(s.pending ?? {}).filter(allocationOrder).length;
+  if (allocationCount) jb.append(h("p", {class: "lead2"},
+    `${allocationCount} pending orders were selected by the full-investment allocation policy. The judge’s assessment below is separate from those orders. `,
+    h("button", {class: "btn", "data-goto": "trades"}, "View pending orders")));
   jb.append(h("div", {class: "head"}, h("h2", {}, "The judge's reasoning"), judge.regime ? h("span", {class: "badge"}, REGIMES[judge.regime] ?? judge.regime) : null));
   if (judge.reasoning) {
     jb.append(h("blockquote", {class: "quote"}, judge.reasoning));

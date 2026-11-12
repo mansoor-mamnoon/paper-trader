@@ -159,10 +159,10 @@
   ],
   "lessons_cursor": 2,
   "analyst": {
-    "at": 1794408865.1498635,
-    "source": "llm",
+    "at": 1794453719.0103986,
+    "source": "quant",
     "model": "9 open-weights models from 9 companies",
-    "market_view": "risk_off",
+    "market_view": "",
     "error": null
   },
   "schema": 2,

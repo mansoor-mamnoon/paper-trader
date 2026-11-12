@@ -16,8 +16,65 @@
       "inverse": true,
       "daily_reset": true,
       "verified": true,
-      "verified_as_of": "2026-11-11",
+      "verified_as_of": "2026-11-12",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type ETF"
+    },
+    "ABG": {
+      "symbol": "ABG",
+      "exchange": "N",
+      "canonical_name": "Asbury Automotive Group Inc Common Stock",
+      "instrument_type": "common_stock",
+      "issuer_name": "ASBURY AUTOMOTIVE GROUP INC",
+      "cik": "0001144980",
+      "figi": null,
+      "cusip": null,
+      "isin": null,
+      "underlying_symbol": null,
+      "underlying_name": null,
+      "leverage_multiple": null,
+      "inverse": false,
+      "daily_reset": false,
+      "verified": true,
+      "verified_as_of": "2026-11-12",
+      "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
+    },
+    "ADMA": {
+      "symbol": "ADMA",
+      "exchange": "Q",
+      "canonical_name": "ADMA Biologics Inc - Common Stock",
+      "instrument_type": "common_stock",
+      "issuer_name": "ADMA BIOLOGICS, INC.",
+      "cik": "0001368514",
+      "figi": null,
+      "cusip": null,
+      "isin": null,
+      "underlying_symbol": null,
+      "underlying_name": null,
+      "leverage_multiple": null,
+      "inverse": false,
+      "daily_reset": false,
+      "verified": true,
+      "verified_as_of": "2026-11-12",
+      "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
+    },
+    "ADT": {
+      "symbol": "ADT",
+      "exchange": "N",
+      "canonical_name": "ADT Inc. Common Stock",
+      "instrument_type": "common_stock",
+      "issuer_name": "ADT Inc.",
+      "cik": "0001703056",
+      "figi": null,
+      "cusip": null,
+      "isin": null,
+      "underlying_symbol": null,
+      "underlying_name": null,
+      "leverage_multiple": null,
+      "inverse": false,
+      "daily_reset": false,
+      "verified": true,
+      "verified_as_of": "2026-11-12",
+      "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "KD": {
       "symbol": "KD",
@@ -35,7 +92,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-11",
+      "verified_as_of": "2026-11-12",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "KIDS": {
@@ -54,7 +111,26 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-11",
+      "verified_as_of": "2026-11-12",
+      "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
+    },
+    "KMPR": {
+      "symbol": "KMPR",
+      "exchange": "N",
+      "canonical_name": "Kemper Corporation",
+      "instrument_type": "common_stock",
+      "issuer_name": "KEMPER Corp",
+      "cik": "0000860748",
+      "figi": null,
+      "cusip": null,
+      "isin": null,
+      "underlying_symbol": null,
+      "underlying_name": null,
+      "leverage_multiple": null,
+      "inverse": false,
+      "daily_reset": false,
+      "verified": true,
+      "verified_as_of": "2026-11-12",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "KRMN": {
@@ -73,7 +149,26 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-11",
+      "verified_as_of": "2026-11-12",
+      "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
+    },
+    "KVYO": {
+      "symbol": "KVYO",
+      "exchange": "N",
+      "canonical_name": "Klaviyo, Inc. Series A Common Stock",
+      "instrument_type": "common_stock",
+      "issuer_name": "Klaviyo, Inc.",
+      "cik": "0001835830",
+      "figi": null,
+      "cusip": null,
+      "isin": null,
+      "underlying_symbol": null,
+      "underlying_name": null,
+      "leverage_multiple": null,
+      "inverse": false,
+      "daily_reset": false,
+      "verified": true,
+      "verified_as_of": "2026-11-12",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "KYMR": {
@@ -92,7 +187,26 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-11",
+      "verified_as_of": "2026-11-12",
+      "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
+    },
+    "LCII": {
+      "symbol": "LCII",
+      "exchange": "N",
+      "canonical_name": "LCI Industries",
+      "instrument_type": "common_stock",
+      "issuer_name": "LCI INDUSTRIES",
+      "cik": "0000763744",
+      "figi": null,
+      "cusip": null,
+      "isin": null,
+      "underlying_symbol": null,
+      "underlying_name": null,
+      "leverage_multiple": null,
+      "inverse": false,
+      "daily_reset": false,
+      "verified": true,
+      "verified_as_of": "2026-11-12",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "LEVI": {
@@ -111,7 +225,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-11",
+      "verified_as_of": "2026-11-12",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "LION": {
@@ -130,7 +244,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-11",
+      "verified_as_of": "2026-11-12",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "LITZ": {
@@ -149,7 +263,7 @@
       "inverse": true,
       "daily_reset": true,
       "verified": true,
-      "verified_as_of": "2026-11-11",
+      "verified_as_of": "2026-11-12",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type ETF"
     },
     "MAX": {
@@ -187,7 +301,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-11",
+      "verified_as_of": "2026-11-12",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "MIDD": {
@@ -206,7 +320,26 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-11",
+      "verified_as_of": "2026-11-12",
+      "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
+    },
+    "OMAB": {
+      "symbol": "OMAB",
+      "exchange": "Q",
+      "canonical_name": "Grupo Aeroportuario del Centro Norte S.A.B. de C.V. - American Depositary Shares each representing 8 Series B shares",
+      "instrument_type": "adr",
+      "issuer_name": "Central North Airport Group",
+      "cik": "0001378239",
+      "figi": null,
+      "cusip": null,
+      "isin": null,
+      "underlying_symbol": null,
+      "underlying_name": null,
+      "leverage_multiple": null,
+      "inverse": false,
+      "daily_reset": false,
+      "verified": true,
+      "verified_as_of": "2026-11-12",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "OMH": {
@@ -225,7 +358,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-11",
+      "verified_as_of": "2026-11-12",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "OSW": {
@@ -244,7 +377,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-11",
+      "verified_as_of": "2026-11-12",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "PCOR": {
@@ -263,7 +396,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-11",
+      "verified_as_of": "2026-11-12",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "PNR": {
@@ -282,7 +415,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-11",
+      "verified_as_of": "2026-11-12",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "POOL": {
@@ -320,7 +453,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-11",
+      "verified_as_of": "2026-11-12",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "RAMZ": {
@@ -358,7 +491,26 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-11",
+      "verified_as_of": "2026-11-12",
+      "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
+    },
+    "REGN": {
+      "symbol": "REGN",
+      "exchange": "Q",
+      "canonical_name": "Regeneron Pharmaceuticals, Inc. - Common Stock",
+      "instrument_type": "common_stock",
+      "issuer_name": "REGENERON PHARMACEUTICALS, INC.",
+      "cik": "0000872589",
+      "figi": null,
+      "cusip": null,
+      "isin": null,
+      "underlying_symbol": null,
+      "underlying_name": null,
+      "leverage_multiple": null,
+      "inverse": false,
+      "daily_reset": false,
+      "verified": true,
+      "verified_as_of": "2026-11-12",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "REPL": {
@@ -377,7 +529,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-11",
+      "verified_as_of": "2026-11-12",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "ROP": {
@@ -396,7 +548,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-11",
+      "verified_as_of": "2026-11-12",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "RYAN": {
@@ -415,7 +567,26 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-11",
+      "verified_as_of": "2026-11-12",
+      "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
+    },
+    "SAM": {
+      "symbol": "SAM",
+      "exchange": "N",
+      "canonical_name": "Boston Beer Company, Inc. (The) Common Stock",
+      "instrument_type": "common_stock",
+      "issuer_name": "BOSTON BEER CO INC",
+      "cik": "0000949870",
+      "figi": null,
+      "cusip": null,
+      "isin": null,
+      "underlying_symbol": null,
+      "underlying_name": null,
+      "leverage_multiple": null,
+      "inverse": false,
+      "daily_reset": false,
+      "verified": true,
+      "verified_as_of": "2026-11-12",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "SITE": {
@@ -434,7 +605,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-11",
+      "verified_as_of": "2026-11-12",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "SNDQ": {
@@ -456,6 +627,25 @@
       "verified_as_of": "2026-11-10",
       "source": "pinned issuer documentation: https://www.tradretfs.com/ ; Nasdaq Trader symbol directory"
     },
+    "STGW": {
+      "symbol": "STGW",
+      "exchange": "Q",
+      "canonical_name": "Stagwell Inc. - Class A Common Stock",
+      "instrument_type": "common_stock",
+      "issuer_name": "Stagwell Inc",
+      "cik": "0000876883",
+      "figi": null,
+      "cusip": null,
+      "isin": null,
+      "underlying_symbol": null,
+      "underlying_name": null,
+      "leverage_multiple": null,
+      "inverse": false,
+      "daily_reset": false,
+      "verified": true,
+      "verified_as_of": "2026-11-12",
+      "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
+    },
     "TNL": {
       "symbol": "TNL",
       "exchange": "N",
@@ -472,7 +662,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-11",
+      "verified_as_of": "2026-11-12",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "VCEL": {
@@ -529,7 +719,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-11",
+      "verified_as_of": "2026-11-12",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "VIA": {
@@ -605,7 +795,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-11",
+      "verified_as_of": "2026-11-12",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "WCN": {
@@ -643,7 +833,83 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-11",
+      "verified_as_of": "2026-11-12",
+      "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
+    },
+    "XERS": {
+      "symbol": "XERS",
+      "exchange": "Q",
+      "canonical_name": "Xeris Biopharma Holdings, Inc. - Common Stock",
+      "instrument_type": "common_stock",
+      "issuer_name": "Xeris Biopharma Holdings, Inc.",
+      "cik": "0001867096",
+      "figi": null,
+      "cusip": null,
+      "isin": null,
+      "underlying_symbol": null,
+      "underlying_name": null,
+      "leverage_multiple": null,
+      "inverse": false,
+      "daily_reset": false,
+      "verified": true,
+      "verified_as_of": "2026-11-12",
+      "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
+    },
+    "XMTR": {
+      "symbol": "XMTR",
+      "exchange": "Q",
+      "canonical_name": "Xometry, Inc. - Class A Common Stock",
+      "instrument_type": "common_stock",
+      "issuer_name": "Xometry, Inc.",
+      "cik": "0001657573",
+      "figi": null,
+      "cusip": null,
+      "isin": null,
+      "underlying_symbol": null,
+      "underlying_name": null,
+      "leverage_multiple": null,
+      "inverse": false,
+      "daily_reset": false,
+      "verified": true,
+      "verified_as_of": "2026-11-12",
+      "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
+    },
+    "XNCR": {
+      "symbol": "XNCR",
+      "exchange": "Q",
+      "canonical_name": "Xencor, Inc. - Common Stock",
+      "instrument_type": "common_stock",
+      "issuer_name": "Xencor Inc",
+      "cik": "0001326732",
+      "figi": null,
+      "cusip": null,
+      "isin": null,
+      "underlying_symbol": null,
+      "underlying_name": null,
+      "leverage_multiple": null,
+      "inverse": false,
+      "daily_reset": false,
+      "verified": true,
+      "verified_as_of": "2026-11-12",
+      "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
+    },
+    "YOU": {
+      "symbol": "YOU",
+      "exchange": "N",
+      "canonical_name": "Clear Secure, Inc. Class A Common Stock",
+      "instrument_type": "common_stock",
+      "issuer_name": "Clear Secure, Inc.",
+      "cik": "0001856314",
+      "figi": null,
+      "cusip": null,
+      "isin": null,
+      "underlying_symbol": null,
+      "underlying_name": null,
+      "leverage_multiple": null,
+      "inverse": false,
+      "daily_reset": false,
+      "verified": true,
+      "verified_as_of": "2026-11-12",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     }
   }
