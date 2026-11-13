@@ -168,3 +168,9 @@ id,run_id,at,kind,subject,detail
 167,43316542147,1794521364.8453858,download,ministral-3-3b,"2147 MB, sha256 verified, attempt 1 (17048 ms)"
 168,43316542147,1794521364.8467379,model_load,ministral-3-3b,Ministral 3 3B Instruct 2512 (Mistral AI) ready (3002 ms)
 169,43316542147,1794521364.8485622,determinism,ministral-3-3b,hash c2d5f58bfe758864 stable (5747 ms)
+170,43512168667,1794605956.9110463,download,ministral-3-3b,"2147 MB, sha256 verified, attempt 1 (22768 ms)"
+171,43512168667,1794605956.912922,model_load,ministral-3-3b,Ministral 3 3B Instruct 2512 (Mistral AI) ready (3002 ms)
+172,43512168667,1794605956.916878,determinism,ministral-3-3b,hash c2d5f58bfe758864 stable (4361 ms)
+173,43512168667,1794606147.9573426,download,smollm3-3b,"1915 MB, sha256 verified, attempt 1 (37860 ms)"
+174,43512168667,1794606147.9597068,model_load,smollm3-3b,SmolLM3 3B (Hugging Face) ready (3002 ms)
+175,43512168667,1794606147.9615848,determinism,smollm3-3b,hash dc192c7624001ab2 stable (4219 ms)

@@ -54,7 +54,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "ADMA": {
@@ -73,7 +73,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "ADT": {
@@ -92,7 +92,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "AER": {
@@ -130,7 +130,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "ALLE": {
@@ -149,7 +149,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "APPN": {
@@ -187,7 +187,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "ARHS": {
@@ -244,7 +244,121 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
+      "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
+    },
+    "BETA": {
+      "symbol": "BETA",
+      "exchange": "N",
+      "canonical_name": "Beta Technologies, Inc. Class A Common Stock",
+      "instrument_type": "common_stock",
+      "issuer_name": "BETA Technologies, Inc.",
+      "cik": "0001784570",
+      "figi": null,
+      "cusip": null,
+      "isin": null,
+      "underlying_symbol": null,
+      "underlying_name": null,
+      "leverage_multiple": null,
+      "inverse": false,
+      "daily_reset": false,
+      "verified": true,
+      "verified_as_of": "2026-11-13",
+      "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
+    },
+    "BHC": {
+      "symbol": "BHC",
+      "exchange": "N",
+      "canonical_name": "Bausch Health Companies Inc. Common Stock",
+      "instrument_type": "common_stock",
+      "issuer_name": "Bausch Health Companies Inc.",
+      "cik": "0000885590",
+      "figi": null,
+      "cusip": null,
+      "isin": null,
+      "underlying_symbol": null,
+      "underlying_name": null,
+      "leverage_multiple": null,
+      "inverse": false,
+      "daily_reset": false,
+      "verified": true,
+      "verified_as_of": "2026-11-13",
+      "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
+    },
+    "BLCO": {
+      "symbol": "BLCO",
+      "exchange": "N",
+      "canonical_name": "Bausch + Lomb Corporation Common Shares",
+      "instrument_type": "common_stock",
+      "issuer_name": "Bausch & Lomb Corp",
+      "cik": "0001860742",
+      "figi": null,
+      "cusip": null,
+      "isin": null,
+      "underlying_symbol": null,
+      "underlying_name": null,
+      "leverage_multiple": null,
+      "inverse": false,
+      "daily_reset": false,
+      "verified": true,
+      "verified_as_of": "2026-11-13",
+      "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
+    },
+    "BOBS": {
+      "symbol": "BOBS",
+      "exchange": "N",
+      "canonical_name": "Bob's Discount Furniture, Inc. Common Stock",
+      "instrument_type": "common_stock",
+      "issuer_name": "Bob's Discount Furniture, Inc.",
+      "cik": "0002085187",
+      "figi": null,
+      "cusip": null,
+      "isin": null,
+      "underlying_symbol": null,
+      "underlying_name": null,
+      "leverage_multiple": null,
+      "inverse": false,
+      "daily_reset": false,
+      "verified": true,
+      "verified_as_of": "2026-11-13",
+      "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
+    },
+    "BRZE": {
+      "symbol": "BRZE",
+      "exchange": "Q",
+      "canonical_name": "Braze, Inc. - Class A Common Stock",
+      "instrument_type": "common_stock",
+      "issuer_name": "Braze, Inc.",
+      "cik": "0001676238",
+      "figi": null,
+      "cusip": null,
+      "isin": null,
+      "underlying_symbol": null,
+      "underlying_name": null,
+      "leverage_multiple": null,
+      "inverse": false,
+      "daily_reset": false,
+      "verified": true,
+      "verified_as_of": "2026-11-13",
+      "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
+    },
+    "BSY": {
+      "symbol": "BSY",
+      "exchange": "Q",
+      "canonical_name": "Bentley Systems, Incorporated - Class B Common Stock",
+      "instrument_type": "common_stock",
+      "issuer_name": "BENTLEY SYSTEMS INC",
+      "cik": "0001031308",
+      "figi": null,
+      "cusip": null,
+      "isin": null,
+      "underlying_symbol": null,
+      "underlying_name": null,
+      "leverage_multiple": null,
+      "inverse": false,
+      "daily_reset": false,
+      "verified": true,
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "KD": {
@@ -263,7 +377,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "KIDS": {
@@ -282,7 +396,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "KMPR": {
@@ -320,7 +434,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "KRMN": {
@@ -358,7 +472,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "KYMR": {
@@ -377,7 +491,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "LCII": {
@@ -434,7 +548,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "LITZ": {
@@ -510,7 +624,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "MIDD": {
@@ -529,7 +643,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "OMAB": {
@@ -586,7 +700,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "PCOR": {
@@ -605,7 +719,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "PNR": {
@@ -624,7 +738,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "POOL": {
@@ -662,7 +776,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "RAMZ": {
@@ -700,7 +814,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "REGN": {
@@ -738,7 +852,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "RHI": {
@@ -757,7 +871,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "ROP": {
@@ -776,7 +890,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "RYAN": {
@@ -814,7 +928,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "SITE": {
@@ -833,7 +947,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "SNDQ": {
@@ -890,7 +1004,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "TNL": {
@@ -966,7 +1080,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "VIA": {
@@ -1080,7 +1194,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "XERS": {
@@ -1118,7 +1232,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "XNCR": {
@@ -1137,7 +1251,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     },
     "YOU": {
@@ -1156,7 +1270,7 @@
       "inverse": false,
       "daily_reset": false,
       "verified": true,
-      "verified_as_of": "2026-11-12",
+      "verified_as_of": "2026-11-13",
       "source": "Nasdaq Trader symbol directory (registered name, exchange, ETF flag); price provider instrument type EQUITY"
     }
   }

@@ -155,11 +155,17 @@
       "symbol": "AAOZ",
       "pnl_pct": 3.087446880173217,
       "lesson": "Set stop-loss orders to manage risk when experimenting with trading strategies to avoid unexpected losses."
+    },
+    {
+      "at": 1794605856.6181984,
+      "symbol": "REPL",
+      "pnl_pct": 1.7497883988540686,
+      "lesson": "Always verify the thesis and risk events before making a trade decision to ensure alignment with your investment goals and risk tolerance."
     }
   ],
-  "lessons_cursor": 2,
+  "lessons_cursor": 14,
   "analyst": {
-    "at": 1794521263.3790011,
+    "at": 1794605856.6181984,
     "source": "quant",
     "model": "9 open-weights models from 9 companies",
     "market_view": "",
