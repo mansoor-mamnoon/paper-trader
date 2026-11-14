@@ -1036,6 +1036,7 @@ mod tests {
                     json!({"labels": labels})
                 }
                 (Agent::Analyst, symbol) => json!({
+                    "evidence": 1,
                     "catalyst": "big_deal",
                     "thesis": format!("{symbol} has a live order."),
                     "upside": 7,
@@ -1346,7 +1347,7 @@ mod tests {
         let brain = Scripted::new(move |agent, subject, user, schema| {
             if agent == Agent::Analyst && subject != "CHIPA" {
                 return Ok(
-                    json!({"catalyst": "none", "thesis": "Nothing new.", "upside": 2, "kill": "n/a"}),
+                    json!({"evidence": 0, "catalyst": "none", "thesis": "Nothing new.", "upside": 2, "kill": "n/a"}),
                 );
             }
             inner.ask(agent, subject, "", user, schema)
@@ -1400,7 +1401,7 @@ mod tests {
         let brain = Scripted::new(move |agent, subject, user, schema| {
             if agent == Agent::Analyst && subject != "CHIPA" {
                 return Ok(
-                    json!({"catalyst": "none", "thesis": "Nothing new.", "upside": 2, "kill": "n/a"}),
+                    json!({"evidence": 0, "catalyst": "none", "thesis": "Nothing new.", "upside": 2, "kill": "n/a"}),
                 );
             }
             inner.ask(agent, subject, "", user, schema)

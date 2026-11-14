@@ -93,6 +93,10 @@ pub struct Case {
     pub upside: i64,
     /// What would prove the case wrong.
     pub kill: String,
+    /// The headline the analyst rests the case on. Empty when the case rests on the
+    /// sector's driver or there is no case.
+    #[serde(default)]
+    pub evidence: String,
 }
 
 /// The skeptic's answer to the case.
@@ -203,7 +207,7 @@ fn headline_lines(headlines: &[Tagged], today: &str) -> String {
         return "  (no headlines found)\n".into();
     }
     let mut out = String::new();
-    for h in headlines {
+    for (i, h) in headlines.iter().enumerate() {
         let when = if h.day == today {
             "today"
         } else {
@@ -219,7 +223,7 @@ fn headline_lines(headlines: &[Tagged], today: &str) -> String {
         } else {
             format!(" ({})", h.source)
         };
-        let _ = writeln!(out, "  - {when}{label}: {}{source}", h.title);
+        let _ = writeln!(out, "  {}. {when}{label}: {}{source}", i + 1, h.title);
     }
     out
 }
@@ -313,6 +317,9 @@ pub fn summary(card: &Card) -> String {
                 "  Analyst (upside {}/10, catalyst {}): {} Wrong if: {}",
                 case.upside, case.catalyst, case.thesis, case.kill
             );
+            if !case.evidence.is_empty() {
+                let _ = writeln!(out, "  Rests on the headline: {}", case.evidence);
+            }
         }
         None => out.push_str("  Analyst: no case was made.\n"),
     }
@@ -557,18 +564,24 @@ pub fn classify(
 
 const ANALYST: &str = "You are the analyst on a trading desk that buys stocks on news buzz. Make the strongest honest case for owning this stock over the next few days. What counts: a fresh catalyst people are excited about, such as a product launch, a big deal, a policy tailwind, a results beat, an approval, a takeover approach, a demand boom or a surge of retail attention, and signs the crowd is arriving, such as rising Reddit mentions, trending lists and unusual volume. A strong sector driver counts when it clearly lifts this company's business: higher oil prices for an oil producer, a law or a spending wave that funds its products, a boom in its industry; label it policy or demand_boom. Results that beat expectations or raise guidance count as earnings_beat. What does not count: executive changes, routine filings, dividends, conference appearances, or the mere fact that the price has been rising. An upcoming earnings date is neither a reason to buy nor a reason to avoid. Use only the facts in the file and never invent news. If the file holds no real catalyst, say so plainly, choose catalyst none and score the upside low. Upside is 1 to 10: how likely and how far the stock rises over the next few days.";
 
-fn case_schema() -> Value {
+fn case_schema(headlines: usize) -> Value {
     let mut labels = bullish_labels();
     labels.push("none");
     object(
         &json!({
+            "evidence": {"type": "integer", "minimum": 0, "maximum": headlines},
             "catalyst": {"type": "string", "enum": labels},
             "thesis": string(420),
             "upside": {"type": "integer", "minimum": 1, "maximum": 10},
             "kill": string(180),
         }),
-        &["catalyst", "thesis", "upside", "kill"],
+        &["evidence", "catalyst", "thesis", "upside", "kill"],
     )
+}
+
+/// Catalysts that may rest on the sector's driver with no company headline.
+fn sector_catalyst(label: &str) -> bool {
+    matches!(label, "policy" | "demand_boom")
 }
 
 /// Make the case for one stock.
@@ -579,23 +592,44 @@ pub fn analyst(
     today: &str,
 ) -> Result<Case> {
     let user = format!(
-        "{}\nState the main catalyst, the case in two or three sentences, the upside score, and in `kill` the one development that would prove the case wrong.",
+        "{}\nFirst give in `evidence` the number of the one headline above that your case rests on, or 0 if no headline supports a case. Quote only what that headline says: do not add names, numbers or events it does not contain. Then state the main catalyst, the case in two or three sentences, the upside score, and in `kill` the one development that would prove the case wrong.",
         dossier(card, note, today)
     );
-    let answer = brain.ask(Agent::Analyst, &card.symbol, ANALYST, &user, &case_schema())?;
-    let thesis = text(&answer, "thesis");
+    let schema = case_schema(card.headlines.len());
+    let answer = brain.ask(Agent::Analyst, &card.symbol, ANALYST, &user, &schema)?;
+    let mut thesis = text(&answer, "thesis");
     if thesis.is_empty() {
         bail!("the analyst wrote no case");
     }
+    let mut catalyst = text(&answer, "catalyst");
+    let mut upside = answer["upside"].as_i64().unwrap_or(1).clamp(1, 10);
+    let cited = answer["evidence"]
+        .as_u64()
+        .and_then(|n| (n as usize).checked_sub(1))
+        .and_then(|i| card.headlines.get(i))
+        .filter(|h| !matches!(h.label.as_str(), "noise" | "unrelated" | "bad_news"));
+    // A case must rest on a real headline, or on the sector's driver for a sector catalyst.
+    if catalyst != "none" && cited.is_none() && !(sector_catalyst(&catalyst) && note.is_some()) {
+        thesis = format!(
+            "No headline in the file supports the case the analyst made, so it does not count. The analyst had said: {thesis}"
+        );
+        catalyst = "none".into();
+        upside = upside.min(3);
+    }
     Ok(Case {
-        catalyst: text(&answer, "catalyst"),
+        evidence: if catalyst == "none" {
+            String::new()
+        } else {
+            cited.map(|h| h.title.clone()).unwrap_or_default()
+        },
+        catalyst,
         thesis,
-        upside: answer["upside"].as_i64().unwrap_or(1).clamp(1, 10),
+        upside,
         kill: text(&answer, "kill"),
     })
 }
 
-const SKEPTIC: &str = "You are the skeptic on a trading desk that buys stocks on news buzz. The analyst has made a case for a stock. Attack it using the same file. Is the catalyst real, about this company, and fresh, or is it old news? Has the price already made the move, so a buyer today is late? Is the buzz fading compared with yesterday? Did the analyst lean on something the file does not say? Give the single strongest objection. Then say whether the case stands, is weakened, or is broken. You only ever argue against buying: if the analyst found no catalyst, agree and say what makes the stock worth avoiding, and never make the case for it yourself. Do not object for the sake of it: if the case is good, say it stands.";
+const SKEPTIC: &str = "You are the skeptic on a trading desk that buys stocks on news buzz. The analyst has made a case for a stock. Attack it using the same file. Is the catalyst real, about this company, and fresh, or is it old news? Has the price already made the move, so a buyer today is late? Is the buzz fading compared with yesterday? Did the analyst lean on something the file does not say? Give the single strongest objection. Then give your verdict. Stands: the objection is minor. Weakened: the catalyst is real but the timing, the price or the fading buzz makes the trade worse than the analyst says; most honest cases with a flaw are this. Broken: the catalyst is false, is not about this company, is contradicted by the file, or the headline the analyst cites does not say what the analyst claims. You only ever argue against buying: if the analyst found no catalyst, agree and say what makes the stock worth avoiding, and never make the case for it yourself. Do not object for the sake of it: if the case is good, say it stands.";
 
 /// Attack the analyst's case for one stock.
 pub fn skeptic(
@@ -606,11 +640,16 @@ pub fn skeptic(
     today: &str,
 ) -> Result<Rebuttal> {
     let user = format!(
-        "{}\nTHE ANALYST'S CASE (catalyst {}, upside {}/10): {}\nThe analyst says the case is wrong if: {}\n\nGive your strongest objection, say whether the move is already priced in, and give your verdict.",
+        "{}\nTHE ANALYST'S CASE (catalyst {}, upside {}/10): {}\nThe headline the analyst rests it on: {}\nThe analyst says the case is wrong if: {}\n\nCheck the case against that headline word for word. Give your strongest objection, say whether the move is already priced in, and give your verdict.",
         dossier(card, note, today),
         case.catalyst,
         case.upside,
         case.thesis,
+        if case.evidence.is_empty() {
+            "(none: it rests on the sector's driver)"
+        } else {
+            &case.evidence
+        },
         case.kill
     );
     let schema = object(
@@ -1022,6 +1061,7 @@ mod tests {
                 thesis: "Contract is new money.".into(),
                 upside: 7,
                 kill: "Contract cancelled".into(),
+                evidence: String::new(),
             }),
             rebuttal: Some(Rebuttal {
                 objection: "Up 9% already.".into(),
@@ -1122,6 +1162,44 @@ mod tests {
             Ok(json!({"buys": [{"symbol": "CCC", "reason": "r", "weight": 1}]}))
         });
         pick(&brain, &book, &["CCC".to_string()], 1, &[]).unwrap();
+    }
+
+    #[test]
+    fn a_case_must_rest_on_a_real_headline() {
+        let stock = card("ACME", false);
+        let ask = |evidence: u64, catalyst: &'static str| {
+            let brain = Scripted::new(move |_, _, user, schema| {
+                assert!(user.contains("1. today [big_deal"));
+                assert_eq!(schema["properties"]["evidence"]["maximum"], 2);
+                Ok(
+                    json!({"evidence": evidence, "catalyst": catalyst, "thesis": "Because.", "upside": 8, "kill": "x"}),
+                )
+            });
+            analyst(&brain, &stock, None, "2026-11-13").unwrap()
+        };
+        let good = ask(1, "big_deal");
+        assert_eq!(good.catalyst, "big_deal");
+        assert_eq!(good.evidence, "ACME wins $2B AI contract");
+        // Headline 2 is noise, and 0 cites nothing: neither can carry a case.
+        for evidence in [2, 0] {
+            let bad = ask(evidence, "takeover");
+            assert_eq!(bad.catalyst, "none");
+            assert!(bad.upside <= 3 && bad.evidence.is_empty());
+            assert!(bad.thesis.starts_with("No headline in the file supports"));
+        }
+        // A sector catalyst may rest on the newsbook when there is an entry.
+        let note = SectorNote::default();
+        let brain = Scripted::new(|_, _, _, _| {
+            Ok(
+                json!({"evidence": 0, "catalyst": "demand_boom", "thesis": "Oil.", "upside": 6, "kill": "x"}),
+            )
+        });
+        assert_eq!(
+            analyst(&brain, &stock, Some(&note), "2026-11-13")
+                .unwrap()
+                .catalyst,
+            "demand_boom"
+        );
     }
 
     #[test]
