@@ -1077,6 +1077,20 @@ mod tests {
     }
 
     #[test]
+    fn schemas_ask_for_the_choice_before_its_justification() {
+        let candidates = [card("CCC", false)];
+        let (focus, memory) = (Focus::default(), Memory::default());
+        let book = book(&focus, &memory, &[], &candidates);
+        let brain = Scripted::new(|_, _, _, schema| {
+            let item = &schema["properties"]["buys"]["items"]["properties"];
+            let keys: Vec<&String> = item.as_object().unwrap().keys().collect();
+            assert_eq!(keys, ["symbol", "reason", "weight"]);
+            Ok(json!({"buys": [{"symbol": "CCC", "reason": "r", "weight": 1}]}))
+        });
+        pick(&brain, &book, &["CCC".to_string()], 1, &[]).unwrap();
+    }
+
+    #[test]
     fn the_classifier_maps_labels_back_to_headlines() {
         let batch = card("ACME", false).headlines;
         let brain = Scripted::new(|_, _, user, _| {
