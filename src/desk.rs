@@ -657,10 +657,14 @@ pub fn run(
         )),
     }
     // A young holding is sold only on bad news: buzz alone rises and falls day to day.
+    // Stocks the previous desk bought have no case to protect, so the rule skips them.
     for card in &book.holdings {
         let Some(holding) = &card.holding else {
             continue;
         };
+        if holding.thesis.is_empty() {
+            continue;
+        }
         let bad_news = card
             .headlines
             .iter()
@@ -1267,6 +1271,7 @@ mod tests {
         };
         let mut young = held("OLDA");
         young.opened_at = AT - 86400.0;
+        young.thesis = "Contract win".into();
         state.positions.insert("OLDA".into(), young);
         state.positions.insert("OLDB".into(), held("OLDB"));
         store.save(&state).unwrap();
@@ -1288,6 +1293,28 @@ mod tests {
             sell.kind, "SELL",
             "a holding past the minimum is sold as decided"
         );
+    }
+
+    #[test]
+    fn the_previous_desks_young_holdings_can_be_sold() {
+        let store = Store::open(":memory:").unwrap();
+        let mut state = State {
+            cash: 0.0,
+            engine: ENGINE.into(),
+            ..State::default()
+        };
+        let mut inherited = held("OLDA");
+        inherited.opened_at = AT - 86400.0;
+        state.positions.insert("OLDA".into(), inherited);
+        store.save(&state).unwrap();
+        let brain = brain();
+        let report = run(&store, Some(&brain), &fixture(), AT, 240.0).unwrap();
+        let sell = report
+            .decisions
+            .iter()
+            .find(|d| d.symbol == "OLDA")
+            .unwrap();
+        assert_eq!(sell.kind, "SELL");
     }
 
     #[test]
