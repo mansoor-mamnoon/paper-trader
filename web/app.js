@@ -185,7 +185,7 @@ function how(d) {
     `Only companies worth at least $${(r.min_market_cap / 1e9).toFixed(0)} billion, priced at least $${r.min_price} and trading $${(r.min_dollar_volume / 1e6).toFixed(0)} million a day.`,
     "Every holding gets a KEEP or SELL every day. Every sale is replaced by a purchase.",
     `No purchase may take a stock above ${Math.round((r.max_weight ?? 0.25) * 100)}% of the account; what it cannot take goes to the other purchases.`,
-    `A stock held under ${r.min_hold_days ?? 3} days is sold only on bad news, never because its buzz faded.`,
+    "No minimum holding period: the manager can replace even a newly bought stock when the evidence justifies the cost.",
     "Only stocks the analyst made a case for can be bought. The skeptic only argues against.",
     "The book never drops below four stocks; cash a capped purchase cannot take goes to the other holdings.",
     `Orders fill at the next open, with ${(r.fee * 100).toFixed(1)}% fees and ${(r.slippage * 100).toFixed(1)}% slippage each way.`,
