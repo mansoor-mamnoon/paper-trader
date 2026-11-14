@@ -142,6 +142,14 @@ For a deliberate historical rerun, provide the original cutoff. Forced reruns ar
 gh workflow run account.yml --ref main -f force=true -f as_of=2026-11-14T06:00:46Z
 ```
 
+## One-off Thursday → Friday replay
+
+The manual-only `replay.yml` workflow rebuilds November 12–13 with DeepSeek and the current rules, including no minimum holding period. It starts from the original November 12 close (account commit `aa1b9e2418744ba67222cf11771ed245c6d0ba24`), preserving the ten actual Thursday holdings and the earlier ledger. It archives the current account before doing any replay work.
+
+Thursday's cutoff is `2026-11-12T22:07:43.379Z`. Its orders fill at Friday's open; Friday then researches and decides at `2026-11-13T22:07:43.379Z` using Thursday's resulting account and memory. The jobs run in sequence with the same account lock as normal daily updates. Friday cannot start until Thursday validates and its checkpoint is committed. Validation checks successful DeepSeek calls, a decision for every holding, and that Friday's new fills came from Thursday's orders. Only a validated Friday result replaces the live account and publishes the dashboard.
+
+Both checkpoints, their decisions and the previous live account are preserved under `archive/deepseek-replay-<run-id>/` on the `account` branch. This workflow has no schedule; subsequent normal runs continue from the replayed account. Historical replay filters future bars and dated headlines, but the current stock universe and the model's own knowledge are not a perfect historical snapshot.
+
 ## Switchover
 
 The model desk took the account over on 13 November 2026. The ledger was rewound to the 12 November close, and the new desk ran for that evening with `--as-of`, which cuts every source at that moment: bars end at the 12 November session, headlines must have been published before it, and Reddit counts are the previous day's. Trending lists have no history, so that run went without them. Its orders filled at the real 13 November open. The previous desk's 13 November trades are kept in `archive/` on the `account` branch.
