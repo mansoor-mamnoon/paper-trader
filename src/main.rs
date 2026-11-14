@@ -24,6 +24,9 @@ enum Cli {
         /// Minutes the desk may spend before it stops arguing new candidates
         #[arg(long, default_value_t = 240.0)]
         minutes: f64,
+        /// Run as of an earlier moment (RFC 3339 or epoch seconds): every source is cut there
+        #[arg(long)]
+        as_of: Option<String>,
     },
     /// Write the dashboard data from the database without running the desk
     Export {
@@ -47,7 +50,8 @@ fn main() -> Result<()> {
             output,
             force,
             minutes,
-        } => run(&db, &output, force, minutes),
+            as_of,
+        } => run(&db, &output, force, minutes, as_of.as_deref()),
         Cli::Export { db, output } => {
             let store = Store::open(&db)?;
             println!("{}", site::export(&store, &output)?);
@@ -57,12 +61,20 @@ fn main() -> Result<()> {
     }
 }
 
-fn run(db: &str, output: &str, force: bool, minutes: f64) -> Result<()> {
+fn parse_time(text: &str) -> Result<f64> {
+    if let Ok(seconds) = text.trim().parse::<f64>() {
+        return Ok(seconds);
+    }
+    Ok(chrono::DateTime::parse_from_rfc3339(text.trim())?.timestamp() as f64)
+}
+
+fn run(db: &str, output: &str, force: bool, minutes: f64, as_of: Option<&str>) -> Result<()> {
     let store = Store::open(db)?;
+    let cutoff = as_of.map(parse_time).transpose()?;
     let now = chrono::Utc::now();
     let settled = market::last_settled(now).timestamp() as f64;
     let state = store.load()?;
-    if !force && state.engine == store::ENGINE && state.last_at >= settled {
+    if cutoff.is_none() && !force && state.engine == store::ENGINE && state.last_at >= settled {
         println!("The desk already ran after the latest session, so this run does nothing.");
         site::export(&store, output)?;
         return Ok(());
@@ -75,11 +87,16 @@ fn run(db: &str, output: &str, force: bool, minutes: f64) -> Result<()> {
             None
         }
     };
+    let replay = cutoff.map(paper_trader::replay::AsOf::new);
+    let feed: &dyn desk::Feed = match &replay {
+        Some(feed) => feed,
+        None => &Live,
+    };
     let result = desk::run(
         &store,
         brain.as_ref().map(|b| b as &dyn Brain),
-        &Live,
-        store::now(),
+        feed,
+        cutoff.unwrap_or_else(store::now),
         minutes,
     );
     drop(brain);
