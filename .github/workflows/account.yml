@@ -6,6 +6,10 @@ on:
         description: Run even if the desk already processed the latest session
         type: boolean
         default: false
+      as_of:
+        description: Optional RFC3339 cutoff for a historical session
+        type: string
+        default: ''
   repository_dispatch:
     types: [run-account]
   schedule:
@@ -54,19 +58,29 @@ jobs:
           test "$(sqlite3 account/account.sqlite 'PRAGMA integrity_check')" = ok
           df -h / | tail -1
           free -g | head -2
+      - name: Archive account before a forced rerun
+        if: inputs.force
+        run: |
+          mkdir -p "account/archive/rerun-${GITHUB_RUN_ID}"
+          cp account/account.sqlite "account/archive/rerun-${GITHUB_RUN_ID}/account.sqlite"
       - name: Run the desk and export the dashboard
         id: desk
         continue-on-error: true
         env:
-          # Optional: a free API key for a larger hosted model. Without it every agent runs
-          # on the local model. PAPER_TRADER_API_URL and PAPER_TRADER_API_MODEL are repository
-          # variables that choose the provider and the model.
+          # DeepSeek V4.1 Flash via NVIDIA; the key stays in Actions secrets.
+          # The local model remains available if the free endpoint is unavailable.
           PAPER_TRADER_API_KEY: ${{ secrets.PAPER_TRADER_API_KEY }}
           PAPER_TRADER_API_URL: ${{ vars.PAPER_TRADER_API_URL }}
           PAPER_TRADER_API_MODEL: ${{ vars.PAPER_TRADER_API_MODEL }}
           PAPER_TRADER_API_RPM: ${{ vars.PAPER_TRADER_API_RPM }}
           PAPER_TRADER_API_TPM: ${{ vars.PAPER_TRADER_API_TPM }}
-        run: ./target/release/paper-trader run --db account/account.sqlite --output account/site --minutes 250 ${{ inputs.force && '--force' || '' }}
+          FORCE_RERUN: ${{ inputs.force }}
+          AS_OF: ${{ inputs.as_of }}
+        run: |
+          args=(run --db account/account.sqlite --output account/site --minutes 250)
+          if [ "$FORCE_RERUN" = true ]; then args+=(--force); fi
+          if [ -n "$AS_OF" ]; then args+=(--as-of "$AS_OF"); fi
+          ./target/release/paper-trader "${args[@]}"
       - name: Apply static dashboard
         run: cp -r web/* account/site/
       - name: Configure visitor analytics
@@ -82,7 +96,7 @@ jobs:
         run: |
           git config user.name 'paper-trader[bot]'
           git config user.email 'paper-trader@users.noreply.github.com'
-          git add -A account.sqlite site INITIALIZED
+          git add -A account.sqlite site INITIALIZED archive
           git diff --cached --quiet || git commit -m 'Record the desk day'
           git push origin HEAD:account
       - uses: actions/configure-pages@v6
