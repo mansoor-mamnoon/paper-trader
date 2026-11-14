@@ -1,1 +1,81 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 370" role="img" aria-label="Paper Trader architecture"><rect width="1000" height="370" fill="#fbfbf8"/><style>text{font-family:Arial,sans-serif;fill:#0f1115}.title{font-size:21px;font-weight:700}.sub{font-size:14px}</style><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8" fill="#0f1115"/></marker></defs><text x="30" y="42" class="title">PAPER TRADER / DAILY ACCOUNT</text><rect x="35" y="90" width="280" height="85" fill="#0f1115"/><rect x="30" y="85" width="280" height="85" fill="#ffe14d" stroke="#0f1115" stroke-width="2"/><text x="45" y="118" class="title">Market inputs</text><text x="45" y="144" class="sub">Prices · news · SEC</text><rect x="355" y="90" width="280" height="85" fill="#0f1115"/><rect x="350" y="85" width="280" height="85" fill="#ffe14d" stroke="#0f1115" stroke-width="2"/><text x="365" y="118" class="title">Identity and screen</text><text x="365" y="144" class="sub">Issuer · liquidity · events</text><rect x="675" y="90" width="280" height="85" fill="#0f1115"/><rect x="670" y="85" width="280" height="85" fill="#ffe14d" stroke="#0f1115" stroke-width="2"/><text x="685" y="118" class="title">Research and debate</text><text x="685" y="144" class="sub">Research → bull → bear</text><rect x="675" y="250" width="280" height="85" fill="#0f1115"/><rect x="670" y="245" width="280" height="85" fill="#ffe14d" stroke="#0f1115" stroke-width="2"/><text x="685" y="278" class="title">Judge and claim checks</text><text x="685" y="304" class="sub">Citations · risks · alternatives</text><rect x="355" y="250" width="280" height="85" fill="#0f1115"/><rect x="350" y="245" width="280" height="85" fill="#ffe14d" stroke="#0f1115" stroke-width="2"/><text x="365" y="278" class="title">Individual stock orders</text><text x="365" y="304" class="sub">All available cash allocated</text><rect x="35" y="250" width="280" height="85" fill="#0f1115"/><rect x="30" y="245" width="280" height="85" fill="#ffe14d" stroke="#0f1115" stroke-width="2"/><text x="45" y="278" class="title">SQLite and dashboard</text><text x="45" y="304" class="sub">Account branch → Pages</text><path d="M312 127H345" stroke="#0f1115" stroke-width="2" marker-end="url(#arrow)"/><path d="M632 127H665" stroke="#0f1115" stroke-width="2" marker-end="url(#arrow)"/><path d="M810 172V238" stroke="#0f1115" stroke-width="2" marker-end="url(#arrow)"/><path d="M668 287H638" stroke="#0f1115" stroke-width="2" marker-end="url(#arrow)"/><path d="M348 287H318" stroke="#0f1115" stroke-width="2" marker-end="url(#arrow)"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 430" font-family="Helvetica, Arial, sans-serif">
+  <title>One trading day: Rust gathers data, six model agents decide, Rust keeps the books</title>
+  <rect width="960" height="430" fill="#fbfbf8"/>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#0f1115"/></marker>
+    <style>
+      .box{fill:#fff;stroke:#0f1115;stroke-width:2}
+      .rust{fill:#e6eefc;stroke:#0f1115;stroke-width:2}
+      .llm{fill:#ffe14d;stroke:#0f1115;stroke-width:2}
+      .t{font-size:15px;font-weight:700;fill:#0f1115}
+      .s{font-size:12px;fill:#44505f}
+      .h{font-size:12px;font-weight:700;letter-spacing:.06em;fill:#44505f}
+      .l{stroke:#0f1115;stroke-width:2;fill:none;marker-end:url(#a)}
+      .m{stroke:#7a8696;stroke-width:2;fill:none;stroke-dasharray:5 4;marker-end:url(#a)}
+    </style>
+  </defs>
+  <text x="24" y="30" class="h">RUST: DATA</text>
+  <rect x="24" y="44" width="200" height="74" rx="10" class="rust"/>
+  <text x="38" y="70" class="t">Settle the books</text>
+  <text x="38" y="90" class="s">fill orders at today's open</text>
+  <text x="38" y="106" class="s">mark holdings, equity curve</text>
+  <rect x="24" y="136" width="200" height="90" rx="10" class="rust"/>
+  <text x="38" y="162" class="t">Buzz screen</text>
+  <text x="38" y="182" class="s">whole US market, no funds</text>
+  <text x="38" y="198" class="s">Reddit, trending, move,</text>
+  <text x="38" y="214" class="s">unusual volume</text>
+  <rect x="24" y="244" width="200" height="74" rx="10" class="rust"/>
+  <text x="38" y="270" class="t">News</text>
+  <text x="38" y="290" class="s">12 sector searches</text>
+  <text x="38" y="306" class="s">per-stock headlines</text>
+
+  <text x="280" y="30" class="h">MODELS: EVERY DECISION</text>
+  <rect x="280" y="44" width="180" height="62" rx="10" class="llm"/>
+  <text x="294" y="70" class="t">1 Scouts ×12</text>
+  <text x="294" y="90" class="s">write the sector newsbook</text>
+  <rect x="280" y="124" width="180" height="62" rx="10" class="llm"/>
+  <text x="294" y="150" class="t">2 Strategist</text>
+  <text x="294" y="170" class="s">picks 1-3 sectors</text>
+  <rect x="280" y="204" width="180" height="62" rx="10" class="llm"/>
+  <text x="294" y="230" class="t">3 Classifier</text>
+  <text x="294" y="250" class="s">labels every headline</text>
+  <rect x="510" y="124" width="190" height="62" rx="10" class="llm"/>
+  <text x="524" y="150" class="t">4 Analyst</text>
+  <text x="524" y="170" class="s">case for each stock</text>
+  <rect x="510" y="204" width="190" height="62" rx="10" class="llm"/>
+  <text x="524" y="230" class="t">5 Skeptic</text>
+  <text x="524" y="250" class="s">attacks the case</text>
+  <rect x="510" y="290" width="190" height="80" rx="10" class="llm"/>
+  <text x="524" y="316" class="t">6 Manager</text>
+  <text x="524" y="336" class="s">KEEP or SELL every holding,</text>
+  <text x="524" y="352" class="s">picks every replacement</text>
+
+  <text x="750" y="30" class="h">RUST: BOOKS</text>
+  <rect x="750" y="290" width="190" height="80" rx="10" class="rust"/>
+  <text x="764" y="316" class="t">Queue orders</text>
+  <text x="764" y="336" class="s">for the next open,</text>
+  <text x="764" y="352" class="s">all cash spent</text>
+  <rect x="750" y="44" width="190" height="142" rx="10" class="box"/>
+  <text x="764" y="70" class="t">Memory (SQLite)</text>
+  <text x="764" y="92" class="s">newsbook by sector</text>
+  <text x="764" y="110" class="s">labelled headlines</text>
+  <text x="764" y="128" class="s">journal: KEEP/SELL/BUY</text>
+  <text x="764" y="146" class="s">manager's daily notes</text>
+  <text x="764" y="164" class="s">closed trades by catalyst</text>
+  <rect x="750" y="204" width="190" height="62" rx="10" class="box"/>
+  <text x="764" y="230" class="t">GitHub Pages</text>
+  <text x="764" y="250" class="s">dashboard + transcripts</text>
+
+  <path d="M224 274H252V75H276" class="l"/>
+  <path d="M224 180H252" class="l"/>
+  <path d="M370 106V120" class="l"/>
+  <path d="M370 186V200" class="l"/>
+  <path d="M460 235H480V155H506" class="l"/>
+  <path d="M605 186V200" class="l"/>
+  <path d="M605 266V286" class="l"/>
+  <path d="M700 330H746" class="l"/>
+  <path d="M750 115H730V95H464" class="m"/>
+  <path d="M750 150H720V330H704" class="m"/>
+  <path d="M845 290V270" class="l"/>
+  <text x="24" y="410" class="s">Dashed: agents read earlier days from memory. One local model (Qwen3.5 9B on llama.cpp) plays every role on a free GitHub runner.</text>
+</svg>
