@@ -16,12 +16,13 @@ After the US close, a GitHub Actions run does one trading day:
 
 1. **Settle.** Rust fills yesterday's orders at today's open, with a 0.1% fee and 0.2% adverse slippage on each side, and marks the book.
 2. **Buzz screen.** It reads the entire US market from the Nasdaq screener in one request. It keeps companies worth at least $5B, priced at least $3 and trading at least $25M a day, and drops every ETF, index fund, closed-end fund, ETN, preferred, warrant and unit. It scores each stock by attention: Reddit mentions and their growth, Yahoo and StockTwits trending lists, the size of the day's move, dollar volume, and volume against its 20-day average. The screen decides what the models read. It never decides a trade.
-3. **Scouts** (one per sector, 12 sectors) each write the day's newsbook entry from two days of sector news, the sector's tape, its most-buzzed stocks and their own earlier entries.
-4. **Strategist** reads the newsbook and picks one to three sectors to trade. The candidates are the eight most-buzzed stocks in those sectors, from the whole eligible market, plus the four most-buzzed stocks anywhere else.
-5. **Classifier** labels every headline of every holding and candidate (product launch, big deal, results beat, upgrade, approval, policy, takeover, retail frenzy, demand boom, bad news, noise, unrelated) with a buzz score from 0 to 3. CEO changes, filings, dividends and conference appearances are noise by definition.
-6. **Analyst** makes the case for each holding and each candidate. **Skeptic** only argues against it, with the same file: is it fresh, is it priced in, is the buzz fading. If the analyst found no catalyst, the skeptic agrees and says why to avoid the stock; it never makes the bull case itself.
-7. **Manager** must answer KEEP or SELL for every holding. Every sale must be replaced: it picks the replacements and their weights from the candidates the analyst made a case for. A replacement must clearly beat what it replaces after the 0.6% round-trip cost. It reads its own notes, decisions and closed trades from earlier days.
-8. **Rust queues the orders** for the next open, writes everything to memory and publishes the dashboard.
+3. **FinBERT** reads every fresh headline of the 60 screened stocks and the holdings and scores its tone from -1 to +1. It runs in Rust in a few seconds. Good news lifts a stock in the screen, bad news lowers it, and each agent sees the score beside every headline.
+4. **Scouts** (one per sector, 12 sectors) each write the day's newsbook entry from two days of sector news, the sector's tape, its most-buzzed stocks and their own earlier entries.
+5. **Strategist** reads the newsbook and picks one to three sectors to trade. The candidates are the eight most-buzzed stocks in those sectors, from the whole eligible market, plus the four most-buzzed stocks anywhere else.
+6. **Classifier** labels every headline of every holding and candidate (product launch, big deal, results beat, upgrade, approval, policy, takeover, retail frenzy, demand boom, bad news, noise, unrelated) with a buzz score from 0 to 3. CEO changes, filings, dividends and conference appearances are noise by definition.
+7. **Analyst** makes the case for each holding and each candidate, and must name the one headline the case rests on. A case that cites no headline, or cites one labelled noise, unrelated or bad news, does not count, so the stock cannot be bought on it. Only a sector-wide catalyst may rest on the newsbook instead. **Skeptic** only argues against it, with the same file: is it fresh, is it priced in, is the buzz fading. If the analyst found no catalyst, the skeptic agrees and says why to avoid the stock; it never makes the bull case itself.
+8. **Manager** must answer KEEP or SELL for every holding. Every sale must be replaced: it picks the replacements and their weights from the candidates the analyst made a case for. A replacement must clearly beat what it replaces after the 0.6% round-trip cost. It reads its own notes, decisions and closed trades from earlier days.
+9. **Rust queues the orders** for the next open, writes everything to memory and publishes the dashboard.
 
 ## Rules no model can change
 
@@ -48,7 +49,28 @@ Everything lives in one SQLite file on the `account` branch:
 
 ## Models
 
-All agents run on **Qwen3.5 9B** (Apache-2.0, 4-bit, 5.7 GB) with llama.cpp on the free GitHub runner (4 CPU cores, 16 GB memory, no GPU). Rust downloads llama.cpp and the model itself, pins each file to a Hugging Face commit and checks its SHA-256.
+The desk uses three kinds of model, each for what it is good at.
+
+**A large hosted model for the reasoning, when a free key is set.** A 27B or larger model cannot run on the free GitHub runner (4 CPU cores, 16 GB memory, no GPU), but several providers serve large open models free over the same chat API. Set one secret and each agent asks the hosted model first:
+
+```sh
+gh secret set PAPER_TRADER_API_KEY                      # the provider's key
+gh variable set PAPER_TRADER_API_URL --body https://integrate.api.nvidia.com/v1
+gh variable set PAPER_TRADER_API_MODEL --body deepseek-ai/deepseek-v4.1-flash
+```
+
+The URL and model shown are the defaults. `PAPER_TRADER_API_RPM` and `PAPER_TRADER_API_TPM` set the requests and tokens allowed per minute (defaults 20 and 60,000); the client waits to stay under them. Options checked on 14 November 2026:
+
+| Provider | Large open models | Free limits | Note |
+|---|---|---|---|
+| NVIDIA build | DeepSeek V4.1 Flash, GLM 5.3 Flash, Kimi K2.6, Gemma 4 31B | reported about 40 requests a minute | Models confirmed from its public list; limits not verified with a key |
+| Groq | Qwen3.8 27B, gpt-oss-120b | reported 1,000 requests and 200K tokens a day, 8K tokens a minute | Set `PAPER_TRADER_API_TPM=8000`; the manager's largest questions then go to the local model |
+| OpenRouter `:free` | Gemma 4 31B and others | 50 requests a day | Too few: a desk day is about 75 calls |
+| DeepSeek's own API | DeepSeek | none | The weights are free; the API is paid |
+
+**A local model as the fallback, and the default with no key.** Qwen3.5 9B (Apache-2.0, 4-bit, 5.7 GB) runs with llama.cpp on the runner. Any question the hosted model fails, whether from a rate limit, an outage, or an answer that does not match the required JSON shape, goes to the local model, so a run never depends on a provider. After three failed questions in a row the hosted model is left alone for the rest of the run. Rust downloads llama.cpp and the model itself, pins each file to a Hugging Face commit and checks its SHA-256.
+
+**FinBERT for tone.** [ProsusAI/finbert](https://huggingface.co/ProsusAI/finbert) (CC BY-NC-SA 4.0) is a 110M-parameter BERT trained on financial text. It runs in pure Rust with [candle](https://github.com/huggingface/candle) and its own WordPiece tokenizer: ten headlines take about a tenth of a second. That speed is its job here. The language model has time to label the headlines of about twenty stocks; FinBERT reads all sixty screened stocks, so news tone can shape which stocks are researched at all. It is a second opinion and not a judge: on test headlines it called an FDA approval neutral and a "fewer customers" story positive, which is why the language model's catalyst label stays and FinBERT's score sits beside it. A very negative score on a company headline does count as bad news for the minimum-hold rule. `paper-trader tone "headline"` prints its reading.
 
 The previous desk used nine 2–4B models, one per role, chosen to come from nine different companies. The new desk drops that rule. One stronger model plays every role, so there are no model swaps during a run and the time goes into more and longer answers. Larger open models were considered:
 
@@ -60,7 +82,7 @@ The previous desk used nine 2–4B models, one per role, chosen to come from nin
 | Gemma 4 26B-A4B, Qwen3.6 35B-A3B | 13–17 GB | no | Too large for 16 GB |
 | Qwen3 4B Instruct (old judge) | 2.5 GB | yes | Kept as the baseline |
 
-`paper-trader bench` puts the same known-answer desk questions to each model: labelling eight headlines, deciding three holdings, and picking two purchases. It reports accuracy and speed. Set `PAPER_TRADER_MODEL=<id>` to run the whole desk on another registered model.
+`paper-trader bench` puts the same known-answer desk questions to each model, the hosted one first when a key is set: labelling eight headlines, deciding three holdings, and picking two purchases. It reports accuracy and speed. Set `PAPER_TRADER_MODEL=<id>` to run the whole desk on another registered model.
 
 First results, on an Apple M2 Pro (Metal), 13 November 2026:
 
@@ -76,7 +98,7 @@ Both models answered every question correctly, so these questions are too easy t
 - **Debate, but one round.** [TradingAgents](https://arxiv.org/abs/2412.20138) showed an analyst, debate and manager structure for trading. [Talk Isn't Always Cheap](https://arxiv.org/abs/2509.05396) found that longer debates can move correct answers to wrong ones. So the skeptic gets one rebuttal and the manager decides, with no back-and-forth.
 - **Structure matters more than the model.** The live [Agent Market Arena](https://arxiv.org/abs/2510.11695) found that changing the agent structure changed results far more than changing the model. That is why the roles have separate evidence jobs (sector news, headlines, the case, the attack, the book) and not just different personas.
 - **News is the signal.** [Lopez-Lira and Tang](https://arxiv.org/abs/2304.07619) found that LLM readings of headlines predict next-day returns, more strongly for smaller stocks. [Beyond Sentiment](https://www.alphaxiv.org/abs/2607.28496) found that structured LLM features add information that sentiment scores miss. That is why the classifier labels the kind of catalyst instead of scoring positive or negative.
-- **Why not a separate classifier model.** FinBERT-style models score sentiment, not catalyst type, and running one would add a Python or ONNX runtime to an otherwise all-Rust project. The LLM classifier is one more agent on the model already loaded.
+- **Two readers of the news.** [Beyond Sentiment](https://www.alphaxiv.org/abs/2607.28496) found that FinBERT sentiment and LLM-extracted features together predict next-day moves better than either alone. So FinBERT scores tone for every screened stock, and the LLM classifier labels the kind of catalyst for the stocks being argued.
 - **Why not fine-tune a smaller model from a larger one.** The MIT work in this area ([DisCIPL](https://news.mit.edu/2025/enabling-small-language-models-solve-complex-reasoning-tasks-1212)) has a large model plan and small models execute; distillation more generally needs a teacher and many labelled examples. The desk has no free teacher that can run on the runner and, so far, only a handful of closed trades to learn from. Revisit once the `trades` and `headlines` tables hold a few hundred labelled outcomes: they are exactly the training set a distilled classifier would need.
 - **Why the screen is buzz and not momentum.** The previous screen ranked 20- and 50-day trend winners and then the models explained them. Trend alone produced the CEO-change and pool-supply rationales in the old journal. The new screen surfaces what people are talking about today, and the models read the news to decide whether the talk is worth money.
 
