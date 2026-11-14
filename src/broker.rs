@@ -2,7 +2,7 @@
 //! before purchases, and purchases spend all the cash there is. Nothing here chooses a
 //! stock: it carries out what the manager decided.
 
-use crate::config::{FEE, MAX_POSITIONS, MIN_ORDER, SLIP, START_CASH};
+use crate::config::{FEE, MAX_POSITIONS, MAX_WEIGHT, MIN_ORDER, SLIP, START_CASH};
 use crate::market::Quote;
 use crate::store::{EquityPoint, Fill, Order, Position, State, Store, Trade};
 use anyhow::Result;
@@ -198,14 +198,17 @@ pub fn settle(
             }
         }
     }
-    let cash = state.cash;
-    let total_weight: f64 = buys.iter().map(|(_, o, _, _)| o.weight.max(0.0)).sum();
-    for (symbol, order, bar_at, open) in buys {
-        let budget = if total_weight > 0.0 {
-            cash * order.weight.max(0.0) / total_weight
-        } else {
-            0.0
-        };
+    let equity = state.equity();
+    let weights: Vec<f64> = buys.iter().map(|(_, o, _, _)| o.weight.max(0.0)).collect();
+    let rooms: Vec<f64> = buys
+        .iter()
+        .map(|(symbol, _, _, _)| {
+            let held = state.positions.get(symbol).map_or(0.0, |p| p.market_value);
+            (MAX_WEIGHT * equity - held).max(0.0)
+        })
+        .collect();
+    let budgets = allocate(state.cash, &weights, &rooms);
+    for ((symbol, order, bar_at, open), budget) in buys.into_iter().zip(budgets) {
         if budget >= MIN_ORDER {
             buy(store, state, &symbol, &order, bar_at, open, budget)?;
         } else {
@@ -245,6 +248,38 @@ pub fn settle(
         },
         drawdown,
     )
+}
+
+/// Split `cash` across purchases by weight, without any purchase going over its room
+/// (the most it may add before the stock passes [`MAX_WEIGHT`] of the account). What one
+/// capped purchase cannot take goes to the others, so the cash is all spent unless every
+/// purchase is full.
+pub fn allocate(cash: f64, weights: &[f64], rooms: &[f64]) -> Vec<f64> {
+    let mut budgets = vec![0.0; weights.len()];
+    let mut open: Vec<usize> = (0..weights.len())
+        .filter(|&i| weights[i] > 0.0 && rooms[i] > 0.0)
+        .collect();
+    let mut remaining = cash.max(0.0);
+    while !open.is_empty() && remaining > 1e-9 {
+        let total: f64 = open.iter().map(|&i| weights[i]).sum();
+        let capped: Vec<usize> = open
+            .iter()
+            .copied()
+            .filter(|&i| remaining * weights[i] / total >= rooms[i] - budgets[i])
+            .collect();
+        if capped.is_empty() {
+            for &i in &open {
+                budgets[i] += remaining * weights[i] / total;
+            }
+            break;
+        }
+        for &i in &capped {
+            remaining -= rooms[i] - budgets[i];
+            budgets[i] = rooms[i];
+        }
+        open.retain(|i| !capped.contains(i));
+    }
+    budgets
 }
 
 /// How many new stocks the manager must pick. Money is on its way whenever something is
@@ -384,7 +419,7 @@ mod tests {
             .insert("OLD".into(), held("OLD", 10.0, 500.0));
         state
             .positions
-            .insert("STAY".into(), held("STAY", 5.0, 500.0));
+            .insert("STAY".into(), held("STAY", 50.0, 5000.0));
         let sells: BTreeMap<String, String> =
             [("OLD".to_string(), "played out".to_string())].into();
         let buys: BTreeMap<String, Order> = [
@@ -427,7 +462,7 @@ mod tests {
         assert!((state.positions["NEW"].entry - 20.0 * (1.0 + SLIP)).abs() < 1e-9);
         assert_eq!(state.positions["NEW"].thesis, "thesis");
         assert!((state.realized_pnl - (proceeds - 500.0)).abs() < 1e-9);
-        assert!((state.positions["STAY"].market_value - liquidation(5.0, 110.0)).abs() < 1e-9);
+        assert!((state.positions["STAY"].market_value - liquidation(50.0, 110.0)).abs() < 1e-9);
         let trades = store.trades(5).unwrap();
         assert_eq!(trades.len(), 1);
         assert_eq!(trades[0].exit_reason, "played out");
@@ -435,6 +470,18 @@ mod tests {
         assert_eq!(store.fills(10).unwrap().len(), 3);
         assert_eq!(store.equity_curve().unwrap().len(), 1);
         assert!((state.benchmark_value.unwrap() - START_CASH).abs() < 1e-9);
+    }
+
+    #[test]
+    fn no_purchase_passes_the_cap_and_the_rest_goes_elsewhere() {
+        let budgets = allocate(100.0, &[3.0, 1.0], &[40.0, 100.0]);
+        assert!((budgets[0] - 40.0).abs() < 1e-9);
+        assert!((budgets[1] - 60.0).abs() < 1e-9);
+        let even = allocate(90.0, &[1.0, 2.0], &[100.0, 100.0]);
+        assert!((even[0] - 30.0).abs() < 1e-9 && (even[1] - 60.0).abs() < 1e-9);
+        let full = allocate(100.0, &[1.0, 1.0], &[10.0, 20.0]);
+        assert!((full.iter().sum::<f64>() - 30.0).abs() < 1e-9);
+        assert_eq!(allocate(50.0, &[1.0], &[0.0]), [0.0]);
     }
 
     #[test]
@@ -459,14 +506,14 @@ mod tests {
             cash: 0.0,
             ..State::default()
         };
-        for i in 0..9 {
+        for i in 0..MAX_POSITIONS + 3 {
             state
                 .positions
                 .insert(format!("S{i}"), held("S", 1.0, 100.0));
         }
-        assert_eq!(sales_required(&state), 4);
-        assert_eq!(purchases_needed(&state, 4), 0);
-        assert_eq!(purchases_needed(&state, 6), 2);
+        assert_eq!(sales_required(&state), 3);
+        assert_eq!(purchases_needed(&state, 3), 0);
+        assert_eq!(purchases_needed(&state, 5), 2);
         assert_eq!(purchases_needed(&state, 0), 0);
         let empty = State::default();
         assert_eq!(sales_required(&empty), 0);

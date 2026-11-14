@@ -9,10 +9,14 @@ pub const SLIP: f64 = 0.002;
 /// Orders smaller than this many dollars are not placed.
 pub const MIN_ORDER: f64 = 1.0;
 /// The book holds this many stocks. A sale is always paired with a purchase.
-pub const MAX_POSITIONS: usize = 5;
+pub const MAX_POSITIONS: usize = 8;
+/// No purchase may take one stock above this share of the account.
+pub const MAX_WEIGHT: f64 = 0.25;
+/// A holding younger than this many days is sold only on bad news, not on fading buzz.
+pub const MIN_HOLD_DAYS: i64 = 3;
 
 /// A stock must be at least this large to be bought.
-pub const MIN_MARKET_CAP: f64 = 1.0e9;
+pub const MIN_MARKET_CAP: f64 = 5.0e9;
 /// A stock must cost at least this much per share.
 pub const MIN_PRICE: f64 = 3.0;
 /// A stock must have traded at least this many dollars in the latest session.
