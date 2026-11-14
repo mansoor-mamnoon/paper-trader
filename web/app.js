@@ -184,6 +184,9 @@ function how(d) {
     "No ETFs, index funds, mutual funds, ETNs, preferreds, warrants or units.",
     `Only companies worth at least $${(r.min_market_cap / 1e9).toFixed(0)} billion, priced at least $${r.min_price} and trading $${(r.min_dollar_volume / 1e6).toFixed(0)} million a day.`,
     "Every holding gets a KEEP or SELL every day. Every sale is replaced by a purchase.",
+    `No purchase may take a stock above ${Math.round((r.max_weight ?? 0.25) * 100)}% of the account; what it cannot take goes to the other purchases.`,
+    `A stock held under ${r.min_hold_days ?? 3} days is sold only on bad news, never because its buzz faded.`,
+    "Only stocks the analyst made a case for can be bought. The skeptic only argues against.",
     `Orders fill at the next open, with ${(r.fee * 100).toFixed(1)}% fees and ${(r.slippage * 100).toFixed(1)}% slippage each way.`,
     "No stop-losses, no momentum fallback and no rule picks a stock: only the models decide.",
   ].map((t) => `<li>${esc(t)}</li>`).join("");

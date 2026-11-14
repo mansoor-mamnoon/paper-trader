@@ -93,12 +93,12 @@
       <h2>One trading day</h2>
       <ol class="flow" style="margin-top:14px">
         <li><b>Settle.</b> Rust fills yesterday's orders at today's open with 0.1% fees and 0.2% slippage, then marks the book.</li>
-        <li><b>Buzz screen.</b> Every US stock above $1B, $3 and $25M daily volume is scored on Reddit mentions, trending lists, the day's move and unusual volume. Funds, ETFs and index products are excluded. The screen decides what the models read, never what is bought.</li>
+        <li><b>Buzz screen.</b> Every US company worth $5B or more, priced at least $3 and trading $25M a day, is scored on Reddit mentions, trending lists, the day's move and unusual volume. Funds, ETFs and index products are excluded. The screen decides what the models read, never what is bought.</li>
         <li><b>Scouts</b> write each of 12 sectors' newsbook entries from the last two days of sector news, the tape and their own earlier entries.</li>
         <li><b>Strategist</b> reads the newsbook and picks one to three sectors to trade. Candidates are the 8 most-buzzed stocks in those sectors plus the 4 most-buzzed anywhere else.</li>
         <li><b>Classifier</b> labels every headline of every holding and candidate: product launch, big deal, policy, retail frenzy, noise and so on, with a buzz score.</li>
-        <li><b>Analyst</b> makes the case for each stock; <b>skeptic</b> attacks it with the same file.</li>
-        <li><b>Manager</b> must answer KEEP or SELL for every holding, then picks replacements for every sale from the argued candidates. It reads its own notes, decisions and closed trades from earlier days.</li>
+        <li><b>Analyst</b> makes the case for each stock; <b>skeptic</b> only argues against it, with the same file.</li>
+        <li><b>Manager</b> must answer KEEP or SELL for every holding of up to eight, then picks replacements for every sale from the candidates the analyst made a case for. A holding under three days old is sold only on bad news. It reads its own notes, decisions and closed trades from earlier days.</li>
         <li><b>Rust queues the orders</b> for the next open. All cash is spent; if nothing new is bought, freed cash tops up the stocks that were kept.</li>
       </ol>
     </div>
