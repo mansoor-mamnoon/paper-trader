@@ -171,9 +171,9 @@ fn reddit_points(attention: &Attention) -> f64 {
     volume + if growing { 1.0 } else { 0.0 }
 }
 
-/// Score every eligible stock on the move, dollar volume, Reddit and trending lists, and
-/// keep the top [`PRESCREEN`].
-pub fn prescreen(eligible: &[Listing], attention: &BTreeMap<String, Attention>) -> Vec<Buzz> {
+/// Score every eligible stock on the move, dollar volume, Reddit and trending lists, best
+/// first.
+pub fn score_all(eligible: &[Listing], attention: &BTreeMap<String, Attention>) -> Vec<Buzz> {
     let mut volumes: Vec<f64> = eligible.iter().map(Listing::dollar_volume).collect();
     volumes.sort_by(f64::total_cmp);
     let mut scored: Vec<Buzz> = eligible
@@ -195,6 +195,12 @@ pub fn prescreen(eligible: &[Listing], attention: &BTreeMap<String, Attention>) 
         })
         .collect();
     rank(&mut scored);
+    scored
+}
+
+/// The top [`PRESCREEN`] of [`score_all`].
+pub fn prescreen(eligible: &[Listing], attention: &BTreeMap<String, Attention>) -> Vec<Buzz> {
+    let mut scored = score_all(eligible, attention);
     scored.truncate(PRESCREEN);
     scored
 }

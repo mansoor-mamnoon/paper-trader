@@ -13,8 +13,8 @@ use crate::agents::{self, Book, Card, Facts, Focus, Holding, Memory};
 use crate::broker;
 use crate::buzz::{self, Attention, Buzz, SourceNote};
 use crate::config::{
-    CANDIDATES, CLASSIFY_BATCH, HEADLINE_DAYS, HEADLINES_PER_STOCK, MANAGER_MEMORY, MAX_FOCUS,
-    NEWSBOOK_MEMORY, SCOUT_HEADLINES, SCOUT_NAMES, TRADE_MEMORY,
+    CLASSIFY_BATCH, FOCUS_CANDIDATES, HEADLINE_DAYS, HEADLINES_PER_STOCK, MANAGER_MEMORY,
+    MAX_FOCUS, NEWSBOOK_MEMORY, PRESCREEN, SCOUT_HEADLINES, SCOUT_NAMES, TRADE_MEMORY, WILDCARDS,
 };
 use crate::llm::Brain;
 use crate::market::{self, Listing, Quote};
@@ -293,12 +293,13 @@ pub fn run(
         .collect();
     let (attention, sources) = feed.attention();
     report.sources = sources;
-    let mut ranked = buzz::prescreen(&eligible, &attention);
+    let all_scored = buzz::score_all(&eligible, &attention);
+    let mut ranked: Vec<Buzz> = all_scored.iter().take(PRESCREEN).cloned().collect();
     let mut wanted: BTreeSet<String> = ranked.iter().map(|b| b.listing.symbol.clone()).collect();
     wanted.extend(state.positions.keys().cloned());
     wanted.extend(state.pending.keys().cloned());
     wanted.insert("SPY".into());
-    let (quotes, quote_errors) = feed.histories(&wanted);
+    let (mut quotes, quote_errors) = feed.histories(&wanted);
     for symbol in state.positions.keys() {
         if let Some(error) = quote_errors.get(symbol) {
             report
@@ -430,22 +431,44 @@ pub fn run(
         }
     };
 
-    // 4. Candidates: the most-buzzed stocks of the focus sectors that are not already held.
-    let in_focus = |b: &&Buzz| {
-        report.focus.sectors.is_empty()
-            || report
-                .focus
-                .sectors
-                .iter()
-                .any(|s| s == sectors::sector_of(&b.listing).id)
+    // 4. Candidates: the most-buzzed stocks of the focus sectors from the whole market, then
+    // the day's most-buzzed stocks from anywhere else, none of them already held.
+    let in_focus = |b: &Buzz| {
+        report
+            .focus
+            .sectors
+            .iter()
+            .any(|s| s == sectors::sector_of(&b.listing).id)
     };
-    let candidates: Vec<Buzz> = ranked
+    let mut focus_pool: Vec<Buzz> = all_scored
         .iter()
-        .filter(|b| !state.positions.contains_key(&b.listing.symbol))
-        .filter(in_focus)
-        .take(CANDIDATES)
+        .filter(|b| !state.positions.contains_key(&b.listing.symbol) && in_focus(b))
+        .take(FOCUS_CANDIDATES * 2)
         .cloned()
         .collect();
+    let missing: BTreeSet<String> = focus_pool
+        .iter()
+        .map(|b| b.listing.symbol.clone())
+        .filter(|s| !quotes.contains_key(s))
+        .collect();
+    if !missing.is_empty() {
+        quotes.extend(feed.histories(&missing).0);
+    }
+    focus_pool.retain(|b| quotes.get(&b.listing.symbol).is_some_and(Quote::is_stock));
+    buzz::refine(&mut focus_pool, &quotes);
+    let mut candidates: Vec<Buzz> = focus_pool.into_iter().take(FOCUS_CANDIDATES).collect();
+    let wildcards: Vec<Buzz> = ranked
+        .iter()
+        .filter(|b| {
+            !state.positions.contains_key(&b.listing.symbol)
+                && !candidates
+                    .iter()
+                    .any(|c| c.listing.symbol == b.listing.symbol)
+        })
+        .take(WILDCARDS + FOCUS_CANDIDATES.saturating_sub(candidates.len()))
+        .cloned()
+        .collect();
+    candidates.extend(wildcards);
     report.funnel.candidates = candidates.len();
 
     // 5. Headlines for holdings and candidates, labelled by the classifier.
@@ -993,13 +1016,14 @@ mod tests {
         assert_eq!(report.newsbook.len(), SECTORS.len());
         assert_eq!(report.newsbook[0].sector, "chips");
         assert_eq!(report.focus.sectors, ["chips"]);
-        // Only chip stocks are argued, and the fund never appears.
-        assert_eq!(report.cards.len(), 6);
+        // The six chip stocks come first, then the day's most-buzzed others; never the fund.
+        assert_eq!(report.cards.len(), 9);
+        assert!(report.cards[..6].iter().all(|c| c.sector == "chips"));
         assert!(
             report
                 .cards
                 .iter()
-                .all(|c| c.sector == "chips" && c.case.is_some() && c.rebuttal.is_some())
+                .all(|c| c.symbol != "FUND" && c.case.is_some() && c.rebuttal.is_some())
         );
         assert_eq!(
             report.cards[0].symbol, "CHIPA",
@@ -1068,7 +1092,7 @@ mod tests {
             4
         );
         // The holdings were argued too.
-        assert_eq!(brain.count(Agent::Analyst), 3 + 5);
+        assert_eq!(brain.count(Agent::Analyst), 3 + 5 + 1);
         // The next day's open fills everything and leaves no cash.
         let next = AT + 86400.0;
         let mut quotes = BTreeMap::new();
