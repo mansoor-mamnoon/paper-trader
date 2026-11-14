@@ -218,12 +218,17 @@ fn headline_lines(headlines: &[Tagged], today: &str) -> String {
         } else {
             format!(" [{}, buzz {}/3]", h.label, h.buzz)
         };
+        let tone = if h.tone.is_empty() {
+            String::new()
+        } else {
+            format!(" [FinBERT: {} {:+.2}]", h.tone, h.tone_score)
+        };
         let source = if h.source.is_empty() {
             String::new()
         } else {
             format!(" ({})", h.source)
         };
-        let _ = writeln!(out, "  {}. {when}{label}: {}{source}", i + 1, h.title);
+        let _ = writeln!(out, "  {}. {when}{label}{tone}: {}{source}", i + 1, h.title);
     }
     out
 }
@@ -246,7 +251,7 @@ pub fn dossier(card: &Card, sector_note: Option<&SectorNote>, today: &str) -> St
     let _ = writeln!(out, "NUMBERS: {}", facts_line(&card.facts));
     let _ = write!(
         out,
-        "HEADLINES (first seen on the day shown; the label and buzz score are the classifier's):\n{}",
+        "HEADLINES (first seen on the day shown; the label and buzz score are the classifier's; FinBERT is a separate small model that scores each headline's tone from -1 to +1 and is a second opinion: a bullish label on a headline FinBERT reads as negative deserves a second look):\n{}",
         headline_lines(&card.headlines, today)
     );
     if let Some(holding) = &card.holding {
@@ -351,6 +356,8 @@ pub struct ScoutBrief {
     /// The sector's most-buzzed stocks, one per line.
     pub names: Vec<String>,
     pub headlines: Vec<String>,
+    /// FinBERT's count of positive, negative and neutral headlines, in one line.
+    pub tone: String,
     /// Earlier entries, newest first.
     pub history: Vec<SectorNote>,
 }
@@ -375,6 +382,13 @@ pub fn scout(brain: &dyn Brain, brief: &ScoutBrief) -> Result<SectorNote> {
     }
     for headline in &brief.headlines {
         let _ = writeln!(user, "  - {headline}");
+    }
+    if !brief.tone.is_empty() {
+        let _ = writeln!(
+            user,
+            "  Tone of these headlines by FinBERT, a financial sentiment model: {}",
+            brief.tone
+        );
     }
     user.push_str("\nYOUR EARLIER ENTRIES:\n");
     if brief.history.is_empty() {
