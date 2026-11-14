@@ -50,7 +50,7 @@ pub const SECTORS: [Sector; 12] = [
         query: "quantum computing OR space OR defense contractor stocks",
         tickers: &[
             "IONQ", "RGTI", "QBTS", "QUBT", "RKLB", "ASTS", "LUNR", "LMT", "RTX", "NOC", "GD",
-            "KTOS", "AVAV", "BA", "PL", "RDW",
+            "KTOS", "AVAV", "BA", "PL", "RDW", "LHX", "HII", "LDOS",
         ],
         name_words: &["quantum", "aerospace", "defense"],
         industry_words: &["aerospace", "military", "ordnance"],
@@ -75,7 +75,7 @@ pub const SECTORS: [Sector; 12] = [
         tickers: &[],
         name_words: &[],
         industry_words: &["oil", "natural gas", "coal", "petroleum"],
-        exchange_sectors: &["Energy"],
+        exchange_sectors: &[],
     },
     Sector {
         id: "biotech",
@@ -133,7 +133,20 @@ pub const SECTORS: [Sector; 12] = [
         query: "retail sales OR consumer spending OR airline OR streaming stocks",
         tickers: &["AMZN", "NFLX", "DIS", "UBER", "ABNB"],
         name_words: &[],
-        industry_words: &[],
+        industry_words: &[
+            "garment",
+            "apparel",
+            "clothing",
+            "footwear",
+            "restaurant",
+            "retail",
+            "hotel",
+            "airline",
+            "beverage",
+            "food",
+            "broadcasting",
+            "movies",
+        ],
         exchange_sectors: &[
             "Consumer Discretionary",
             "Consumer Staples",
@@ -297,6 +310,27 @@ mod tests {
                 "frontier",
             ),
             ("ZZZZ", "Unknown Co Common Stock", "", "", "industry"),
+            (
+                "FPS",
+                "Forgent Power Solutions Inc Common Stock",
+                "Energy",
+                "Industrial Machinery/Components",
+                "industry",
+            ),
+            (
+                "VFC",
+                "V.F. Corporation Common Stock",
+                "Industrials",
+                "Garments and Clothing",
+                "consumer",
+            ),
+            (
+                "LHX",
+                "L3Harris Technologies Inc Common Stock",
+                "Industrials",
+                "Industrial Machinery/Components",
+                "frontier",
+            ),
         ];
         for (symbol, name, sector, industry, expected) in cases {
             assert_eq!(
