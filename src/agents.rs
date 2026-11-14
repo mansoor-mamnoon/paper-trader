@@ -555,7 +555,7 @@ pub fn classify(
     Ok(out)
 }
 
-const ANALYST: &str = "You are the analyst on a trading desk that buys stocks on news buzz. Make the strongest honest case for owning this stock over the next few days. What counts: a fresh catalyst people are excited about, such as a product launch, a big deal, a policy tailwind, a results beat, an approval, a takeover approach, a demand boom or a surge of retail attention, and signs the crowd is arriving, such as rising Reddit mentions, trending lists and unusual volume. What does not count: executive changes, routine filings, dividends, conference appearances, or the mere fact that the price has been rising. An upcoming earnings date is neither a reason to buy nor a reason to avoid. Use only the facts in the file and never invent news. If the file holds no real catalyst, say so plainly, choose catalyst none and score the upside low. Upside is 1 to 10: how likely and how far the stock rises over the next few days.";
+const ANALYST: &str = "You are the analyst on a trading desk that buys stocks on news buzz. Make the strongest honest case for owning this stock over the next few days. What counts: a fresh catalyst people are excited about, such as a product launch, a big deal, a policy tailwind, a results beat, an approval, a takeover approach, a demand boom or a surge of retail attention, and signs the crowd is arriving, such as rising Reddit mentions, trending lists and unusual volume. A strong sector driver counts when it clearly lifts this company's business: higher oil prices for an oil producer, a law or a spending wave that funds its products, a boom in its industry; label it policy or demand_boom. Results that beat expectations or raise guidance count as earnings_beat. What does not count: executive changes, routine filings, dividends, conference appearances, or the mere fact that the price has been rising. An upcoming earnings date is neither a reason to buy nor a reason to avoid. Use only the facts in the file and never invent news. If the file holds no real catalyst, say so plainly, choose catalyst none and score the upside low. Upside is 1 to 10: how likely and how far the stock rises over the next few days.";
 
 fn case_schema() -> Value {
     let mut labels = bullish_labels();
@@ -788,6 +788,40 @@ pub fn trim(
         let symbol = text(item, "symbol");
         if kept.contains(&symbol) && out.len() < count {
             out.insert(symbol, text(item, "reason"));
+        }
+    }
+    Ok(out)
+}
+
+/// Choose exactly `count` of the stocks the manager meant to sell to keep after all,
+/// because too few replacements were found to hold the money. Returns the symbols kept.
+pub fn reprieve(
+    brain: &dyn Brain,
+    book: &Book,
+    selling: &[String],
+    count: usize,
+) -> Result<Vec<String>> {
+    let user = format!(
+        "{}\nYou chose to sell {}, but too few candidates have a case to replace them, and the account must hold at least four stocks so the money stays invested with no stock above a quarter of the account. Choose exactly {count} of the stocks you meant to sell to keep instead: the ones with the most life left in them.",
+        book_text(book),
+        selling.join(", ")
+    );
+    let schema = object(
+        &json!({"keep": {
+            "type": "array", "minItems": count, "maxItems": count,
+            "items": object(
+                &json!({"symbol": {"type": "string", "enum": selling}, "reason": string(220)}),
+                &["symbol", "reason"],
+            ),
+        }}),
+        &["keep"],
+    );
+    let answer = brain.ask(Agent::Manager, "reprieve", MANAGER, &user, &schema)?;
+    let mut out: Vec<String> = Vec::new();
+    for item in answer["keep"].as_array().into_iter().flatten() {
+        let symbol = text(item, "symbol");
+        if selling.contains(&symbol) && !out.contains(&symbol) && out.len() < count {
+            out.push(symbol);
         }
     }
     Ok(out)
