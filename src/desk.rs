@@ -14,8 +14,8 @@ use crate::broker;
 use crate::buzz::{self, Attention, Buzz, SourceNote};
 use crate::config::{
     CLASSIFY_BATCH, FOCUS_CANDIDATES, HEADLINE_DAYS, HEADLINES_PER_STOCK, MANAGER_MEMORY,
-    MAX_FOCUS, MIN_HOLD_DAYS, NEWSBOOK_MEMORY, PRESCREEN, SCOUT_HEADLINES, SCOUT_NAMES,
-    TRADE_MEMORY, WILDCARDS,
+    MAX_FOCUS, MIN_HOLD_DAYS, MIN_POSITIONS, NEWSBOOK_MEMORY, PRESCREEN, SCOUT_HEADLINES,
+    SCOUT_NAMES, TRADE_MEMORY, WILDCARDS,
 };
 use crate::llm::Brain;
 use crate::market::{self, Listing, Quote};
@@ -700,6 +700,28 @@ pub fn run(
             Err(error) => problems.push(format!("The manager could not trim the book: {error}")),
         }
     }
+    // The book must hold at least MIN_POSITIONS stocks so the money fits under the cap. If
+    // too few candidates can replace the sales, the manager calls some of them off.
+    let book_after = keeps.len() + broker::purchases_needed(&state, sells.len()).min(allowed.len());
+    if book_after < MIN_POSITIONS && !sells.is_empty() {
+        let short = (MIN_POSITIONS - book_after).min(sells.len());
+        let selling: Vec<String> = sells.keys().cloned().collect();
+        match agents::reprieve(brain, &book, &selling, short) {
+            Ok(saved) => {
+                for symbol in saved {
+                    if let Some(reason) = sells.remove(&symbol) {
+                        keeps.insert(
+                            symbol,
+                            format!("Kept after all: too few candidates had a case to replace it. The manager had said: {reason}"),
+                        );
+                    }
+                }
+            }
+            Err(error) => problems.push(format!(
+                "The manager could not choose which sales to call off: {error}"
+            )),
+        }
+    }
     let needed = broker::purchases_needed(&state, sells.len()).min(allowed.len());
     let mut purchases: Vec<agents::Purchase> = Vec::new();
     for _ in 0..3 {
@@ -1051,6 +1073,19 @@ mod tests {
                         .collect();
                     json!({"buys": buys})
                 }
+                (Agent::Manager, "reprieve") => {
+                    let items = &schema["properties"]["keep"];
+                    let n = items["minItems"].as_u64().unwrap() as usize;
+                    let selling = items["items"]["properties"]["symbol"]["enum"]
+                        .as_array()
+                        .unwrap();
+                    let keep: Vec<Value> = selling
+                        .iter()
+                        .take(n)
+                        .map(|s| json!({"symbol": s, "reason": "most life left"}))
+                        .collect();
+                    json!({"keep": keep})
+                }
                 (Agent::Manager, "trim") => {
                     let items = &schema["properties"]["sell"];
                     let n = items["minItems"].as_u64().unwrap() as usize;
@@ -1292,6 +1327,47 @@ mod tests {
         assert_eq!(
             sell.kind, "SELL",
             "a holding past the minimum is sold as decided"
+        );
+    }
+
+    #[test]
+    fn sales_are_called_off_when_too_few_stocks_would_remain() {
+        let store = Store::open(":memory:").unwrap();
+        let mut state = State {
+            cash: 0.0,
+            engine: ENGINE.into(),
+            ..State::default()
+        };
+        for symbol in ["OLDA", "OLDB", "HELD1", "HELD2"] {
+            state.positions.insert(symbol.into(), held(symbol));
+        }
+        store.save(&state).unwrap();
+        let inner = brain();
+        let brain = Scripted::new(move |agent, subject, user, schema| {
+            if agent == Agent::Analyst && subject != "CHIPA" {
+                return Ok(
+                    json!({"catalyst": "none", "thesis": "Nothing new.", "upside": 2, "kill": "n/a"}),
+                );
+            }
+            inner.ask(agent, subject, "", user, schema)
+        });
+        let report = run(&store, Some(&brain), &fixture(), AT, 240.0).unwrap();
+        let kinds = |kind: &str| -> Vec<String> {
+            report
+                .decisions
+                .iter()
+                .filter(|d| d.kind == kind)
+                .map(|d| d.symbol.clone())
+                .collect()
+        };
+        // Two sales and one replacement would leave three stocks, so one sale is called off.
+        assert_eq!(kinds("SELL"), ["OLDB"]);
+        assert_eq!(kinds("BUY"), ["CHIPA"]);
+        assert!(kinds("KEEP").contains(&"OLDA".to_string()));
+        assert_eq!(
+            brain.count(Agent::Manager),
+            4,
+            "review, reprieve, purchases, note"
         );
     }
 

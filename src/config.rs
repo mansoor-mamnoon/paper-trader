@@ -12,6 +12,8 @@ pub const MIN_ORDER: f64 = 1.0;
 pub const MAX_POSITIONS: usize = 8;
 /// No purchase may take one stock above this share of the account.
 pub const MAX_WEIGHT: f64 = 0.25;
+/// The fewest stocks the book may hold, so the money fits under [`MAX_WEIGHT`].
+pub const MIN_POSITIONS: usize = 4;
 /// A holding younger than this many days is sold only on bad news, not on fading buzz.
 pub const MIN_HOLD_DAYS: i64 = 3;
 
