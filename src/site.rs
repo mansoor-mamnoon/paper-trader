@@ -3,7 +3,8 @@
 
 use crate::agents::CATALYSTS;
 use crate::config::{
-    FEE, MAX_POSITIONS, MIN_DOLLAR_VOLUME, MIN_MARKET_CAP, MIN_PRICE, SLIP, START_CASH,
+    FEE, MAX_POSITIONS, MAX_WEIGHT, MIN_DOLLAR_VOLUME, MIN_HOLD_DAYS, MIN_MARKET_CAP, MIN_PRICE,
+    SLIP, START_CASH,
 };
 use crate::models::{Agent, MODELS, model_for};
 use crate::sectors::SECTORS;
@@ -90,6 +91,7 @@ pub fn export(store: &Store, output: &str) -> Result<Value> {
             "max_positions": MAX_POSITIONS, "fee": FEE, "slippage": SLIP,
             "min_market_cap": MIN_MARKET_CAP, "min_price": MIN_PRICE,
             "min_dollar_volume": MIN_DOLLAR_VOLUME, "start_cash": START_CASH,
+            "max_weight": MAX_WEIGHT, "min_hold_days": MIN_HOLD_DAYS,
         },
     });
     write_atomic(&root.join("api/state.json"), &serde_json::to_string(&body)?)?;
