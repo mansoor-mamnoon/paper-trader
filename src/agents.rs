@@ -595,7 +595,7 @@ pub fn analyst(
     })
 }
 
-const SKEPTIC: &str = "You are the skeptic on a trading desk that buys stocks on news buzz. The analyst has made a case for a stock. Attack it using the same file. Is the catalyst real, about this company, and fresh, or is it old news? Has the price already made the move, so a buyer today is late? Is the buzz fading compared with yesterday? Did the analyst lean on something the file does not say? Give the single strongest objection. Then say whether the case stands, is weakened, or is broken. Do not object for the sake of it: if the case is good, say it stands.";
+const SKEPTIC: &str = "You are the skeptic on a trading desk that buys stocks on news buzz. The analyst has made a case for a stock. Attack it using the same file. Is the catalyst real, about this company, and fresh, or is it old news? Has the price already made the move, so a buyer today is late? Is the buzz fading compared with yesterday? Did the analyst lean on something the file does not say? Give the single strongest objection. Then say whether the case stands, is weakened, or is broken. You only ever argue against buying: if the analyst found no catalyst, agree and say what makes the stock worth avoiding, and never make the case for it yourself. Do not object for the sake of it: if the case is good, say it stands.";
 
 /// Attack the analyst's case for one stock.
 pub fn skeptic(
@@ -629,7 +629,7 @@ pub fn skeptic(
     })
 }
 
-const MANAGER: &str = "You manage a $1,000 stock account that trades news buzz. Rules you cannot change: the account is always fully invested, it holds at most five individual stocks, and every holding is decided again every day. You make every decision and nobody overrides you. Act. Keep a stock only if its catalyst is still alive and you would buy it again today at this price. Otherwise sell it, and the money goes straight into a stronger candidate. A stock with no fresh news and no buzz is a stock to sell, however it was bought. Do not sell because of an executive change or an upcoming earnings date. Each swap costs about 0.6% in fees and slippage, so do not swap one story for another that is only slightly better. Weigh the analyst against the skeptic and decide.";
+const MANAGER: &str = "You manage a $1,000 stock account that trades news buzz. Rules you cannot change: the account is always fully invested, it holds at most eight individual stocks, no stock may grow past a quarter of the account by purchase, and every holding is decided again every day. You make every decision and nobody overrides you. Act. Keep a stock only if its catalyst is still alive and you would buy it again today at this price. Otherwise sell it, and the money goes straight into a stronger candidate. A stock with no fresh news and no buzz is a stock to sell, however it was bought. Do not sell because of an executive change or an upcoming earnings date. Each swap costs about 0.6% in fees and slippage, so a replacement must clearly beat what it replaces after that cost; do not swap one story for another that is only slightly better. Buzz rises and falls from day to day: a stock owned fewer than three days is sold only when bad news has broken its case, never because chatter is quieter. Buy only stocks the analyst made a case for; the skeptic tells you what could go wrong, not what to buy. Weigh the analyst against the skeptic and decide.";
 
 /// What the manager remembers from earlier days.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -768,7 +768,7 @@ pub fn trim(
     count: usize,
 ) -> Result<BTreeMap<String, String>> {
     let user = format!(
-        "{}\nThe account holds more stocks than its limit of five. You kept {}. Choose exactly {count} of them to sell: the ones with the weakest catalyst and the least buzz.",
+        "{}\nThe account holds more stocks than its limit of eight. You kept {}. Choose exactly {count} of them to sell: the ones with the weakest catalyst and the least buzz.",
         book_text(book),
         kept.join(", ")
     );
@@ -819,7 +819,7 @@ pub fn pick(
     if !already.is_empty() {
         let _ = write!(user, " You have already chosen {}.", already.join(", "));
     }
-    user.push_str(" Give each a weight from 1 to 3: a stock with weight 3 gets three times the money of a stock with weight 1. Prefer today's focus sectors and the cases the skeptic could not break.");
+    user.push_str(" Give each a weight from 1 to 3: a stock with weight 3 gets three times the money of a stock with weight 1. Prefer today's focus sectors, the strongest analyst cases and the cases the skeptic could not break.");
     let schema = object(
         &json!({"buys": {
             "type": "array", "minItems": count, "maxItems": count,
