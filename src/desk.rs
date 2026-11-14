@@ -14,8 +14,8 @@ use crate::broker;
 use crate::buzz::{self, Attention, Buzz, SourceNote};
 use crate::config::{
     CLASSIFY_BATCH, FOCUS_CANDIDATES, HEADLINE_DAYS, HEADLINES_PER_STOCK, MANAGER_MEMORY,
-    MAX_FOCUS, MIN_HOLD_DAYS, MIN_POSITIONS, NEWSBOOK_MEMORY, PRESCREEN, SCOUT_HEADLINES,
-    SCOUT_NAMES, TRADE_MEMORY, WILDCARDS,
+    MAX_FOCUS, MIN_POSITIONS, NEWSBOOK_MEMORY, PRESCREEN, SCOUT_HEADLINES, SCOUT_NAMES,
+    TRADE_MEMORY, WILDCARDS,
 };
 use crate::llm::Brain;
 use crate::market::{self, Listing, Quote};
@@ -761,32 +761,6 @@ pub fn run_with(
             "The manager's review failed, so no holding was sold today: {error}"
         )),
     }
-    // A young holding is sold only on bad news: buzz alone rises and falls day to day.
-    // Stocks the previous desk bought have no case to protect, so the rule skips them.
-    for card in &book.holdings {
-        let Some(holding) = &card.holding else {
-            continue;
-        };
-        if holding.thesis.is_empty() {
-            continue;
-        }
-        let bad_news = card.headlines.iter().any(|h| {
-            (h.label == "bad_news" && h.buzz >= 1)
-                || (h.tone_score <= -0.8 && !matches!(h.label.as_str(), "noise" | "unrelated"))
-        });
-        if holding.days_held < MIN_HOLD_DAYS
-            && !bad_news
-            && let Some(reason) = sells.remove(&card.symbol)
-        {
-            keeps.insert(
-                card.symbol.clone(),
-                format!(
-                    "Held under the minimum-hold rule: owned {} days with no bad news, so fading buzz is not enough to sell yet. The manager had said: {reason}",
-                    holding.days_held
-                ),
-            );
-        }
-    }
     let allowed: Vec<String> = book.candidates.iter().map(|c| c.symbol.clone()).collect();
     if allowed.is_empty() && keeps.is_empty() && !sells.is_empty() {
         problems.push("No candidate had a case today and nothing was kept, so the sales were not placed: the money would have sat in cash.".into());
@@ -1403,7 +1377,7 @@ mod tests {
     }
 
     #[test]
-    fn a_young_holding_is_kept_unless_bad_news_broke_it() {
+    fn the_manager_can_sell_a_one_day_holding_without_bad_news() {
         let store = Store::open(":memory:").unwrap();
         let mut state = State {
             cash: 0.0,
@@ -1418,13 +1392,13 @@ mod tests {
         store.save(&state).unwrap();
         let brain = brain();
         let report = run(&store, Some(&brain), &fixture(), AT, 240.0).unwrap();
-        let keep = report
+        let sell_young = report
             .decisions
             .iter()
             .find(|d| d.symbol == "OLDA")
             .unwrap();
-        assert_eq!(keep.kind, "KEEP");
-        assert!(keep.text.contains("minimum-hold"));
+        assert_eq!(sell_young.kind, "SELL");
+        assert_eq!(store.load().unwrap().pending["OLDA"].side, "SELL");
         let sell = report
             .decisions
             .iter()
@@ -1432,7 +1406,7 @@ mod tests {
             .unwrap();
         assert_eq!(
             sell.kind, "SELL",
-            "a holding past the minimum is sold as decided"
+            "an older holding is also sold as decided"
         );
     }
 
