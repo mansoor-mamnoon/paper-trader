@@ -149,9 +149,15 @@ pub fn for_ticker(symbol: &str) -> Vec<Headline> {
 
 /// A news search for a sector over the last two days. Returns the items and the source used.
 pub fn for_topic(query: &str) -> (Vec<Headline>, &'static str) {
+    for_topic_window(query, "when:2d")
+}
+
+/// A news search for a sector limited by a Google News date operator such as `when:2d` or
+/// `after:2026-11-10 before:2026-11-13`. Bing, the fallback, searches the last week.
+pub fn for_topic_window(query: &str, window: &str) -> (Vec<Headline>, &'static str) {
     let google = format!(
         "https://news.google.com/rss/search?q={}&hl=en-US&gl=US&ceid=US:en",
-        http::encode(&format!("{query} when:2d"))
+        http::encode(&format!("{query} {window}"))
     );
     let items = http::get_retry(&google, Duration::from_secs(20), 2)
         .map(|xml| parse_rss(&xml, 40))
