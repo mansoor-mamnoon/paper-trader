@@ -145,6 +145,12 @@ pub struct Tagged {
     pub label: String,
     /// 0 to 3. Meaningless until classified.
     pub buzz: i64,
+    /// FinBERT's reading: `positive`, `negative` or `neutral`. Empty until read.
+    #[serde(default)]
+    pub tone: String,
+    /// FinBERT's positive minus negative probability, -1 to 1.
+    #[serde(default)]
+    pub tone_score: f64,
 }
 
 /// One line of the desk's journal.
@@ -247,6 +253,15 @@ impl Store {
         let has_speed: bool = db
             .prepare("SELECT 1 FROM pragma_table_info('calls') WHERE name='tokens_per_second'")?
             .exists([])?;
+        let has_tone: bool = db
+            .prepare("SELECT 1 FROM pragma_table_info('headlines') WHERE name='tone'")?
+            .exists([])?;
+        if !has_tone {
+            db.execute_batch(
+                "ALTER TABLE headlines ADD COLUMN tone TEXT NOT NULL DEFAULT '';
+                 ALTER TABLE headlines ADD COLUMN tone_score REAL NOT NULL DEFAULT 0;",
+            )?;
+        }
         if !has_speed {
             db.execute_batch(
                 "ALTER TABLE calls ADD COLUMN prompt_per_second REAL NOT NULL DEFAULT 0;
@@ -401,7 +416,7 @@ impl Store {
     /// Headlines for `scope` first seen on or after `since_day`, newest first.
     pub fn headlines(&self, scope: &str, since_day: &str, limit: usize) -> Result<Vec<Tagged>> {
         let mut stmt = self.db.prepare(
-            "SELECT id, day, title, source, published, link, label, buzz FROM headlines \
+            "SELECT id, day, title, source, published, link, label, buzz, tone, tone_score FROM headlines \
              WHERE scope=? AND day>=? ORDER BY day DESC, published DESC, id DESC LIMIT ?",
         )?;
         let rows = stmt.query_map(params![scope, since_day, limit as i64], |r| {
@@ -414,9 +429,19 @@ impl Store {
                 link: r.get::<_, Option<String>>(5)?.unwrap_or_default(),
                 label: r.get(6)?,
                 buzz: r.get(7)?,
+                tone: r.get(8)?,
+                tone_score: r.get(9)?,
             })
         })?;
         Ok(rows.collect::<rusqlite::Result<_>>()?)
+    }
+
+    pub fn tone_headline(&self, id: i64, tone: &str, score: f64) -> Result<()> {
+        self.db.execute(
+            "UPDATE headlines SET tone=?, tone_score=? WHERE id=?",
+            params![tone, score, id],
+        )?;
+        Ok(())
     }
 
     pub fn label_headline(&self, id: i64, label: &str, buzz: i64) -> Result<()> {
@@ -736,6 +761,7 @@ mod tests {
             .unwrap();
         let first = store.headlines("ACME", "2026-11-01", 10).unwrap();
         store.label_headline(first[0].id, "deal", 3).unwrap();
+        store.tone_headline(first[0].id, "positive", 0.8).unwrap();
         store
             .remember_headlines("2026-11-13", "ACME", &[item])
             .unwrap();
@@ -743,6 +769,10 @@ mod tests {
         assert_eq!(again.len(), 1);
         assert_eq!(again[0].day, "2026-11-12");
         assert_eq!((again[0].label.as_str(), again[0].buzz), ("deal", 3));
+        assert_eq!(
+            (again[0].tone.as_str(), again[0].tone_score),
+            ("positive", 0.8)
+        );
         assert!(
             store
                 .headlines("ACME", "2026-11-13", 10)
