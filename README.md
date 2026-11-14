@@ -93,6 +93,10 @@ To run the desk on GitHub now instead of waiting for the evening schedule:
 gh workflow run account.yml --ref main -f force=true
 ```
 
+## Switchover
+
+The model desk took the account over on 13 November 2026. The ledger was rewound to the 12 November close, and the new desk ran for that evening with `--as-of`, which cuts every source at that moment: bars end at the 12 November session, headlines must have been published before it, and Reddit counts are the previous day's. Trending lists have no history, so that run went without them. Its orders filled at the real 13 November open. The previous desk's 13 November trades are kept in `archive/` on the `account` branch.
+
 ## Limits
 
 This is a paper account: no broker is connected. Daily bars cannot show intraday fills. Headlines come from free feeds and can be late or missing. Five concentrated buzz positions are volatile by design, and a few weeks of results cannot show whether the desk has an edge. Nothing here is investment advice.
