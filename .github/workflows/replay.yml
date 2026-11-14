@@ -1,0 +1,142 @@
+name: One-off Thursday then Friday replay
+run-name: DeepSeek replay of November 12 and 13
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: stock-account
+  cancel-in-progress: false
+jobs:
+  thursday:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    env:
+      PAPER_TRADER_API_KEY: ${{ secrets.PAPER_TRADER_API_KEY }}
+      PAPER_TRADER_API_URL: ${{ vars.PAPER_TRADER_API_URL }}
+      PAPER_TRADER_API_MODEL: ${{ vars.PAPER_TRADER_API_MODEL }}
+      PAPER_TRADER_API_RPM: ${{ vars.PAPER_TRADER_API_RPM }}
+      PAPER_TRADER_API_TPM: ${{ vars.PAPER_TRADER_API_TPM }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
+        run: cargo build --release --locked
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/paper-trader-llm
+          key: llm-${{ hashFiles('src/models.rs', 'src/sentiment.rs') }}
+      - name: Restore durable account
+        uses: actions/checkout@v7
+        with:
+          ref: account
+          path: account
+          fetch-depth: 0
+      - name: Preserve current account and restore the original Thursday holdings
+        working-directory: account
+        run: |
+          replay="archive/deepseek-replay-${GITHUB_RUN_ID}"
+          mkdir -p "$replay"
+          test -f "$replay/before.sqlite" || cp account.sqlite "$replay/before.sqlite"
+          git show aa1b9e2418744ba67222cf11771ed245c6d0ba24:account.sqlite > "$replay/baseline.sqlite"
+          cp "$replay/baseline.sqlite" "$replay/thursday.sqlite"
+          git config user.name 'paper-trader[bot]'
+          git config user.email 'paper-trader@users.noreply.github.com'
+          git add "$replay"
+          git diff --cached --quiet || git commit -m 'Archive current account and original Thursday baseline for DeepSeek replay'
+          git push origin HEAD:account
+      - name: Decide Thursday orders using only Thursday evidence
+        run: |
+          ./target/release/paper-trader run \
+            --db "account/archive/deepseek-replay-${GITHUB_RUN_ID}/thursday.sqlite" \
+            --output "$RUNNER_TEMP/thursday-site" --minutes 250 --force \
+            --as-of 2026-11-12T22:07:43.379Z
+      - name: Validate Thursday decisions
+        run: |
+          python3 scripts/replay_account.py \
+            "account/archive/deepseek-replay-${GITHUB_RUN_ID}/thursday.sqlite" 2026-11-12 \
+            --output "account/archive/deepseek-replay-${GITHUB_RUN_ID}/thursday.json"
+      - name: Save Thursday checkpoint, including failure evidence
+        if: always()
+        working-directory: account
+        run: |
+          git config user.name 'paper-trader[bot]'
+          git config user.email 'paper-trader@users.noreply.github.com'
+          git add "archive/deepseek-replay-${GITHUB_RUN_ID}"
+          git diff --cached --quiet || git commit -m 'Checkpoint Thursday DeepSeek replay'
+          git push origin HEAD:account
+  friday:
+    needs: thursday
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    env:
+      PAPER_TRADER_API_KEY: ${{ secrets.PAPER_TRADER_API_KEY }}
+      PAPER_TRADER_API_URL: ${{ vars.PAPER_TRADER_API_URL }}
+      PAPER_TRADER_API_MODEL: ${{ vars.PAPER_TRADER_API_MODEL }}
+      PAPER_TRADER_API_RPM: ${{ vars.PAPER_TRADER_API_RPM }}
+      PAPER_TRADER_API_TPM: ${{ vars.PAPER_TRADER_API_TPM }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
+        run: cargo build --release --locked
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/paper-trader-llm
+          key: llm-${{ hashFiles('src/models.rs', 'src/sentiment.rs') }}
+      - name: Restore durable account
+        uses: actions/checkout@v7
+        with:
+          ref: account
+          path: account
+          fetch-depth: 0
+      - name: Continue directly from Thursday decisions
+        run: |
+          test -s "account/archive/deepseek-replay-${GITHUB_RUN_ID}/thursday.json"
+          cp "account/archive/deepseek-replay-${GITHUB_RUN_ID}/thursday.sqlite" "$RUNNER_TEMP/friday.sqlite"
+      - name: Fill Thursday orders at Friday open and decide Friday orders
+        run: |
+          ./target/release/paper-trader run --db "$RUNNER_TEMP/friday.sqlite" \
+            --output "$RUNNER_TEMP/friday-site" --minutes 250 --force \
+            --as-of 2026-11-13T22:07:43.379Z
+      - name: Validate Friday fills and decisions before replacing the live account
+        run: |
+          python3 scripts/replay_account.py "$RUNNER_TEMP/friday.sqlite" 2026-11-13 \
+            --previous "account/archive/deepseek-replay-${GITHUB_RUN_ID}/thursday.sqlite" \
+            --output "account/archive/deepseek-replay-${GITHUB_RUN_ID}/friday.json"
+          cp "$RUNNER_TEMP/friday.sqlite" account/account.sqlite
+          cp -r "$RUNNER_TEMP/friday-site/"* account/site/
+          cp -r web/* account/site/
+      - name: Configure visitor analytics
+        env:
+          GOATCOUNTER_CODE: ${{ vars.GOATCOUNTER_CODE }}
+          GA4_ID: ${{ vars.GA4_ID }}
+        run: |
+          gc=$(printf '%s' "$GOATCOUNTER_CODE" | tr -cd 'A-Za-z0-9-')
+          ga=$(printf '%s' "$GA4_ID" | tr -cd 'A-Za-z0-9-')
+          printf 'window.PT_ANALYTICS = { goatcounter: "%s", ga4: "%s" };\n' "$gc" "$ga" > account/site/analytics-config.js
+      - name: Save Friday checkpoint and validated account
+        if: always()
+        working-directory: account
+        run: |
+          replay="archive/deepseek-replay-${GITHUB_RUN_ID}"
+          if [ -f "$RUNNER_TEMP/friday.sqlite" ]; then cp "$RUNNER_TEMP/friday.sqlite" "$replay/friday.sqlite"; fi
+          git config user.name 'paper-trader[bot]'
+          git config user.email 'paper-trader@users.noreply.github.com'
+          git add account.sqlite site "$replay"
+          git diff --cached --quiet || git commit -m 'Record Friday replay after Thursday orders filled at the open'
+          git push origin HEAD:account
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: account/site
+      - name: Publish replayed dashboard
+        id: deployment
+        uses: actions/deploy-pages@v5
