@@ -45,6 +45,7 @@ pub fn export(store: &Store, output: &str) -> Result<Value> {
                 "decisions": report["decisions"],
                 "funnel": report["funnel"],
                 "problems": report["problems"],
+                "metrics": report["metrics"],
             }))
         })
         .collect();
