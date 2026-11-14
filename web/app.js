@@ -134,14 +134,14 @@ function desk(d) {
   for (const e of r?.decisions || []) decided[e.symbol] = e.kind;
   const cards = r?.cards || [];
   $("cards").innerHTML = cards.length ? cards.map((c) => {
-    const heads = (c.headlines || []).slice(0, 6).map((h) => `<li><span class="badge ${["noise", "unrelated"].includes(h.label) ? "" : h.label === "bad_news" ? "hot" : "buy"}">${esc(h.label || "unlabelled")}${h.label ? " " + h.buzz : ""}</span> ${h.link ? `<a href="${esc(h.link)}" rel="noopener">${esc(h.title)}</a>` : esc(h.title)} <span class="muted">${esc(h.day)}</span></li>`).join("");
+    const heads = (c.headlines || []).slice(0, 6).map((h) => `<li><span class="badge ${["noise", "unrelated"].includes(h.label) ? "" : h.label === "bad_news" ? "hot" : "buy"}">${esc(h.label || "unlabelled")}${h.label ? " " + h.buzz : ""}</span> ${h.tone ? `<span class="badge tone ${esc(h.tone)}" title="FinBERT tone, -1 to +1">${esc(h.tone)} ${(h.tone_score >= 0 ? "+" : "") + Number(h.tone_score).toFixed(2)}</span> ` : ""}${h.link ? `<a href="${esc(h.link)}" rel="noopener">${esc(h.title)}</a>` : esc(h.title)} <span class="muted">${esc(h.day)}</span></li>`).join("");
     const verdict = decided[c.symbol];
     return `<div class="card" style="margin-top:18px">
       <div class="head"><div class="line"><b class="mono" style="font-size:1.1rem">${esc(c.symbol)}</b><span>${esc(c.name)}</span>${c.holding ? '<span class="badge keep">held</span>' : '<span class="badge">candidate</span>'}${verdict ? `<span class="badge ${verdict.toLowerCase()}">${verdict.replace("_", " ")}</span>` : ""}</div><span class="label">${esc(sectorName(c.sector))}</span></div>
       <p class="small mono">${esc(factsLine(c.facts))}</p>
       ${heads ? `<ul class="heads">${heads}</ul>` : '<p class="small muted">No headlines found.</p>'}
       <div class="argue">
-        <div><span class="label">Analyst${c.case ? ` · ${esc(c.case.catalyst)} · upside ${c.case.upside}/10` : ""}</span><p class="small">${c.case ? esc(c.case.thesis) + `<br><i>Wrong if: ${esc(c.case.kill)}</i>` : "No case was made."}</p></div>
+        <div><span class="label">Analyst${c.case ? ` · ${esc(c.case.catalyst)} · upside ${c.case.upside}/10` : ""}</span><p class="small">${c.case ? esc(c.case.thesis) + (c.case.evidence ? `<br><b>Rests on:</b> ${esc(c.case.evidence)}` : "") + `<br><i>Wrong if: ${esc(c.case.kill)}</i>` : "No case was made."}</p></div>
         <div class="skeptic"><span class="label">Skeptic${c.rebuttal ? ` · case ${esc(c.rebuttal.verdict)}${c.rebuttal.priced_in ? " · priced in" : ""}` : ""}</span><p class="small">${c.rebuttal ? esc(c.rebuttal.objection) : "No rebuttal."}</p></div>
       </div></div>`;
   }).join("") : '<div class="card muted">No stocks were argued yet.</div>';
@@ -177,7 +177,7 @@ async function loadCalls() {
 }
 
 function how(d) {
-  $("agents").innerHTML = `<table><thead><tr><th>Agent</th><th>Job</th><th>Model</th></tr></thead><tbody>${d.desk.agents.map((a) => `<tr><td><b class="mono">${esc(a.name)}</b></td><td class="small">${esc(a.job)}</td><td class="small">${esc(a.model)}</td></tr>`).join("")}</tbody></table>`;
+  $("agents").innerHTML = `<table><thead><tr><th>Agent</th><th>Job</th><th>Model</th></tr></thead><tbody>${d.desk.agents.map((a) => `<tr><td><b class="mono">${esc(a.name)}</b></td><td class="small">${esc(a.job)}</td><td class="small">${esc(d.latest?.models?.[a.name] || a.model)}</td></tr>`).join("")}<tr><td><b class="mono">finbert</b></td><td class="small">Scores the tone of every headline of every screened stock, from -1 to +1</td><td class="small">ProsusAI FinBERT, run in Rust</td></tr></tbody></table>`;
   const r = d.rules;
   $("rules").innerHTML = [
     `Always fully invested in at most ${r.max_positions} individual US stocks.`,
@@ -258,7 +258,7 @@ function ops(d) {
     ["Fees", usd(t.fees)],
     ["Turnover", `${num(t.turnover_pct)}% of the account`],
     ["Orders queued for the next open", t.orders_queued ?? 0],
-    ["Funnel", r.funnel ? `${num(r.funnel.listed)} listed → ${num(r.funnel.eligible)} eligible → ${r.funnel.screened} screened → ${r.funnel.candidates} candidates · ${r.funnel.headlines} headlines` : "–"],
+    ["Funnel", r.funnel ? `${num(r.funnel.listed)} listed → ${num(r.funnel.eligible)} eligible → ${r.funnel.screened} screened → ${r.funnel.candidates} candidates · ${r.funnel.headlines} headlines argued · ${r.funnel.headlines_read ?? 0} fresh headlines read by FinBERT` : "–"],
   ].map(([k, v]) => `<li><b>${k}:</b> ${v}</li>`).join("");
   $("ops-history").innerHTML = table(["Day ", "Run", "Model", "Calls", "Failed", "Tokens in", "Tokens out", "Turnover", "Fees", "Problems"],
     (d.days || []).map((day) => {
