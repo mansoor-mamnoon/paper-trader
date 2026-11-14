@@ -13,6 +13,7 @@ pub mod desk;
 pub mod http;
 pub mod llm;
 pub mod market;
+pub mod metrics;
 pub mod models;
 pub mod news;
 pub mod progress;
