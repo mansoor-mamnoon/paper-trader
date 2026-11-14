@@ -1,31 +1,21 @@
-//! Paper Trader: a $1,000 simulated account for US stocks and a second one for crypto.
+//! Paper Trader: a $1,000 simulated account run by a desk of local language models.
 //!
-//! Both accounts share one SQLite ledger format. A cycle takes an observation of the
-//! market, records every decision with its evidence, and fills queued orders at a later
-//! price with fees and slippage applied against the account.
+//! Rust gathers the market, the news and the attention each stock is getting. Models read
+//! it, keep a sector newsbook, argue each stock, and make every trading decision. Rust
+//! then keeps the books: it fills orders at the next open and keeps the account invested.
 
-pub mod account;
-pub mod analyst;
-pub mod crypto;
-pub mod daily;
-pub mod data;
+pub mod agents;
+pub mod bench;
+pub mod broker;
+pub mod buzz;
+pub mod config;
 pub mod desk;
-pub mod diagnostics;
-pub mod edgar;
-pub mod evidence;
-pub mod export;
-pub mod gates;
 pub mod http;
-pub mod intel;
-pub mod lab;
-pub mod ledger;
-pub mod model;
+pub mod llm;
+pub mod market;
 pub mod models;
 pub mod news;
-pub mod pool;
 pub mod progress;
-pub mod replay;
-pub mod scorecard;
-pub mod security;
-pub mod strategy;
-pub mod telemetry;
+pub mod sectors;
+pub mod site;
+pub mod store;

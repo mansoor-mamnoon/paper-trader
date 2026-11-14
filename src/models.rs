@@ -1,59 +1,59 @@
-//! The open-weights models and the job each one does.
+//! The open-weights models the desk can run and which agent uses which.
 //!
-//! Every decision role runs on a model from a different company, so no single model's
-//! habits or blind spots decide the whole result. Each file is pinned to an exact
-//! Hugging Face commit and a SHA-256, so a run uses byte-identical weights every day.
+//! Each file is pinned to a Hugging Face commit and a SHA-256, so every run uses the same
+//! weights. The runner has 4 CPU cores, 16 GB of memory and no GPU, so one model is loaded
+//! at a time.
 
 use serde::Serialize;
 
-/// A decision point in the desk. Each has its own model.
+/// The agents on the desk, in the order they work.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize)]
 #[serde(rename_all = "snake_case")]
-pub enum Role {
-    /// Scores screened stocks 0 to 10.
-    Triage,
-    /// The tool-using research agents, and their findings summaries.
-    Research,
-    /// Argues for buying.
-    Bull,
-    /// Argues against buying.
-    Bear,
-    /// The portfolio manager: reasons, picks, sizes, calls the regime.
-    Judge,
-    /// Re-checks each holding.
-    Doctor,
-    /// Turns a closed trade into a lesson.
-    PostMortem,
-    /// Proposes strategy changes in the lab.
-    Proposer,
-    /// The one-prompt analyst used by the depth-1 ablation.
-    SingleShot,
+pub enum Agent {
+    /// Writes one sector's newsbook entry for the day.
+    Scout,
+    /// Reads the newsbook and picks the sectors to trade.
+    Strategist,
+    /// Labels each headline with the kind of catalyst it is and how much buzz it carries.
+    Classifier,
+    /// Makes the case for owning one stock.
+    Analyst,
+    /// Attacks the analyst's case.
+    Skeptic,
+    /// Decides: keeps or sells every holding and picks every purchase.
+    Manager,
 }
 
-impl Role {
-    pub const ALL: [Role; 9] = [
-        Role::Triage,
-        Role::Research,
-        Role::Bull,
-        Role::Bear,
-        Role::Judge,
-        Role::Doctor,
-        Role::PostMortem,
-        Role::Proposer,
-        Role::SingleShot,
+impl Agent {
+    pub const ALL: [Agent; 6] = [
+        Agent::Scout,
+        Agent::Strategist,
+        Agent::Classifier,
+        Agent::Analyst,
+        Agent::Skeptic,
+        Agent::Manager,
     ];
 
     pub fn name(self) -> &'static str {
         match self {
-            Role::Triage => "triage",
-            Role::Research => "research",
-            Role::Bull => "bull",
-            Role::Bear => "bear",
-            Role::Judge => "judge",
-            Role::Doctor => "doctor",
-            Role::PostMortem => "post_mortem",
-            Role::Proposer => "proposer",
-            Role::SingleShot => "single_shot",
+            Agent::Scout => "scout",
+            Agent::Strategist => "strategist",
+            Agent::Classifier => "classifier",
+            Agent::Analyst => "analyst",
+            Agent::Skeptic => "skeptic",
+            Agent::Manager => "manager",
+        }
+    }
+
+    /// What the agent does, for the dashboard.
+    pub fn job(self) -> &'static str {
+        match self {
+            Agent::Scout => "Writes each sector's newsbook entry from the day's headlines",
+            Agent::Strategist => "Reads the newsbook and picks the sectors to trade",
+            Agent::Classifier => "Labels every headline: what kind of catalyst, how much buzz",
+            Agent::Analyst => "Makes the case for owning each stock",
+            Agent::Skeptic => "Attacks the analyst's case",
+            Agent::Manager => "Keeps or sells every holding and picks every purchase",
         }
     }
 }
@@ -73,6 +73,10 @@ pub struct ModelSpec {
     pub license: &'static str,
     /// Context window the server is started with.
     pub ctx: u32,
+    /// Hidden thinking tokens the model may spend per answer: -1 unlimited, 0 none.
+    pub reasoning_budget: i32,
+    /// Chat-template settings sent with every request, as JSON. Empty for none.
+    pub template: &'static str,
 }
 
 impl ModelSpec {
@@ -84,7 +88,78 @@ impl ModelSpec {
     }
 }
 
-pub const MODELS: [ModelSpec; 9] = [
+pub const MODELS: [ModelSpec; 6] = [
+    ModelSpec {
+        id: "gpt-oss-20b",
+        company: "OpenAI",
+        name: "gpt-oss-20b",
+        repo: "unsloth/gpt-oss-20b-GGUF",
+        revision: "d449b42d93e1c2c7bda5312f5c25c8fb91dfa9b4",
+        file: "gpt-oss-20b-Q4_K_M.gguf",
+        sha256: "c27536640e410032865dc68781d80a08b98f8db5e93575919af8ccc0568aeb4f",
+        bytes: 11_624_759_488,
+        license: "Apache-2.0",
+        ctx: 12288,
+        reasoning_budget: -1,
+        template: r#"{"reasoning_effort":"low"}"#,
+    },
+    ModelSpec {
+        id: "qwen3.5-9b",
+        company: "Alibaba",
+        name: "Qwen3.5 9B",
+        repo: "unsloth/Qwen3.5-9B-GGUF",
+        revision: "3885219b6810b007914f3a7950a8d1b469d598a5",
+        file: "Qwen3.5-9B-Q4_K_M.gguf",
+        sha256: "03b74727a860a56338e042c4420bb3f04b2fec5734175f4cb9fa853daf52b7e8",
+        bytes: 5_680_522_464,
+        license: "Apache-2.0",
+        ctx: 12288,
+        reasoning_budget: 0,
+        template: "",
+    },
+    ModelSpec {
+        id: "gemma-4-12b",
+        company: "Google",
+        name: "Gemma 4 12B (QAT)",
+        repo: "google/gemma-4-12B-it-qat-q4_0-gguf",
+        revision: "29d097773436b69ff9feafd636ab4cf873786537",
+        file: "gemma-4-12b-it-qat-q4_0.gguf",
+        sha256: "93567e57a8fe10b23569b9d9ec38cd005deedf71e29477c421a4b83f418a538b",
+        bytes: 6_975_879_296,
+        license: "Apache-2.0",
+        ctx: 12288,
+        reasoning_budget: 0,
+        template: "",
+    },
+    ModelSpec {
+        id: "granite-4.2-8b",
+        company: "IBM",
+        name: "Granite 4.2 8B",
+        repo: "ibm-granite/granite-4.2-8b-GGUF",
+        revision: "93f3f6a8938ee922b784cf4e5b4203cd3428df8f",
+        file: "granite-4.2-8b-Q4_K_M.gguf",
+        sha256: "16a9369d0805f80b7377d25d87f937a90c05dc04ad79173a52001e42c9aab311",
+        bytes: 5_347_917_952,
+        license: "Apache-2.0",
+        ctx: 12288,
+        reasoning_budget: 0,
+        template: "",
+    },
+    ModelSpec {
+        id: "qwen3.5-4b",
+        company: "Alibaba",
+        name: "Qwen3.5 4B",
+        repo: "unsloth/Qwen3.5-4B-GGUF",
+        revision: "e87f176479d0855a907a41277aca2f8ee7a09523",
+        file: "Qwen3.5-4B-Q4_K_M.gguf",
+        sha256: "00fe7986ff5f6b463e62455821146049db6f9313603938a70800d1fb69ef11a4",
+        bytes: 2_740_937_888,
+        license: "Apache-2.0",
+        ctx: 12288,
+        reasoning_budget: 0,
+        template: "",
+    },
+    // The judge of the previous desk, kept as the baseline in the model comparison.
     ModelSpec {
         id: "qwen3-4b-instruct",
         company: "Alibaba",
@@ -95,126 +170,39 @@ pub const MODELS: [ModelSpec; 9] = [
         sha256: "3605803b982cb64aead44f6c1b2ae36e3acdb41d8e46c8a94c6533bc4c67e597",
         bytes: 2_497_281_120,
         license: "Apache-2.0",
-        ctx: 16384,
-    },
-    ModelSpec {
-        id: "gemma-4-e4b",
-        company: "Google",
-        name: "Gemma 4 E4B",
-        repo: "unsloth/gemma-4-E4B-it-GGUF",
-        revision: "bfc15c382204943c3a8fff0c750b94ae2364d7a3",
-        file: "gemma-4-E4B-it-Q4_K_M.gguf",
-        sha256: "85a896a047553e842f25297ee5b031d64ff30147d9c4af17b1e4b394cd1fab87",
-        bytes: 4_977_171_584,
-        license: "Apache-2.0",
         ctx: 12288,
-    },
-    ModelSpec {
-        id: "llama-3.2-3b",
-        company: "Meta",
-        name: "Llama 3.2 3B Instruct",
-        repo: "unsloth/Llama-3.2-3B-Instruct-GGUF",
-        revision: "e7d0997e49c9cb00d88b4c1a6a16aa894b0bbc31",
-        file: "Llama-3.2-3B-Instruct-Q4_K_M.gguf",
-        sha256: "6c99cc00ae910f6a532a80022cb4bc1939094527a089c29294b841c0bd87f74d",
-        bytes: 2_019_377_600,
-        license: "Llama 3.2 Community",
-        ctx: 12288,
-    },
-    ModelSpec {
-        id: "phi-4-mini",
-        company: "Microsoft",
-        name: "Phi-4 mini Instruct",
-        repo: "unsloth/Phi-4-mini-instruct-GGUF",
-        revision: "78eb92a46fc37e6b524df991ed9aca9bc6aa7b80",
-        file: "Phi-4-mini-instruct-Q4_K_M.gguf",
-        sha256: "88c00229914083cd112853aab84ed51b87bdf6b9ce42f532d8c85c7c63b1730a",
-        bytes: 2_491_874_272,
-        license: "MIT",
-        ctx: 12288,
-    },
-    ModelSpec {
-        id: "granite-4.0-h-micro",
-        company: "IBM",
-        name: "Granite 4.0 H Micro",
-        repo: "ibm-granite/granite-4.0-h-micro-GGUF",
-        revision: "dc1dd2585fac18a78001c677d33ef8a7bbb7eb68",
-        file: "granite-4.0-h-micro-Q4_K_M.gguf",
-        sha256: "bcc78b9b25450101d1ad90d4b9a264e1bac892f534dfb76066f4eec792fdf023",
-        bytes: 1_942_564_512,
-        license: "Apache-2.0",
-        ctx: 12288,
-    },
-    ModelSpec {
-        id: "ministral-3-3b",
-        company: "Mistral AI",
-        name: "Ministral 3 3B Instruct 2512",
-        repo: "mistralai/Ministral-3-3B-Instruct-2512-GGUF",
-        revision: "eb599d408350ea2bb60452cb86be7c7b2fc28227",
-        file: "Ministral-3-3B-Instruct-2512-Q4_K_M.gguf",
-        sha256: "9ed150d4367e68df0ac8e1540f6ddc65b42d0ee26378329d1ecbca60f93fc5f8",
-        bytes: 2_147_023_008,
-        license: "Apache-2.0",
-        ctx: 12288,
-    },
-    ModelSpec {
-        id: "smollm3-3b",
-        company: "Hugging Face",
-        name: "SmolLM3 3B",
-        repo: "ggml-org/SmolLM3-3B-GGUF",
-        revision: "4965cb60b150737b68a0408c36aeefb65078f894",
-        file: "SmolLM3-Q4_K_M.gguf",
-        sha256: "8334b850b7bd46238c16b0c550df2138f0889bf433809008cc17a8b05761863e",
-        bytes: 1_915_305_312,
-        license: "Apache-2.0",
-        ctx: 12288,
-    },
-    ModelSpec {
-        id: "nemotron-3-nano-4b",
-        company: "NVIDIA",
-        name: "Nemotron 3 Nano 4B",
-        repo: "nvidia/NVIDIA-Nemotron-3-Nano-4B-GGUF",
-        revision: "ba223d14e45525f7fae81db77ea8cabeb2fc6c25",
-        file: "NVIDIA-Nemotron3-Nano-4B-Q4_K_M.gguf",
-        sha256: "be5d9a656a51922f24f1f09a759cebb694e1f5d9728bf0ef9f8c972c5a0b5ef2",
-        bytes: 2_837_072_864,
-        license: "NVIDIA Open Model",
-        ctx: 12288,
-    },
-    ModelSpec {
-        id: "lfm2.5-2.6b",
-        company: "Liquid AI",
-        name: "LFM2.5 2.6B",
-        repo: "LiquidAI/LFM2.5-2.6B-GGUF",
-        revision: "e7caca5d835a3901a8e0d63e94009429bafafdfc",
-        file: "LFM2.5-2.6B-Q4_K_M.gguf",
-        sha256: "02a8b7e17487d326e46d68ce0ba24211e1b80a14c4cd0597fa73c1cd697f52ed",
-        bytes: 1_674_455_040,
-        license: "LFM Open",
-        ctx: 12288,
+        reasoning_budget: 0,
+        template: "",
     },
 ];
 
-fn by_id(id: &str) -> &'static ModelSpec {
-    MODELS
-        .iter()
-        .find(|m| m.id == id)
-        .expect("model registered")
+/// The model with this id.
+pub fn by_id(id: &str) -> Option<&'static ModelSpec> {
+    MODELS.iter().find(|m| m.id == id)
 }
 
-/// The model that makes each kind of decision.
-pub fn model_for(role: Role) -> &'static ModelSpec {
-    by_id(match role {
-        Role::Triage => "granite-4.0-h-micro",
-        Role::Research => "gemma-4-e4b",
-        Role::Bull => "llama-3.2-3b",
-        Role::Bear => "phi-4-mini",
-        Role::Judge => "qwen3-4b-instruct",
-        Role::Doctor => "ministral-3-3b",
-        Role::PostMortem => "smollm3-3b",
-        Role::Proposer => "nemotron-3-nano-4b",
-        Role::SingleShot => "lfm2.5-2.6b",
-    })
+/// Set this to a model id to run every agent on that model.
+pub const MODEL_VAR: &str = "PAPER_TRADER_MODEL";
+
+/// The model each agent runs on.
+pub fn default_for(agent: Agent) -> &'static ModelSpec {
+    let id = match agent {
+        Agent::Scout
+        | Agent::Strategist
+        | Agent::Classifier
+        | Agent::Analyst
+        | Agent::Skeptic
+        | Agent::Manager => "qwen3.5-9b",
+    };
+    by_id(id).expect("model registered")
+}
+
+/// The model an agent runs on in this process: [`MODEL_VAR`] when it names a model.
+pub fn model_for(agent: Agent) -> &'static ModelSpec {
+    std::env::var(MODEL_VAR)
+        .ok()
+        .and_then(|id| by_id(id.trim()))
+        .unwrap_or_else(|| default_for(agent))
 }
 
 #[cfg(test)]
@@ -223,26 +211,29 @@ mod tests {
     use std::collections::BTreeSet;
 
     #[test]
-    fn every_role_has_its_own_model_from_its_own_company() {
-        let models: BTreeSet<&str> = Role::ALL.iter().map(|r| model_for(*r).id).collect();
-        let companies: BTreeSet<&str> = Role::ALL.iter().map(|r| model_for(*r).company).collect();
-        assert_eq!(models.len(), Role::ALL.len());
-        assert_eq!(companies.len(), Role::ALL.len());
-    }
-
-    #[test]
     fn every_file_is_pinned_to_a_commit_and_a_hash() {
         for m in &MODELS {
             assert_eq!(m.sha256.len(), 64, "{}", m.id);
             assert_eq!(m.revision.len(), 40, "{}", m.id);
             assert!(m.file.to_ascii_lowercase().ends_with(".gguf"));
             assert!(m.url().contains(m.revision));
+            assert!(
+                m.template.is_empty()
+                    || serde_json::from_str::<serde_json::Value>(m.template).is_ok()
+            );
+            // One model at a time must fit in the runner's 16 GB with room for the context.
+            assert!(m.bytes < 12_500_000_000, "{}", m.id);
         }
     }
 
     #[test]
-    fn role_names_are_unique() {
-        let names: BTreeSet<&str> = Role::ALL.iter().map(|r| r.name()).collect();
-        assert_eq!(names.len(), Role::ALL.len());
+    fn ids_and_agent_names_are_unique_and_every_agent_has_a_model() {
+        let ids: BTreeSet<&str> = MODELS.iter().map(|m| m.id).collect();
+        assert_eq!(ids.len(), MODELS.len());
+        let names: BTreeSet<&str> = Agent::ALL.iter().map(|a| a.name()).collect();
+        assert_eq!(names.len(), Agent::ALL.len());
+        for agent in Agent::ALL {
+            assert!(by_id(default_for(agent).id).is_some());
+        }
     }
 }

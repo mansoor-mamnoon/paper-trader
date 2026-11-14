@@ -30,7 +30,7 @@ jobs:
           ref: account
           path: account
       - name: Apply the dashboard files
-        run: cp web/* account/site/
+        run: cp -r web/* account/site/
       - name: Configure visitor analytics
         # Off unless the repository variables GOATCOUNTER_CODE and/or GA4_ID are set.
         env:

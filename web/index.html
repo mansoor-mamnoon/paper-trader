@@ -4,293 +4,92 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>Paper Trader · The $1,000 Experiment</title>
-<meta name="description" content="A $1,000 paper-trading account run by a free open-weights AI. Every decision is public.">
+<title>Paper Trader</title>
+<meta name="description" content="A $1,000 paper account run by a desk of free local language models that trade news buzz, sector by sector. Every decision is public.">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800;900&family=JetBrains+Mono:wght@500;700&family=Kalam:wght@700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap">
 <link rel="stylesheet" href="style.css">
 <script src="analytics-config.js"></script>
 <script src="analytics.js"></script>
 <script src="app.js" defer></script>
 </head>
 <body>
-<a class="skip" href="#main">Skip to content</a>
 <header class="top">
   <div class="wrap bar">
-    <a class="brand" href="#overview"><img src="favicon.svg" alt=""><span><b>Paper Trader</b><small>The $1,000 experiment</small></span></a>
-    <nav aria-label="Sections" class="tabs" role="tablist">
-      <button role="tab" data-tab="overview" aria-selected="true">Overview</button>
-      <button role="tab" data-tab="desk" aria-selected="false">The Desk</button>
-      <button role="tab" data-tab="holdings" aria-selected="false">Holdings</button>
-      <button role="tab" data-tab="trades" aria-selected="false">Trades</button>
-      <button role="tab" data-tab="journal" aria-selected="false">Journal</button>
-      <button role="tab" data-tab="lab" aria-selected="false">Strategy lab</button>
-      <button role="tab" data-tab="ops" aria-selected="false">Ops</button>
-      <button role="tab" data-tab="about" aria-selected="false">How it works</button>
+    <a class="brand" href="#today"><img src="favicon.svg" alt=""><span><b>Paper Trader</b><small>The $1,000 model desk</small></span></a>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button role="tab" data-tab="today" aria-selected="true">Today</button>
+      <button role="tab" data-tab="newsbook" aria-selected="false">Newsbook</button>
+      <button role="tab" data-tab="desk" aria-selected="false">The desk</button>
+      <button role="tab" data-tab="history" aria-selected="false">History</button>
+      <button role="tab" data-tab="how" aria-selected="false">How it works</button>
     </nav>
-    <a class="star" href="https://github.com/mansoor-mamnoon/paper-trader" rel="noopener">★ Star on GitHub</a>
   </div>
 </header>
+<div class="wrap"><div id="notice" class="notice" role="status" hidden></div></div>
 
-<div class="wrap">
-  <div id="notice" class="notice" role="status" hidden></div>
-</div>
-
-<main id="main" class="wrap">
-
-<!-- OVERVIEW -->
-<section id="overview" class="view" role="tabpanel">
-<p class="muted">Allocation policy: all available cash allocated to individual stocks; no mutual funds, ETFs or index funds. New allocations execute at the next observed session open. Historical data below may predate this policy.</p>
-  <div class="hero">
-    <div class="hero-top"><span class="pill" id="day">Day 0 of 60</span><span id="ends" class="mono-note"></span></div>
-    <div class="hero-tags"><span class="tag"><i id="status-dot" class="dot"></i><span id="status">Connecting…</span></span><span class="mono-note">benchmark: SPY, price only</span></div>
-    <h1 id="headline">Loading the account…</h1>
-    <p id="subline" class="sub"></p>
-    <div class="outline-pills"><span>No real money</span><span>Open-weights AI</span><span>Every trade public</span></div>
-    <p id="script-note" class="script"></p>
-    <div class="versus card" aria-label="Account compared with SPY">
-      <div><span class="label">Paper account</span><strong id="v-account">—</strong><small id="v-account-pct"></small></div>
-      <div class="vs">vs</div>
-      <div><span class="label">Buying SPY</span><strong id="v-spy">—</strong><small id="v-spy-pct"></small></div>
+<main class="wrap">
+  <section class="view" id="view-today">
+    <div class="hero">
+      <h1>A desk of local AI models runs <span class="mark">$1,000</span>.</h1>
+      <p>Every evening six agents read the day's news and buzz, keep a sector newsbook, argue each stock, and decide every holding: keep it or sell it and buy something better. The account is always fully invested.</p>
     </div>
-  </div>
-
-  <div class="progress card slim">
-    <div class="row"><span>Experiment progress</span><span class="muted">60 days, then it stops</span></div>
-    <div class="bar-track" role="progressbar" aria-label="Experiment progress" aria-valuemin="0" aria-valuemax="60" id="progress"><div id="progress-fill"></div></div>
-  </div>
-
-  <div class="stats">
-    <article class="card stat"><p class="label">Cash <button class="tip" aria-label="What is cash?" data-tip="Money not invested in any stock. The account starts with $1,000 in cash.">?</button></p><h2 id="cash">—</h2><small id="invested" class="muted"></small></article>
-    <article class="card stat"><p class="label">Profit and loss <button class="tip" aria-label="What is profit and loss?" data-tip="Realized is locked in by selling. Unrealized is the gain or loss on stocks still held, after estimated selling costs.">?</button></p><h2 id="pnl">—</h2><small id="pnl-detail" class="muted"></small></article>
-    <article class="card stat"><p class="label">Worst drop <button class="tip" aria-label="What is the worst drop?" data-tip="The largest fall from the account's highest value. It is only reported: the account keeps trading for all 60 days.">?</button></p><h2 id="drawdown">—</h2><small class="muted">Reported, never a stop</small></article>
-    <article class="card stat"><p class="label">Fees paid <button class="tip" aria-label="What are fees?" data-tip="Modeled trading fees. Slippage, a worse-than-quoted fill price, is charged on top and is already inside the prices.">?</button></p><h2 id="fees">—</h2><small id="costs" class="muted"></small></article>
-  </div>
-
-  <div class="card chart-card">
-    <div class="head"><h2>Account vs. SPY</h2>
-      <div class="legend"><span><i class="sw"></i>Paper account</span><span><i class="sw spy"></i>SPY (S&amp;P 500 ETF)</span></div></div>
-    <div id="chart-wrap" class="chart-wrap"><svg id="chart" viewBox="0 0 900 280" role="img" aria-labelledby="chart-title"><title id="chart-title">Account value and SPY, in dollars</title></svg><div id="chart-tip" class="chart-tip" hidden></div></div>
-    <p class="foot muted">Both lines start at $1,000. SPY is price only (no dividends) and has no trading costs.</p>
-  </div>
-
-  <div class="two">
-    <section class="card">
-      <div class="head"><h2>What happens next</h2></div>
-      <ul id="next" class="plain"></ul>
-      <p id="scan" class="muted small"></p>
-    </section>
-    <section class="card">
-      <div class="head"><h2>Latest activity</h2><button class="link" data-goto="journal">See all</button></div>
-      <ul id="recent" class="timeline"></ul>
-    </section>
-  </div>
-</section>
-
-<!-- THE DESK -->
-<section id="desk" class="view" role="tabpanel" hidden>
-  <div class="page-head">
-    <span class="pill" style="justify-self:start">The Desk</span>
-    <h1>An investment committee on a <span class="mark">free model</span>.</h1>
-    <p>Every day the model triages the screened stocks, sends researchers to read filings and news, stages a bull and bear debate, and a judge makes the call. This is the latest saved transcript; its timestamp identifies the run, which may predate code updates.</p>
-    <p class="mono-note" id="desk-note"></p>
-  </div>
-
-  <div class="card regime" id="desk-regime"></div>
-  <ol class="funnel" id="desk-funnel" aria-label="From screened stocks to picks"></ol>
-
-  <section class="card" id="desk-roster" hidden>
-    <div class="head"><h2>Who decides what</h2><span class="mono-note">9 roles · 9 companies</span></div>
-    <p class="muted small">Every role runs on an open-weights model from a different company, so one model's habits and blind spots cannot decide the whole result. Each file is pinned to an exact version and checked by hash.</p>
-    <ul class="roster" id="desk-roster-list"></ul>
+    <div class="stats" id="stats"></div>
+    <div class="card">
+      <div class="head"><h2>Equity</h2><div class="legend"><span><i class="sw"></i>Account</span><span><i class="sw spy"></i>SPY yardstick (never held)</span></div></div>
+      <svg id="chart" viewBox="0 0 900 260" role="img" aria-label="Account equity over time"></svg>
+    </div>
+    <div class="two">
+      <div class="card"><div class="head"><h2>Holdings</h2><span class="label" id="held-count"></span></div><div class="scroll" id="holdings"></div></div>
+      <div class="card"><div class="head"><h2>Orders for the next open</h2></div><div id="pending"></div></div>
+    </div>
+    <div class="card">
+      <div class="head"><h2>Today's decisions</h2><span class="label" id="today-day"></span></div>
+      <p id="focus" class="small"></p>
+      <ul class="list" id="decisions"></ul>
+      <p id="note" class="small muted"></p>
+    </div>
   </section>
 
-  <div id="desk-finalists" class="finalists"></div>
+  <section class="view" id="view-newsbook" hidden>
+    <div class="card"><h2>The sector newsbook</h2><p class="small muted" style="margin-top:6px">A scout keeps one page per sector. Each day it writes what changed: laws, spending, deals, launches, waves of excitement. It reads its own earlier entries, so the book carries the story across days. Highlighted sectors are the ones the strategist chose to trade.</p></div>
+    <div class="sectors" id="sectors"></div>
+  </section>
 
-  <section class="card judge" id="desk-judge"></section>
+  <section class="view" id="view-desk" hidden>
+    <div class="card"><h2>How each stock was argued today</h2><p class="small muted" style="margin-top:6px">The classifier labels every headline. The analyst makes the case; the skeptic attacks it; the manager reads both and decides.</p></div>
+    <div id="cards"></div>
+  </section>
 
-  <div class="two">
-    <section class="card"><div class="head"><h2>Position doctor</h2><span class="muted small">re-checks every holding daily</span></div><div id="desk-doctor"></div></section>
-    <section class="card"><div class="head"><h2>Memory</h2><span class="muted small">what it has learned</span></div><div id="desk-memory"></div></section>
-  </div>
+  <section class="view" id="view-history" hidden>
+    <div class="card"><div class="head"><h2>Day by day</h2></div><ul class="list" id="days"></ul></div>
+    <div class="card"><div class="head"><h2>Closed trades</h2></div><div class="scroll" id="trades"></div></div>
+    <div class="card"><div class="head"><h2>Fills</h2></div><div class="scroll" id="fills"></div></div>
+    <div class="card"><div class="head"><h2>Model transcripts</h2></div><p class="small muted">Every question the desk asked a model today and what it answered.</p><div id="calls"></div></div>
+  </section>
 
-  <section class="card" id="desk-skipped-card" hidden><div class="head"><h2>What was skipped</h2></div><ul id="desk-degraded" class="plain small"></ul></section>
-</section>
-
-<!-- HOLDINGS -->
-<section id="holdings" class="view" role="tabpanel" hidden>
-  <div class="page-head"><h1>Holdings</h1><p class="muted">Stocks the account owns right now. The bar shows where the price sits between the stop (sell to limit losses) and the target (sell to take profit).</p></div>
-  <div id="holdings-list" class="cards"></div>
-</section>
-
-<!-- TRADES -->
-<section id="trades" class="view" role="tabpanel" hidden>
-  <div class="page-head"><h1>Trades</h1><p class="muted">Every simulated buy and sell, newest first. <a href="export/fills.csv">Download the full ledger (CSV)</a></p></div>
-  <div class="card table-card"><div class="table-wrap" tabindex="0"><table>
-    <thead><tr><th>When</th><th>Side</th><th>Stock</th><th class="num">Shares</th><th class="num">Price</th><th class="num">Fee</th><th class="num">Result</th></tr></thead>
-    <tbody id="fills"></tbody></table></div>
-    <p id="fills-empty" class="empty" hidden></p></div>
-</section>
-
-<!-- JOURNAL -->
-<section id="journal" class="view" role="tabpanel" hidden>
-  <div class="page-head"><h1>Decision journal</h1><p class="muted">Why the account did what it did, in order. <a href="export/decisions.csv">Download everything (CSV)</a></p></div>
-  <div class="filters" role="group" aria-label="Filter decisions">
-    <button class="chip" data-filter="activity" aria-pressed="true">Trades and signals</button>
-    <button class="chip" data-filter="screen" aria-pressed="false">Screening results</button>
-    <input id="search" type="search" placeholder="Search a ticker, e.g. NVDA" aria-label="Search by ticker">
-  </div>
-  <ol id="journal-list" class="timeline big"></ol>
-  <p id="journal-empty" class="empty" hidden></p>
-  <button id="more" class="btn" hidden>Show more</button>
-</section>
-
-<!-- STRATEGY LAB -->
-<section id="lab" class="view" role="tabpanel" hidden>
-  <div class="page-head"><h1>Strategy lab</h1><p class="muted">The strategy is not fixed. An AI analyst reads the news and earnings calendar every day, and the system tests its own changes before adopting them.</p></div>
-
-  <div class="two">
-    <section class="card"><div class="head"><h2>Today's analyst</h2><span id="analyst-badge" class="badge">—</span></div>
-      <p id="analyst-view" class="lead"></p><p id="analyst-note" class="muted small"></p></section>
-    <section class="card"><div class="head"><h2>Live strategy</h2><span id="champion-id" class="badge info">—</span></div>
-      <p id="champion-why" class="muted"></p><dl id="champion-params" class="facts"></dl>
-      <details class="playbook"><summary>Read the analyst's playbook</summary><p id="champion-playbook" class="small"></p></details></section>
-  </div>
-
-  <section class="card"><div class="head"><h2>Does more AI help?</h2><span class="muted small">every layer is tested against the one below it</span></div>
-    <div class="table-wrap" tabindex="0"><table class="ladder"><thead><tr><th>Desk depth</th><th class="num">Portfolio</th><th class="num">Picks scored</th><th class="num">Avg vs SPY, 5 days</th><th class="num">Hit rate</th></tr></thead><tbody id="ladder"></tbody></table></div>
-    <p id="ladder-note" class="foot muted"></p>
-    <h3 class="sub-h">Is its confidence earned?</h3>
-    <div id="calibration" class="bars"></div></section>
-
-  <section class="card"><div class="head"><h2>Challengers</h2><span class="muted small" id="lab-rule"></span></div>
-    <div id="shadows" class="shadows"></div></section>
-
-  <div class="two">
-    <section class="card"><div class="head"><h2>Change log</h2></div><ul id="lab-log" class="timeline"></ul></section>
-    <section class="card"><div class="head"><h2>How it improves itself</h2></div>
-      <ol class="mini">
-        <li><strong>Mine.</strong> Once a week it reviews how the live strategy traded: wins, losses, what the analyst said, how buys before earnings behaved.</li>
-        <li><strong>Propose.</strong> The AI suggests one small change, such as a wider stop, an earnings blackout, or a rewritten playbook. Every value must stay inside fixed bounds.</li>
-        <li><strong>Test.</strong> The change trades a separate $1,000 shadow account on the same data for at least two weeks.</li>
-        <li><strong>Decide.</strong> It replaces the live strategy only if it beats it by a clear margin with similar risk. The old strategy keeps running and wins its seat back if the change turns out to be luck.</li>
+  <section class="view" id="view-how" hidden>
+    <div class="card">
+      <h2>One trading day</h2>
+      <ol class="flow" style="margin-top:14px">
+        <li><b>Settle.</b> Rust fills yesterday's orders at today's open with 0.1% fees and 0.2% slippage, then marks the book.</li>
+        <li><b>Buzz screen.</b> Every US stock above $1B, $3 and $25M daily volume is scored on Reddit mentions, trending lists, the day's move and unusual volume. Funds, ETFs and index products are excluded. The screen decides what the models read, never what is bought.</li>
+        <li><b>Scouts</b> write each of 12 sectors' newsbook entries from the last two days of sector news, the tape and their own earlier entries.</li>
+        <li><b>Strategist</b> reads the newsbook and picks one to three sectors to trade.</li>
+        <li><b>Classifier</b> labels every headline of every holding and candidate: product launch, big deal, policy, retail frenzy, noise and so on, with a buzz score.</li>
+        <li><b>Analyst</b> makes the case for each stock; <b>skeptic</b> attacks it with the same file.</li>
+        <li><b>Manager</b> must answer KEEP or SELL for every holding, then picks replacements for every sale from the argued candidates. It reads its own notes, decisions and closed trades from earlier days.</li>
+        <li><b>Rust queues the orders</b> for the next open. All cash is spent; if nothing new is bought, freed cash tops up the stocks that were kept.</li>
       </ol>
-      <p class="small muted">Position size, the five-slot cap, costs and the 60-day end are written in code. No proposal can change them.</p></section>
-  </div>
-</section>
-
-<!-- OPS -->
-<section id="ops" class="view" role="tabpanel" hidden>
-  <div class="page-head">
-    <span class="pill" style="justify-self:start">Ops</span>
-    <h1>Where the time <span class="mark">goes</span>.</h1>
-    <p>Logs and metrics for every stage, model and data source, so slow or failing parts show up fast.</p>
-  </div>
-  <p id="ops-empty" class="empty card" hidden>Telemetry appears after the next daily run.</p>
-  <div id="ops-content" hidden>
-    <section class="card" id="ops-status"></section>
-
-    <section class="card">
-      <div class="head"><h2>Where the time went</h2><span class="mono-note" id="ops-stage-total"></span></div>
-      <div id="ops-waterfall" class="waterfall"></div>
-    </section>
-
-    <section class="card">
-      <div class="head"><h2>Bottlenecks over the last 30 runs</h2></div>
-      <p id="ops-bottleneck" class="lead"></p>
-      <p class="small muted">p95 means 19 out of 20 runs were faster than this number. It shows the bad days, which the average hides.</p>
-      <div class="table-wrap" tabindex="0"><table>
-        <thead><tr><th>Stage</th><th class="num">Mean</th><th class="num">p95</th><th class="num">Max</th><th class="num">Fails</th><th>Share of the slowest</th></tr></thead>
-        <tbody id="ops-stage-rows"></tbody></table></div>
-    </section>
-
-    <section class="card">
-      <div class="head"><h2>Run history</h2>
-        <span class="legend"><span><i class="sw"></i>OK</span><span><i class="sw yellow"></i>Degraded</span><span><i class="sw hatch"></i>Failed</span></span></div>
-      <div id="ops-runs" class="runs"></div>
-      <p class="foot muted">Minutes of work per run, oldest on the left. The dashed line is the time budget.</p>
-    </section>
-
-    <section class="card table-card">
-      <div class="head pad"><h2>By decision role</h2></div>
-      <div class="table-wrap" tabindex="0"><table>
-        <thead><tr><th>Role</th><th>Model</th><th>Company</th><th class="num">Calls</th><th class="num">OK</th><th class="num">Mean latency</th><th class="num">Total time</th></tr></thead>
-        <tbody id="ops-role-rows"></tbody></table></div>
-    </section>
-
-    <section class="card table-card">
-      <div class="head pad"><h2>Models</h2></div>
-      <p class="small muted pad">The determinism check (a canary) asks each model the same short question twice at temperature 0 and compares the answers, then compares today's answer with the last run's. STABLE means identical. DRIFT means the answer changed, usually because the runner hardware did.</p>
-      <div class="table-wrap" tabindex="0"><table>
-        <thead><tr><th>Model</th><th>Company</th><th class="num">Calls</th><th class="num">OK</th><th class="num">Mean</th><th class="num">p95</th><th class="num">Tokens/s out</th><th class="num">Tokens/s in</th><th class="num">Errors</th><th>Canary</th></tr></thead>
-        <tbody id="ops-model-rows"></tbody></table></div>
-    </section>
-
-    <section class="card table-card">
-      <div class="head pad"><h2>Data sources</h2></div>
-      <div class="table-wrap" tabindex="0"><table>
-        <thead><tr><th>Source</th><th class="num">Requests</th><th class="num">OK</th><th class="num">Mean</th><th class="num">p95</th></tr></thead>
-        <tbody id="ops-fetch-rows"></tbody></table></div>
-    </section>
-
-    <section class="card">
-      <div class="head"><h2>Events</h2><span class="mono-note" id="ops-event-count"></span></div>
-      <ul class="timeline" id="ops-events"></ul>
-    </section>
-
-    <section class="card">
-      <div class="head"><h2>Download the raw logs</h2></div>
-      <p class="small muted">Everything above is built from these files. They keep the last 120 runs.</p>
-      <div class="outline-pills">
-        <a class="chip" href="export/runs.csv">runs.csv</a><a class="chip" href="export/stages.csv">stages.csv</a><a class="chip" href="export/llm_calls.csv">llm_calls.csv</a><a class="chip" href="export/events.csv">events.csv</a><a class="chip" href="export/fetches.csv">fetches.csv</a>
-      </div>
-    </section>
-  </div>
-</section>
-
-<!-- ABOUT -->
-<section id="about" class="view" role="tabpanel" hidden>
-  <div class="page-head"><h1>How it works</h1><p class="muted">A fake $1,000, a committee of model calls, and nothing hidden.</p></div>
-  <ol class="steps">
-    <li><h3>Architecture</h3><img src="architecture.svg" alt="Market inputs, research, audited stock orders, stock allocation and ledger" style="width:100%;height:auto"></li>
-    <li><h3>Scan and screen</h3><p>After the US close the program loads a rotating batch of US stocks, their daily prices, the earnings calendar, headlines and, when a contact address is configured for the SEC, recent filings and industry codes. Hard gates come first and no model can loosen them: verified common stocks and ADRs by default; leveraged and inverse products are excluded. News is matched to the issuer, and future-dated notices cannot verify a catalyst. the price must be at least $5, average daily traded value at least $5M over 30 sessions, and there must be no earnings report, FDA decision or restructuring (bankruptcy, reverse split, merger, delisting) within 7 days either side. Survivors then need the trend and momentum screen shown in the Strategy lab. A queued buy is checked against the gates again on every run until it fills, and one that fails is cancelled at once so its slot goes back to the desk.</p></li>
-    <li><h3>Triage</h3><p>The model scores the survivors in small batches for how specific and recent their catalyst is, and keeps the best few as finalists.</p></li>
-    <li><h3>Evidence review</h3><p>Price and volume are technical signals, not company catalysts. Missing calendar entries are unknowns. The judge’s thesis, risk and invalidation claims are audited; risk-off purchases require a cited verified event. Model conviction is an uncalibrated score, not a probability. These checks do not verify every claim or guarantee returns.</p></li>
-    <li><h3>Research agents</h3><p>For each finalist an agent decides what to look up next: read a filing, pull older headlines, inspect price action. Each step is shown on The Desk tab.</p></li>
-    <li><h3>Bull and bear</h3><p>Two calls argue the stock for and against, using only the evidence gathered.</p></li>
-    <li><h3>Full allocation</h3><p>Available cash is divided across up to five eligible individual stocks. Model picks receive priority; quantitative momentum ranking fills available slots when the model abstains. Funds and ETFs are excluded. Position-size, industry and volatility reductions and the drawdown cash lock are disabled in full-investment mode. One eligible stock can receive all capital. Orders execute at the next observed session open. Missing prices or no eligible stocks can leave cash temporarily. SPY is only a benchmark.</p></li>
-    <li><h3>The judge</h3><p>A portfolio manager writes out its reasoning, calls the market regime, and picks and states what would prove it wrong. Full-investment mode divides all available cash across eligible stock orders, with no reserved cash fraction. An order fills at the next session's open with fees and slippage, and the following evening's run records the fill. A session counts as finished from 4:30 pm New York time, so each evening run sees that day's prices.</p></li>
-    <li><h3>Doctor, memory and scorecard</h3><p>A doctor re-checks every holding and may exit or tighten a stop. Closed trades become lessons. Every pick, veto and near miss is scored against SPY, and shadow accounts at lower desk depths show whether each layer earns its place.</p></li>
-  </ol>
-  <section class="card"><div class="head"><h2>Independent models</h2></div>
-    <p>Each decision is made by a different open-weights model from a different company: triage, research, the bull case, the bear case, the judge, the doctor, the post-mortem, the strategy proposer and the single-shot analyst. A model that reads the debate did not write both sides of it. The Desk tab lists who decides what, and every model file is pinned to an exact version and checked by hash.</p>
-    <p class="small muted">The runner holds one model at a time, so the work runs in blocks and swaps models between them.</p></section>
-  <section class="card"><div class="head"><h2>Same prompt, same answer</h2></div>
-    <p>Every model call uses greedy decoding with a fixed seed, and each model file is checked against a pinned hash before it loads. When a model loads it answers the same small prompt twice. If the two answers ever differ, the Ops tab shows the model as unstable. The CPU of each run is logged, because different machines can round differently.</p></section>
-  <section class="card"><div class="head"><h2>Why it keeps running</h2></div>
-    <p>The job runs on GitHub's free runners. GitHub can delay or drop scheduled runs (on 9 November it dropped two in one evening), so the main trigger now lives outside GitHub: every 30 minutes a small script on a Mac, or a free Cloudflare cron, checks whether the latest session has been processed and starts a run through GitHub's API if not. The GitHub schedule stays as a backup. A run skips itself when the account already ran after the latest session settled at 4:30 pm New York time, so extra triggers cost nothing. A watchdog starts a run each morning if one was missed, and every run re-enables the schedule so GitHub never pauses it for inactivity.</p></section>
-  <section class="card"><div class="head"><h2>Reading the Ops tab</h2></div>
-    <p>Start at the top: the status word says whether the last run finished cleanly, and the bar shows how much of its time budget it used. "Where the time went" shows each stage of that run, with triage, research, bull and bear indented inside the desk's prepare stage, and "Bottlenecks" shows which stage is slowest on average across the last 30 runs. While a run is going, the Actions log prints each step as it happens and a heartbeat every minute, so a slow run and a stalled one look different. If a model's latency or error count climbs, or a data source starts failing, it shows in the tables below before it shows in the results. The raw logs are downloadable.</p></section>
-  <div class="two">
-    <section class="card"><div class="head"><h2>Guardrails</h2></div>
-      <dl class="facts"><div><dt>Biggest position</dt><dd>Up to 100% when one stock qualifies</dd></div><div><dt>Open positions</dt><dd>Up to 5 individual stocks, fractional shares</dd></div><div><dt>Price floor</dt><dd>$5 at the last close</dd></div><div><dt>Liquidity floor</dt><dd>$5M a day, 30-session average</dd></div><div><dt>Event blackout</dt><dd>No buy within 7 days of earnings, an FDA decision or a restructuring</dd></div><div><dt>Volatile stocks</dt><dd>No allocation reduction in full-investment mode</dd></div><div><dt>One industry</dt><dd>No industry allocation cap in full-investment mode</dd></div><div><dt>Stop / target</dt><dd>−4% / +8%, on daily closes</dd></div><div><dt>Circuit breaker</dt><dd>10% below the five-session high: Disabled in full-investment mode</dd></div><div><dt>Leverage and shorting</dt><dd>None</dd></div><div><dt>Real orders</dt><dd>None</dd></div></dl>
-      <p class="small muted">These are fixed in code. The models only choose among stocks that pass them and never size a position.</p></section>
-    <section class="card"><div class="head"><h2>Coverage</h2></div><p id="coverage" class="muted">Loading…</p>
-      <p class="small muted"><a href="api/universe.json">Symbol directory (JSON)</a> · <a href="api/state">Raw snapshot (JSON)</a> · <a href="export/equity.csv">Equity history (CSV)</a></p></section>
-  </div>
-  <section class="card"><div class="head"><h2>What this cannot tell you</h2></div>
-    <ul class="plain"><li>Sixty days is too short to separate skill from luck.</li><li>Prices are delayed and come from a free source with no guarantees.</li><li>Stops are checked on daily closes, so a gap can cost more than 4%.</li><li>Real markets add queues, outages and price impact that this model leaves out.</li><li>The page refreshes when GitHub Actions publishes after each US session. It can run late or fail, and the last good snapshot stays up.</li></ul>
-    <p class="small muted">This is a simulation and not financial advice.</p></section>
-</section>
-
+    </div>
+    <div class="two">
+      <div class="card"><h2>The agents</h2><div class="scroll" id="agents" style="margin-top:10px"></div></div>
+      <div class="card"><h2>Rules no model can change</h2><ul class="list small" id="rules" style="margin-top:6px"></ul></div>
+    </div>
+    <div class="card"><h2>Data sources</h2><ul class="list small" id="sources" style="margin-top:6px"></ul></div>
+    <div class="card"><h2>Why it is built this way</h2><p class="small" style="margin-top:8px">The design, the model choice and the research behind it are written up in the <a href="https://github.com/mansoor-mamnoon/paper-trader#readme">README</a>. This is a paper account: no broker is connected and nothing here is advice.</p></div>
+  </section>
 </main>
-
-<footer class="wrap foot-bar">
-  <span id="health-detail" class="muted">Delayed daily data</span>
-  <span id="privacy" class="muted"></span>
-  <span><a href="https://github.com/mansoor-mamnoon/paper-trader">Source on GitHub</a> · <a href="https://github.com/mansoor-mamnoon/paper-trader/actions">Run history</a></span>
-</footer>
-<div id="tooltip" class="tooltip" role="tooltip" hidden></div>
 </body>
 </html>
