@@ -285,6 +285,7 @@ pub fn run(
 
     // 1. The market, the attention and the books.
     let stage = Lap::start("market data and buzz screen");
+    let first_step = report.metrics.stages.len();
     let lap = Lap::quiet("data: stock screener");
     let listings = feed.listings()?;
     report.metrics.stages.push(lap.end());
@@ -360,7 +361,7 @@ pub fn run(
             tape(members.get(sector.id).map_or(&[][..], Vec::as_slice)),
         );
     }
-    report.metrics.stages.push(stage.end());
+    report.metrics.stages.insert(first_step, stage.end());
 
     let Some(brain) = brain else {
         report
@@ -1127,6 +1128,10 @@ mod tests {
             .iter()
             .map(|s| s.name.as_str())
             .collect();
+        assert_eq!(
+            stages[0], "market data and buzz screen",
+            "a stage comes before its steps"
+        );
         for expected in [
             "data: stock screener",
             "scouts write the sector newsbook",
