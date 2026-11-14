@@ -35,6 +35,22 @@ pub struct Call {
     pub prompt_tokens: u64,
     pub completion_tokens: u64,
     pub seconds: f64,
+    /// Prompt tokens read per second, as the server reported.
+    #[serde(default)]
+    pub prompt_per_second: f64,
+    /// Answer tokens written per second, as the server reported.
+    #[serde(default)]
+    pub tokens_per_second: f64,
+}
+
+/// A model runtime event worth timing: a download, a server start, a swap.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct ModelEvent {
+    /// `download`, `load` or `runtime`.
+    pub kind: String,
+    pub model: String,
+    pub seconds: f64,
+    pub detail: String,
 }
 
 /// Something that answers an agent's question with JSON matching a schema.
@@ -51,6 +67,10 @@ pub trait Brain {
     fn model_name(&self, agent: Agent) -> String;
     /// Every call made since the last time this was asked.
     fn take_calls(&self) -> Vec<Call>;
+    /// Model downloads and loads since the last time this was asked.
+    fn take_events(&self) -> Vec<ModelEvent> {
+        Vec::new()
+    }
 }
 
 /// Find the JSON object in a model's reply.
@@ -191,6 +211,7 @@ pub struct LocalBrain {
     prune: bool,
     running: RefCell<Option<Running>>,
     calls: RefCell<Vec<Call>>,
+    events: RefCell<Vec<ModelEvent>>,
 }
 
 impl std::fmt::Debug for LocalBrain {
@@ -222,13 +243,25 @@ impl LocalBrain {
             .ok()
             .and_then(|p| p.parse().ok())
             .unwrap_or(8091);
+        let mut events = Vec::new();
         Ok(LocalBrain {
             models,
-            server: ensure_server()?,
+            server: {
+                let started = Instant::now();
+                let server = ensure_server()?;
+                events.push(ModelEvent {
+                    kind: "runtime".into(),
+                    model: format!("llama.cpp {LLAMA_BUILD}"),
+                    seconds: started.elapsed().as_secs_f64(),
+                    detail: "find or download llama-server".into(),
+                });
+                server
+            },
             port,
             prune: std::env::var("PAPER_TRADER_PRUNE_MODELS").is_ok(),
             running: RefCell::new(None),
             calls: RefCell::new(Vec::new()),
+            events: RefCell::new(events),
         })
     }
 
@@ -255,9 +288,21 @@ impl LocalBrain {
             spec.bytes / 1_000_000
         ));
         let mut last = anyhow!("no attempt made");
+        let started = Instant::now();
         for attempt in 1..=3 {
             match download(spec, &path) {
-                Ok(()) => return Ok(path),
+                Ok(()) => {
+                    self.events.borrow_mut().push(ModelEvent {
+                        kind: "download".into(),
+                        model: spec.id.into(),
+                        seconds: started.elapsed().as_secs_f64(),
+                        detail: format!(
+                            "{} MB, attempt {attempt}, sha256 verified",
+                            spec.bytes / 1_000_000
+                        ),
+                    });
+                    return Ok(path);
+                }
                 Err(error) => {
                     progress::log(&format!(
                         "download attempt {attempt} of {} failed: {error}",
@@ -322,6 +367,12 @@ impl LocalBrain {
             }
             std::thread::sleep(Duration::from_millis(1500));
         }
+        self.events.borrow_mut().push(ModelEvent {
+            kind: "load".into(),
+            model: spec.id.into(),
+            seconds: started.elapsed().as_secs_f64(),
+            detail: format!("context {} tokens, {threads} threads", spec.ctx),
+        });
         *self.running.borrow_mut() = Some(Running { spec, child, path });
         Ok(())
     }
@@ -427,6 +478,8 @@ impl Brain for LocalBrain {
                 call.response = text;
                 call.prompt_tokens = stats.prompt_tokens;
                 call.completion_tokens = stats.completion_tokens;
+                call.prompt_per_second = stats.prompt_per_second;
+                call.tokens_per_second = stats.tokens_per_second;
                 progress::log(&format!(
                     "{} {subject}: {} in, {} out, {seconds:.0}s ({:.1} tok/s)",
                     agent.name(),
@@ -452,6 +505,10 @@ impl Brain for LocalBrain {
 
     fn take_calls(&self) -> Vec<Call> {
         std::mem::take(&mut *self.calls.borrow_mut())
+    }
+
+    fn take_events(&self) -> Vec<ModelEvent> {
+        std::mem::take(&mut *self.events.borrow_mut())
     }
 }
 
@@ -491,6 +548,7 @@ mod tests {
             prune: false,
             running: RefCell::new(None),
             calls: RefCell::new(Vec::new()),
+            events: RefCell::new(Vec::new()),
         };
         let error = brain
             .ask(Agent::Manager, "book", "s", "u", &json!({}))
