@@ -145,6 +145,11 @@ impl Remote {
                 )},
             ],
         });
+        if self.model == "deepseek-ai/deepseek-v4.1-flash" {
+            // Keep the output budget for the schema answer rather than hidden reasoning.
+            body["temperature"] = json!(1.0);
+            body["chat_template_kwargs"] = json!({"thinking": false});
+        }
         body["response_format"] = if self.strict.get() {
             json!({"type": "json_schema", "json_schema": {"name": "answer", "strict": true, "schema": schema}})
         } else {
