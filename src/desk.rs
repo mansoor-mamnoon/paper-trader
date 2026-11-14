@@ -19,9 +19,9 @@ use crate::config::{
 };
 use crate::llm::Brain;
 use crate::market::{self, Listing, Quote};
+use crate::metrics::{self, Lap, Metrics};
 use crate::models::Agent;
 use crate::news::{self, Headline};
-use crate::progress;
 use crate::sectors::{self, SECTORS};
 use crate::store::{self, ENGINE, Entry, Order, SectorNote, State, Store};
 use anyhow::Result;
@@ -107,6 +107,8 @@ pub struct Report {
     /// The most-buzzed stocks of the day, whatever their sector.
     pub buzz: Vec<Buzz>,
     pub problems: Vec<String>,
+    /// How long everything took and what it cost, for the ops page.
+    pub metrics: Metrics,
 }
 
 fn median(values: &mut [f64]) -> f64 {
@@ -282,9 +284,13 @@ pub fn run(
     let mut state = store.load()?;
 
     // 1. The market, the attention and the books.
-    let stage = progress::begin("market data and buzz screen");
+    let stage = Lap::start("market data and buzz screen");
+    let lap = Lap::quiet("data: stock screener");
     let listings = feed.listings()?;
+    report.metrics.stages.push(lap.end());
+    let lap = Lap::quiet("data: fund directory");
     let funds = feed.funds();
+    report.metrics.stages.push(lap.end());
     let by_symbol: BTreeMap<&str, &Listing> =
         listings.iter().map(|l| (l.symbol.as_str(), l)).collect();
     let eligible: Vec<Listing> = listings
@@ -292,7 +298,9 @@ pub fn run(
         .filter(|l| market::ineligible(l, &funds).is_none())
         .cloned()
         .collect();
+    let lap = Lap::quiet("data: buzz sources");
     let (attention, sources) = feed.attention();
+    report.metrics.stages.push(lap.end());
     report.sources = sources;
     let all_scored = buzz::score_all(&eligible, &attention);
     let mut ranked: Vec<Buzz> = all_scored.iter().take(PRESCREEN).cloned().collect();
@@ -300,7 +308,9 @@ pub fn run(
     wanted.extend(state.positions.keys().cloned());
     wanted.extend(state.pending.keys().cloned());
     wanted.insert("SPY".into());
+    let lap = Lap::quiet("data: daily bars");
     let (mut quotes, quote_errors) = feed.histories(&wanted);
+    report.metrics.stages.push(lap.end());
     for symbol in state.positions.keys() {
         if let Some(error) = quote_errors.get(symbol) {
             report
@@ -308,11 +318,28 @@ pub fn run(
                 .push(format!("No prices for holding {symbol}: {error}"));
         }
     }
+    let lap = Lap::quiet("books: settle and fill orders");
+    let fills_before = store.fill_count()?;
     store.begin()?;
     take_over(store, &mut state, at)?;
     broker::settle(store, &mut state, &quotes, at)?;
     store.save(&state)?;
     store.commit()?;
+    let new_fills = store.fills(store.fill_count()?.saturating_sub(fills_before))?;
+    let trading = &mut report.metrics.trading;
+    trading.fills = new_fills.len() as u64;
+    for fill in &new_fills {
+        if fill.side == "BUY" {
+            trading.bought += fill.quantity * fill.price;
+        } else {
+            trading.sold += fill.quantity * fill.price;
+        }
+        trading.fees += fill.fee;
+    }
+    if state.equity() > 0.0 {
+        trading.turnover_pct = (trading.bought + trading.sold) / state.equity() * 100.0;
+    }
+    report.metrics.stages.push(lap.end());
     // A stock must also be an equity according to the price provider.
     ranked.retain(|b| quotes.get(&b.listing.symbol).is_some_and(Quote::is_stock));
     buzz::refine(&mut ranked, &quotes);
@@ -333,7 +360,7 @@ pub fn run(
             tape(members.get(sector.id).map_or(&[][..], Vec::as_slice)),
         );
     }
-    drop(stage);
+    report.metrics.stages.push(stage.end());
 
     let Some(brain) = brain else {
         report
@@ -348,7 +375,7 @@ pub fn run(
     }
 
     // 2. Scouts: one newsbook entry per sector.
-    let stage = progress::begin("scouts write the sector newsbook");
+    let stage = Lap::start("scouts write the sector newsbook");
     for sector in &SECTORS {
         let (items, _) = feed.topic_news(sector.query);
         let items = news::clean(items, at, 2, SCOUT_HEADLINES);
@@ -389,9 +416,10 @@ pub fn run(
     report
         .newsbook
         .sort_by(|a, b| b.heat.cmp(&a.heat).then_with(|| a.sector.cmp(&b.sector)));
-    drop(stage);
+    report.metrics.stages.push(stage.end());
 
     // 3. Strategist: the sectors to trade.
+    let stage = Lap::start("strategist picks sectors");
     let mut held_by_sector: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for (symbol, position) in &state.positions {
         let sector = by_symbol
@@ -432,6 +460,8 @@ pub fn run(
         }
     };
 
+    report.metrics.stages.push(stage.end());
+
     // 4. Candidates: the most-buzzed stocks of the focus sectors from the whole market, then
     // the day's most-buzzed stocks from anywhere else, none of them already held.
     let in_focus = |b: &Buzz| {
@@ -441,6 +471,7 @@ pub fn run(
             .iter()
             .any(|s| s == sectors::sector_of(&b.listing).id)
     };
+    let stage = Lap::start("candidates chosen and priced");
     let mut focus_pool: Vec<Buzz> = all_scored
         .iter()
         .filter(|b| !state.positions.contains_key(&b.listing.symbol) && in_focus(b))
@@ -471,9 +502,10 @@ pub fn run(
         .collect();
     candidates.extend(wildcards);
     report.funnel.candidates = candidates.len();
+    report.metrics.stages.push(stage.end());
 
     // 5. Headlines for holdings and candidates, labelled by the classifier.
-    let stage = progress::begin("classifier labels the headlines");
+    let stage = Lap::start("classifier labels the headlines");
     let mut researched: Vec<String> = state.positions.keys().cloned().collect();
     researched.extend(candidates.iter().map(|b| b.listing.symbol.clone()));
     let since = store::days_before(&day, HEADLINE_DAYS);
@@ -507,10 +539,10 @@ pub fn run(
             }
         }
     }
-    drop(stage);
+    report.metrics.stages.push(stage.end());
 
     // 6. A card per stock, then the analyst and the skeptic.
-    let stage = progress::begin("analyst and skeptic argue each stock");
+    let stage = Lap::start("analyst and skeptic argue each stock");
     let scores: BTreeMap<&str, f64> = ranked
         .iter()
         .map(|b| (b.listing.symbol.as_str(), b.score))
@@ -584,10 +616,10 @@ pub fn run(
                 .push(format!("Analyst failed on {}: {error}", card.symbol)),
         }
     }
-    drop(stage);
+    report.metrics.stages.push(stage.end());
 
     // 7. The manager decides.
-    let stage = progress::begin("manager decides the book");
+    let stage = Lap::start("manager decides the book");
     let remembered = memory(store, &day)?;
     let book = Book {
         day: &day,
@@ -739,7 +771,7 @@ pub fn run(
         Err(error) => problems.push(format!("The manager wrote no note: {error}")),
     }
     report.problems.extend(problems);
-    drop(stage);
+    report.metrics.stages.push(stage.end());
     finish(store, &mut state, report, Some(brain), started)
 }
 
@@ -752,6 +784,22 @@ fn finish(
     started: Instant,
 ) -> Result<Report> {
     let calls = brain.map(Brain::take_calls).unwrap_or_default();
+    let elapsed = started.elapsed().as_secs_f64();
+    let now = store::now();
+    let m = &mut report.metrics;
+    m.agents = metrics::agent_stats(&calls);
+    m.slowest = metrics::slowest(&calls, 10);
+    m.sources = crate::http::drain_fetches();
+    m.model = brain.map(Brain::take_events).unwrap_or_default();
+    m.machine = metrics::machine();
+    m.prompt_tokens = calls.iter().map(|c| c.prompt_tokens).sum();
+    m.completion_tokens = calls.iter().map(|c| c.completion_tokens).sum();
+    m.model_seconds = calls.iter().map(|c| c.seconds).sum();
+    m.started_at = now - elapsed;
+    m.finished_at = now;
+    m.seconds = elapsed;
+    m.trading.orders_queued = state.pending.len() as u64;
+    m.database_bytes = store.size_bytes().unwrap_or(0);
     report.funnel.calls = calls.len();
     report.funnel.failed_calls = calls.iter().filter(|c| !c.ok).count();
     report.funnel.minutes = started.elapsed().as_secs_f64() / 60.0;
@@ -1073,6 +1121,21 @@ mod tests {
         );
         assert_eq!(report.note, "Betting on chips.");
         assert!(report.problems.is_empty(), "{:?}", report.problems);
+        let stages: Vec<&str> = report
+            .metrics
+            .stages
+            .iter()
+            .map(|s| s.name.as_str())
+            .collect();
+        for expected in [
+            "data: stock screener",
+            "scouts write the sector newsbook",
+            "manager decides the book",
+        ] {
+            assert!(stages.contains(&expected), "{stages:?}");
+        }
+        assert!(report.metrics.seconds > 0.0);
+        assert_eq!(report.metrics.trading.orders_queued, MAX_POSITIONS as u64);
         assert_eq!(store.reports(1).unwrap()[0].0, DAY);
         assert_eq!(store.journal_since(DAY).unwrap().len(), MAX_POSITIONS + 2);
     }
