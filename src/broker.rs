@@ -158,6 +158,60 @@ fn buy(
     })
 }
 
+/// Cash the cap kept out of the purchases goes to every holding with room left, equally,
+/// at the same session's open, so the account stays invested.
+fn spread_leftover(
+    store: &Store,
+    state: &mut State,
+    quotes: &BTreeMap<String, Quote>,
+    bar_at: f64,
+    signal_at: f64,
+) -> Result<()> {
+    if state.cash < MIN_ORDER {
+        return Ok(());
+    }
+    let value = |p: &Position| {
+        if p.market_value > 0.0 {
+            p.market_value
+        } else {
+            p.cost
+        }
+    };
+    let equity = state.cash + state.positions.values().map(value).sum::<f64>();
+    let mut targets = Vec::new();
+    for (symbol, position) in &state.positions {
+        let open = quotes
+            .get(symbol)
+            .and_then(|q| q.bars.iter().find(|b| b.at == bar_at))
+            .map(|b| b.open);
+        if let Some(open) = open {
+            targets.push((
+                symbol.clone(),
+                open,
+                (MAX_WEIGHT * equity - value(position)).max(0.0),
+            ));
+        }
+    }
+    let weights = vec![1.0; targets.len()];
+    let rooms: Vec<f64> = targets.iter().map(|t| t.2).collect();
+    let budgets = allocate(state.cash, &weights, &rooms);
+    let order = Order {
+        side: "BUY".into(),
+        at: signal_at,
+        reason:
+            "Cash the 25% cap kept out of the day's purchases, spread over the holdings with room"
+                .into(),
+        weight: 1.0,
+        ..Order::default()
+    };
+    for ((symbol, open, _), budget) in targets.into_iter().zip(budgets) {
+        if budget >= MIN_ORDER {
+            buy(store, state, &symbol, &order, bar_at, open, budget)?;
+        }
+    }
+    Ok(())
+}
+
 /// Bring the account up to date with the market: apply corporate actions, fill queued orders
 /// at the first open after they were placed, mark every holding at its last close and add a
 /// point to the equity curve. `quotes` must cover holdings, queued orders and SPY.
@@ -208,12 +262,17 @@ pub fn settle(
         })
         .collect();
     let budgets = allocate(state.cash, &weights, &rooms);
+    let mut session = None;
     for ((symbol, order, bar_at, open), budget) in buys.into_iter().zip(budgets) {
         if budget >= MIN_ORDER {
             buy(store, state, &symbol, &order, bar_at, open, budget)?;
+            session = Some((bar_at, order.at));
         } else {
             waiting.insert(symbol, order);
         }
+    }
+    if let Some((bar_at, signal_at)) = session {
+        spread_leftover(store, state, quotes, bar_at, signal_at)?;
     }
     state.pending = waiting;
     if state.cash.abs() < 1e-6 {
@@ -482,6 +541,42 @@ mod tests {
         let full = allocate(100.0, &[1.0, 1.0], &[10.0, 20.0]);
         assert!((full.iter().sum::<f64>() - 30.0).abs() < 1e-9);
         assert_eq!(allocate(50.0, &[1.0], &[0.0]), [0.0]);
+    }
+
+    #[test]
+    fn cash_the_cap_keeps_out_goes_to_the_other_holdings() {
+        let store = Store::open(":memory:").unwrap();
+        let mut state = State {
+            cash: 0.0,
+            ..State::default()
+        };
+        for symbol in ["A", "B", "C"] {
+            let mut p = held(symbol, 1.0, 250.0);
+            p.market_value = 250.0;
+            state.positions.insert(symbol.into(), p);
+        }
+        let mut old = held("OLD", 1.0, 250.0);
+        old.market_value = 250.0;
+        state.positions.insert("OLD".into(), old);
+        state.pending.insert(
+            "OLD".into(),
+            Order {
+                side: "SELL".into(),
+                at: 100.0,
+                reason: "x".into(),
+                ..Order::default()
+            },
+        );
+        state.pending.insert("NEW".into(), buy_order(100.0, 1.0));
+        let q = || quote(&[(90.0, 250.0, 250.0), (200.0, 250.0, 250.0)]);
+        let quotes: BTreeMap<String, Quote> = ["A", "B", "C", "OLD", "NEW"]
+            .iter()
+            .map(|s| ((*s).to_string(), q()))
+            .collect();
+        // Only one purchase for the whole sale: the cap stops it short, the rest spreads out.
+        settle(&store, &mut state, &quotes, 300.0).unwrap();
+        assert!(state.cash.abs() < 1e-6, "cash {}", state.cash);
+        assert_eq!(state.positions.len(), 4);
     }
 
     #[test]
