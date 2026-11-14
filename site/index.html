@@ -23,6 +23,7 @@
       <button role="tab" data-tab="newsbook" aria-selected="false">Newsbook</button>
       <button role="tab" data-tab="desk" aria-selected="false">The desk</button>
       <button role="tab" data-tab="history" aria-selected="false">History</button>
+      <button role="tab" data-tab="ops" aria-selected="false">Ops</button>
       <button role="tab" data-tab="how" aria-selected="false">How it works</button>
     </nav>
   </div>
@@ -69,17 +70,35 @@
     <div class="card"><div class="head"><h2>Model transcripts</h2></div><p class="small muted">Every question the desk asked a model today and what it answered.</p><div id="calls"></div></div>
   </section>
 
+  <section class="view" id="view-ops" hidden>
+    <div class="card"><div class="head"><h2>Ops</h2><span class="label" id="ops-day"></span></div><p class="small muted">How the latest run spent its time, what the models and data sources did, and how runs compare over time. Use it to find bottlenecks.</p></div>
+    <div class="stats" id="ops-stats"></div>
+    <div class="card"><div class="head"><h2>Where the time went</h2><span class="label">stages in run order</span></div><div id="ops-stages"></div></div>
+    <div class="card"><div class="head"><h2>Agents</h2><span class="label">model calls by role</span></div><div class="scroll" id="ops-agents"></div></div>
+    <div class="two">
+      <div class="card"><div class="head"><h2>Slowest model calls</h2></div><div class="scroll" id="ops-slowest"></div></div>
+      <div class="card"><div class="head"><h2>Model runtime</h2></div><div class="scroll" id="ops-model"></div></div>
+    </div>
+    <div class="card"><div class="head"><h2>Data sources</h2><span class="label">requests this run</span></div><div class="scroll" id="ops-sources"></div></div>
+    <div class="two">
+      <div class="card"><div class="head"><h2>Machine and trigger</h2></div><ul class="list small" id="ops-machine"></ul></div>
+      <div class="card"><div class="head"><h2>Trading</h2></div><ul class="list small" id="ops-trading"></ul></div>
+    </div>
+    <div class="card"><div class="head"><h2>Run history</h2><span class="label">one row per trading day</span></div><div class="scroll" id="ops-history"></div></div>
+    <div class="card"><div class="head"><h2>Problems and events</h2></div><ul class="list small" id="ops-events"></ul></div>
+  </section>
+
   <section class="view" id="view-how" hidden>
     <div class="card">
       <h2>One trading day</h2>
       <ol class="flow" style="margin-top:14px">
         <li><b>Settle.</b> Rust fills yesterday's orders at today's open with 0.1% fees and 0.2% slippage, then marks the book.</li>
-        <li><b>Buzz screen.</b> Every US stock above $1B, $3 and $25M daily volume is scored on Reddit mentions, trending lists, the day's move and unusual volume. Funds, ETFs and index products are excluded. The screen decides what the models read, never what is bought.</li>
+        <li><b>Buzz screen.</b> Every US company worth $5B or more, priced at least $3 and trading $25M a day, is scored on Reddit mentions, trending lists, the day's move and unusual volume. Funds, ETFs and index products are excluded. The screen decides what the models read, never what is bought.</li>
         <li><b>Scouts</b> write each of 12 sectors' newsbook entries from the last two days of sector news, the tape and their own earlier entries.</li>
         <li><b>Strategist</b> reads the newsbook and picks one to three sectors to trade. Candidates are the 8 most-buzzed stocks in those sectors plus the 4 most-buzzed anywhere else.</li>
         <li><b>Classifier</b> labels every headline of every holding and candidate: product launch, big deal, policy, retail frenzy, noise and so on, with a buzz score.</li>
-        <li><b>Analyst</b> makes the case for each stock; <b>skeptic</b> attacks it with the same file.</li>
-        <li><b>Manager</b> must answer KEEP or SELL for every holding, then picks replacements for every sale from the argued candidates. It reads its own notes, decisions and closed trades from earlier days.</li>
+        <li><b>Analyst</b> makes the case for each stock; <b>skeptic</b> only argues against it, with the same file.</li>
+        <li><b>Manager</b> must answer KEEP or SELL for every holding of up to eight, then picks replacements for every sale from the candidates the analyst made a case for. A holding under three days old is sold only on bad news. It reads its own notes, decisions and closed trades from earlier days.</li>
         <li><b>Rust queues the orders</b> for the next open. All cash is spent; if nothing new is bought, freed cash tops up the stocks that were kept.</li>
       </ol>
     </div>
