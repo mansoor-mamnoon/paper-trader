@@ -16,6 +16,7 @@ pub mod market;
 pub mod models;
 pub mod news;
 pub mod progress;
+pub mod replay;
 pub mod sectors;
 pub mod site;
 pub mod store;
