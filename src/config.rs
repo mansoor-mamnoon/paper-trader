@@ -26,8 +26,10 @@ pub const SCOUT_NAMES: usize = 6;
 pub const SCOUT_HEADLINES: usize = 16;
 /// Sectors the strategist may focus the book on.
 pub const MAX_FOCUS: usize = 3;
-/// New stocks researched each day, drawn from the focus sectors.
-pub const CANDIDATES: usize = 10;
+/// New stocks researched each day from the focus sectors, drawn from the whole market.
+pub const FOCUS_CANDIDATES: usize = 8;
+/// New stocks researched each day from outside the focus sectors: the day's most-buzzed.
+pub const WILDCARDS: usize = 4;
 /// Headlines kept per stock, newest first.
 pub const HEADLINES_PER_STOCK: usize = 8;
 /// A headline older than this many days is not shown to an agent.
