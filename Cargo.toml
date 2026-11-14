@@ -43,6 +43,8 @@ similar_names = "allow"
 float_cmp = "allow"
 module_name_repetitions = "allow"
 struct_excessive_bools = "allow"
+format_push_string = "allow"
+assert_is_empty = "allow"
 
 [profile.release]
 lto = "thin"
