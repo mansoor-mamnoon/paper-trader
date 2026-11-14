@@ -44,6 +44,10 @@ pub fn source_of(url: &str) -> String {
         "api.stocktwits.com" => "StockTwits",
         "huggingface.co" => "Hugging Face",
         "github.com" => "GitHub releases",
+        "integrate.api.nvidia.com" => "Hosted model (NVIDIA)",
+        "api.groq.com" => "Hosted model (Groq)",
+        "openrouter.ai" => "Hosted model (OpenRouter)",
+        "generativelanguage.googleapis.com" => "Hosted model (Google)",
         h if h.starts_with("127.0.0.1") || h.starts_with("localhost") => "",
         other => other,
     }
@@ -143,6 +147,38 @@ pub fn post_json(url: &str, body: &str, timeout: Duration) -> Result<String> {
         );
     }
     Ok(text)
+}
+
+/// POST a JSON body with a bearer token. Returns the status code and the response text,
+/// whatever the status, so the caller can react to rate limits.
+pub fn post_json_auth(
+    url: &str,
+    key: &str,
+    body: &str,
+    timeout: Duration,
+) -> Result<(u16, String)> {
+    let started = Instant::now();
+    let agent: ureq::Agent = ureq::Agent::config_builder()
+        .timeout_global(Some(timeout))
+        .http_status_as_error(false)
+        .build()
+        .into();
+    let result = agent
+        .post(url)
+        .header("content-type", "application/json")
+        .header("authorization", &format!("Bearer {key}"))
+        .send(body)
+        .and_then(|mut response| {
+            let status = response.status().as_u16();
+            Ok((status, response.body_mut().read_to_string()?))
+        });
+    record(
+        url,
+        started,
+        result.as_ref().is_ok_and(|(status, _)| *status < 400),
+        result.as_ref().map_or(0, |(_, text)| text.len()),
+    );
+    Ok(result?)
 }
 
 /// Percent-encode a query value.
