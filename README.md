@@ -28,7 +28,8 @@ After the US close, a GitHub Actions run does one trading day:
 - Always fully invested in at most eight individual US stocks. Sales fill before purchases, and purchases share all the cash by weight. If the manager sells and buys nothing new, the freed cash tops up the stocks it kept.
 - No purchase may take a stock above 25% of the account. What a capped purchase cannot take goes to the other purchases.
 - A stock held fewer than three days is sold only when a headline labelled bad news has broken its case. Buzz rises and falls from day to day, and every swap costs about 0.6%, so a quiet day is not a reason to sell.
-- Only a stock the analyst made a case for can be bought.
+- Only a stock the analyst made a case for can be bought. A clear sector driver that lifts the company, such as oil prices for an oil producer, counts as a case, and so do earnings beats.
+- The book never drops below four stocks, so the money always fits under the 25% cap. If too few candidates have a case to replace the day's sales, the manager chooses which sales to call off. Cash a capped purchase cannot take is spread over the other holdings at the same open.
 - No stop-losses, take-profit rules or momentum fallback. A model decides every holding and every purchase. If no model runs, the books are settled and nothing is traded.
 - Earnings dates are not a filter. Nothing stops the desk from holding through a report.
 - Each answer must match a JSON schema enforced by the model server. A holding can only get KEEP or SELL, a purchase can only be a stock the analyst argued that day, and a focus sector can only be one the scouts wrote about.

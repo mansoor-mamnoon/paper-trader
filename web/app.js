@@ -187,6 +187,7 @@ function how(d) {
     `No purchase may take a stock above ${Math.round((r.max_weight ?? 0.25) * 100)}% of the account; what it cannot take goes to the other purchases.`,
     `A stock held under ${r.min_hold_days ?? 3} days is sold only on bad news, never because its buzz faded.`,
     "Only stocks the analyst made a case for can be bought. The skeptic only argues against.",
+    "The book never drops below four stocks; cash a capped purchase cannot take goes to the other holdings.",
     `Orders fill at the next open, with ${(r.fee * 100).toFixed(1)}% fees and ${(r.slippage * 100).toFixed(1)}% slippage each way.`,
     "No stop-losses, no momentum fallback and no rule picks a stock: only the models decide.",
   ].map((t) => `<li>${esc(t)}</li>`).join("");
