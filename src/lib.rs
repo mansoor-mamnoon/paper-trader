@@ -19,5 +19,6 @@ pub mod news;
 pub mod progress;
 pub mod replay;
 pub mod sectors;
+pub mod sentiment;
 pub mod site;
 pub mod store;

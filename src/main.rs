@@ -35,6 +35,11 @@ enum Cli {
         #[arg(long)]
         output: String,
     },
+    /// Read the tone of headlines with FinBERT
+    Tone {
+        /// One or more headlines
+        text: Vec<String>,
+    },
     /// Put the same desk questions to several models and compare speed and answers
     Bench {
         /// Comma-separated model ids; all registered models when empty
@@ -58,6 +63,20 @@ fn main() -> Result<()> {
             Ok(())
         }
         Cli::Bench { models } => bench(&models),
+        Cli::Tone { text } => {
+            use paper_trader::sentiment::{FinBert, Reader};
+            let started = std::time::Instant::now();
+            let model = FinBert::load()?;
+            let loaded = started.elapsed().as_secs_f64();
+            for (headline, tone) in text.iter().zip(model.read(&text)?) {
+                println!("{:8} {:+.2}  {headline}", tone.label, tone.score);
+            }
+            eprintln!(
+                "loaded in {loaded:.1}s, read in {:.2}s",
+                started.elapsed().as_secs_f64() - loaded
+            );
+            Ok(())
+        }
     }
 }
 
