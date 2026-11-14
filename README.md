@@ -3,7 +3,7 @@
 
 # Paper Trader
 
-A $1,000 simulated account run by a desk of free, local language models. They trade news buzz sector by sector, decide every holding every day, and publish every decision.
+A $1,000 simulated account run by DeepSeek V4.1 Flash through NVIDIA’s free hosted API, with a local model available as a fallback. They trade news buzz sector by sector, decide every holding every day, and publish every decision.
 
 [Dashboard](https://mansoor-mamnoon.github.io/paper-trader/) · [Ops](https://mansoor-mamnoon.github.io/paper-trader/#ops) · [Actions](https://github.com/mansoor-mamnoon/paper-trader/actions)
 </div>
@@ -51,24 +51,20 @@ Everything lives in one SQLite file on the `account` branch:
 
 The desk uses three kinds of model, each for what it is good at.
 
-**A large hosted model for the reasoning, when a free key is set.** A 27B or larger model cannot run on the free GitHub runner (4 CPU cores, 16 GB memory, no GPU), but several providers serve large open models free over the same chat API. Set one secret and each agent asks the hosted model first:
+**DeepSeek V4.1 Flash makes the decisions.** All six agent roles use `deepseek-ai/deepseek-v4.1-flash` through NVIDIA's OpenAI-compatible endpoint. The repository is configured with `PAPER_TRADER_API_KEY` in GitHub Actions secrets, and the URL and model in repository variables. The key is never exported to the dashboard or committed. A live authenticated request succeeded on 14 November 2026.
 
 ```sh
-gh secret set PAPER_TRADER_API_KEY                      # the provider's key
+# For a separate installation; never put the key in source code.
+gh secret set PAPER_TRADER_API_KEY
 gh variable set PAPER_TRADER_API_URL --body https://integrate.api.nvidia.com/v1
 gh variable set PAPER_TRADER_API_MODEL --body deepseek-ai/deepseek-v4.1-flash
 ```
 
-The URL and model shown are the defaults. `PAPER_TRADER_API_RPM` and `PAPER_TRADER_API_TPM` set the requests and tokens allowed per minute (defaults 20 and 60,000); the client waits to stay under them. Options checked on 14 November 2026:
+`PAPER_TRADER_API_RPM` and `PAPER_TRADER_API_TPM` set the requests and tokens allowed per minute (defaults 20 and 60,000). The client paces requests, retries transient failures and validates each answer against its JSON schema. DeepSeek answers without hidden thinking so the 2,500-token output budget goes to the structured answer. The dashboard records the model that actually answered each question.
 
-| Provider | Large open models | Free limits | Note |
-|---|---|---|---|
-| NVIDIA build | DeepSeek V4.1 Flash, GLM 5.3 Flash, Kimi K2.6, Gemma 4 31B | reported about 40 requests a minute | Models confirmed from its public list; limits not verified with a key |
-| Groq | Qwen3.8 27B, gpt-oss-120b | reported 1,000 requests and 200K tokens a day, 8K tokens a minute | Set `PAPER_TRADER_API_TPM=8000`; the manager's largest questions then go to the local model |
-| OpenRouter `:free` | Gemma 4 31B and others | 50 requests a day | Too few: a desk day is about 75 calls |
-| DeepSeek's own API | DeepSeek | none | The weights are free; the API is paid |
+[NVIDIA documents free endpoint access for prototyping](https://docs.api.nvidia.com/nim/docs/run-anywhere); provider availability, limits and terms can change. There is no paid API fallback or automatic purchase of credits. An unavailable endpoint falls back to the local model on the free public GitHub runner.
 
-**A local model as the fallback, and the default with no key.** Qwen3.5 9B (Apache-2.0, 4-bit, 5.7 GB) runs with llama.cpp on the runner. Any question the hosted model fails, whether from a rate limit, an outage, or an answer that does not match the required JSON shape, goes to the local model, so a run never depends on a provider. After three failed questions in a row the hosted model is left alone for the rest of the run. Rust downloads llama.cpp and the model itself, pins each file to a Hugging Face commit and checks its SHA-256.
+**A local model as the fallback, and the default with no key.** Qwen3.5 9B (Apache-2.0, 4-bit, 5.7 GB) runs with llama.cpp on the runner. Any question the hosted model fails, whether from a rate limit, an outage, or an answer that does not match the required JSON shape, goes to the local model, so decisions can continue without the provider. After three failed questions in a row the hosted model is left alone for the rest of the run. Rust downloads llama.cpp and the model itself, pins each file to a Hugging Face commit and checks its SHA-256.
 
 **FinBERT for tone.** [ProsusAI/finbert](https://huggingface.co/ProsusAI/finbert) (CC BY-NC-SA 4.0) is a 110M-parameter BERT trained on financial text. It runs in pure Rust with [candle](https://github.com/huggingface/candle) and its own WordPiece tokenizer: ten headlines take about a tenth of a second. That speed is its job here. The language model has time to label the headlines of about twenty stocks; FinBERT reads all sixty screened stocks, so news tone can shape which stocks are researched at all. It is a second opinion and not a judge: on test headlines it called an FDA approval neutral and a "fewer customers" story positive, which is why the language model's catalyst label stays and FinBERT's score sits beside it. A very negative score on a company headline does count as bad news for the minimum-hold rule. `paper-trader tone "headline"` prints its reading.
 
@@ -76,7 +72,7 @@ The previous desk used nine 2–4B models, one per role, chosen to come from nin
 
 | Model | Size at 4 bits | Fits the runner | Notes |
 |---|---:|---|---|
-| Qwen3.5 9B | 5.7 GB | yes | Chosen. Published reasoning scores (GPQA) above gpt-oss-20b, and it leaves room for a 12k context |
+| Qwen3.5 9B | 5.7 GB | yes | Local fallback. Published reasoning scores (GPQA) above gpt-oss-20b, and it leaves room for a 12k context |
 | Gemma 4 12B (QAT) | 7.0 GB | yes | Registered as an alternative to compare |
 | gpt-oss-20b | 11.6 GB | barely | Mixture of experts with about 3.6B active parameters, so it is fast on CPU, but 11.6 GB leaves little room for the context in 16 GB |
 | Gemma 4 26B-A4B, Qwen3.6 35B-A3B | 13–17 GB | no | Too large for 16 GB |
@@ -91,7 +87,7 @@ First results, on an Apple M2 Pro (Metal), 13 November 2026:
 | Qwen3.5 9B | 8 / 8 | 3 / 3 | 2 / 2 | 26 tokens/s |
 | Qwen3 4B Instruct | 8 / 8 | 3 / 3 | 2 / 2 | 48 tokens/s |
 
-Both models answered every question correctly, so these questions are too easy to separate them. The 9B model is kept for the harder, open-ended work: newsbook entries, cases and rebuttals. The runner has no GPU, so it is several times slower there. The questions should get harder as the journal collects real cases the desk got wrong.
+Both models answered every question correctly, so these questions are too easy to separate them. DeepSeek now handles the open-ended work; the 9B model remains available for fallback. The runner has no GPU, so it is several times slower there. The questions should get harder as the journal collects real cases the desk got wrong.
 
 ## Why the desk is built this way
 
@@ -126,12 +122,24 @@ cargo build --release --locked
 ./target/release/paper-trader bench --models qwen3.5-9b,qwen3-4b-instruct
 ```
 
-The first run downloads llama.cpp and the model (5.7 GB) to `~/.cache/paper-trader-llm`. No API key or account is needed for any data source or model. Open `site/index.html` after copying `web/*` into `site/`.
+With `PAPER_TRADER_API_KEY` set, DeepSeek answers first and no local runtime is downloaded unless a fallback is needed. Without a key, the first question downloads llama.cpp and the local model (5.7 GB) to `~/.cache/paper-trader-llm`. Public market data and local inference need no paid service. Open `site/index.html` after copying `web/*` into `site/`.
 
 To run the desk on GitHub now instead of waiting for the evening schedule:
 
 ```sh
 gh workflow run account.yml --ref main -f force=true
+```
+
+## Unattended operation
+
+The public repository uses standard GitHub-hosted runners and GitHub Pages. The account workflow runs after the US close at 22:37 UTC, with catch-up triggers at 00:47 and 03:23 UTC. Already completed sessions skip model work. A morning watchdog at 07:17 UTC checks for a missed run and dispatches it; both workflows re-enable their schedules. No computer needs to stay on and no daily manual trigger is needed. The durable SQLite account is committed before publication, including failure evidence.
+
+GitHub cron can be delayed or dropped, and inactive repositories can have schedules disabled. The watchdog reduces missed runs but cannot guarantee service if GitHub disables both schedules or NVIDIA changes its free access. No billing settings or paid services are enabled by this project.
+
+For a deliberate historical rerun, provide the original cutoff. Forced reruns archive the previous database under `archive/rerun-<run-id>/` on the `account` branch. Existing fills and holdings remain; the manager replaces the unfilled order queue with its new decisions. Historical data sources are cut at the cutoff; trending lists are omitted because they have no history.
+
+```sh
+gh workflow run account.yml --ref main -f force=true -f as_of=2026-11-14T06:00:46Z
 ```
 
 ## Switchover
