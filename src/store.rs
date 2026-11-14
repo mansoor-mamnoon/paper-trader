@@ -322,6 +322,24 @@ impl Store {
         Ok(())
     }
 
+    /// How many fills the ledger holds.
+    pub fn fill_count(&self) -> Result<usize> {
+        let n: i64 = self
+            .db
+            .query_row("SELECT COUNT(*) FROM fills", [], |r| r.get(0))?;
+        Ok(n as usize)
+    }
+
+    /// The database file's size in bytes.
+    pub fn size_bytes(&self) -> Result<u64> {
+        let bytes: i64 = self.db.query_row(
+            "SELECT page_count * page_size FROM pragma_page_count, pragma_page_size",
+            [],
+            |r| r.get(0),
+        )?;
+        Ok(bytes as u64)
+    }
+
     /// The most recent fills, newest first.
     pub fn fills(&self, limit: usize) -> Result<Vec<Fill>> {
         let mut stmt = self.db.prepare(
