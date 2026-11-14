@@ -244,6 +244,15 @@ impl Store {
                 exit_reason TEXT);
             CREATE TABLE IF NOT EXISTS reports (day TEXT PRIMARY KEY, at REAL, body TEXT);",
         )?;
+        let has_speed: bool = db
+            .prepare("SELECT 1 FROM pragma_table_info('calls') WHERE name='tokens_per_second'")?
+            .exists([])?;
+        if !has_speed {
+            db.execute_batch(
+                "ALTER TABLE calls ADD COLUMN prompt_per_second REAL NOT NULL DEFAULT 0;
+                 ALTER TABLE calls ADD COLUMN tokens_per_second REAL NOT NULL DEFAULT 0;",
+            )?;
+        }
         db.execute(
             "INSERT OR IGNORE INTO state VALUES (1, ?)",
             params![serde_json::to_string(&State::default())?],
@@ -499,8 +508,8 @@ impl Store {
     pub fn record_calls(&self, day: &str, calls: &[Call]) -> Result<()> {
         for call in calls {
             self.db.execute(
-                "INSERT INTO calls(day,at,agent,model,subject,system,user,response,ok,prompt_tokens,completion_tokens,seconds) \
-                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+                "INSERT INTO calls(day,at,agent,model,subject,system,user,response,ok,prompt_tokens,completion_tokens,seconds,prompt_per_second,tokens_per_second) \
+                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 params![
                     day,
                     call.at,
@@ -513,7 +522,9 @@ impl Store {
                     call.ok,
                     call.prompt_tokens as i64,
                     call.completion_tokens as i64,
-                    call.seconds
+                    call.seconds,
+                    call.prompt_per_second,
+                    call.tokens_per_second
                 ],
             )?;
         }
@@ -524,7 +535,7 @@ impl Store {
     pub fn calls(&self, day: &str) -> Result<Vec<Call>> {
         let mut stmt = self.db.prepare(
             "SELECT at, agent, model, subject, system, user, response, ok, prompt_tokens, \
-             completion_tokens, seconds FROM calls WHERE day=? ORDER BY id",
+             completion_tokens, seconds, prompt_per_second, tokens_per_second FROM calls WHERE day=? ORDER BY id",
         )?;
         let rows = stmt.query_map([day], |r| {
             Ok(Call {
@@ -539,6 +550,8 @@ impl Store {
                 prompt_tokens: r.get::<_, i64>(8)? as u64,
                 completion_tokens: r.get::<_, i64>(9)? as u64,
                 seconds: r.get(10)?,
+                prompt_per_second: r.get(11)?,
+                tokens_per_second: r.get(12)?,
             })
         })?;
         Ok(rows.collect::<rusqlite::Result<_>>()?)
