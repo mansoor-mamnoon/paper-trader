@@ -214,6 +214,8 @@ pub struct LocalBrain {
     running: RefCell<Option<Running>>,
     calls: RefCell<Vec<Call>>,
     events: RefCell<Vec<ModelEvent>>,
+    /// A larger hosted model asked first, when one is configured.
+    remote: Option<crate::remote::Remote>,
 }
 
 impl std::fmt::Debug for LocalBrain {
@@ -264,7 +266,13 @@ impl LocalBrain {
             running: RefCell::new(None),
             calls: RefCell::new(Vec::new()),
             events: RefCell::new(events),
+            remote: crate::remote::Remote::from_env(),
         })
+    }
+
+    /// The hosted model, when one is configured.
+    pub fn remote(&self) -> Option<&crate::remote::Remote> {
+        self.remote.as_ref()
     }
 
     /// Stop the server. The next question starts it again.
@@ -462,12 +470,35 @@ impl Brain for LocalBrain {
         let spec = model_for(agent);
         let _live = progress::track(&format!("{} on {subject}", agent.name()));
         let started = Instant::now();
-        let outcome = self.ask_model(spec, system, user, schema);
+        // The hosted model answers first. If it fails, the local model answers instead.
+        let mut model = spec.id.to_string();
+        let mut outcome = None;
+        if let Some(remote) = self.remote.as_ref().filter(|r| r.usable()) {
+            match remote.ask(system, user, schema) {
+                Ok(answer) => {
+                    model.clone_from(&remote.model);
+                    outcome = Some(Ok(answer));
+                }
+                Err(error) => {
+                    progress::log(&format!(
+                        "{} {subject}: hosted model failed ({error}); asking the local model",
+                        agent.name()
+                    ));
+                    self.events.borrow_mut().push(ModelEvent {
+                        kind: "fallback".into(),
+                        model: remote.model.clone(),
+                        seconds: started.elapsed().as_secs_f64(),
+                        detail: format!("{} {subject}: {error}", agent.name()),
+                    });
+                }
+            }
+        }
+        let outcome = outcome.unwrap_or_else(|| self.ask_model(spec, system, user, schema));
         let seconds = started.elapsed().as_secs_f64();
         let mut call = Call {
             at: now(),
             agent: agent.name().into(),
-            model: spec.id.into(),
+            model,
             subject: subject.into(),
             system: system.into(),
             user: user.into(),
@@ -502,7 +533,14 @@ impl Brain for LocalBrain {
     }
 
     fn model_name(&self, agent: Agent) -> String {
-        model_for(agent).name.to_string()
+        match &self.remote {
+            Some(remote) => format!(
+                "{} (hosted), {} as fallback",
+                remote.model,
+                model_for(agent).name
+            ),
+            None => model_for(agent).name.to_string(),
+        }
     }
 
     fn take_calls(&self) -> Vec<Call> {
@@ -551,6 +589,7 @@ mod tests {
             running: RefCell::new(None),
             calls: RefCell::new(Vec::new()),
             events: RefCell::new(Vec::new()),
+            remote: None,
         };
         let error = brain
             .ask(Agent::Manager, "book", "s", "u", &json!({}))

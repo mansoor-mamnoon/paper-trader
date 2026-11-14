@@ -163,6 +163,22 @@ fn bench(ids: &str) -> Result<()> {
             .collect()
     };
     let questions = paper_trader::bench::questions();
+    if let Some(remote) = brain.remote() {
+        for (name, system, user, schema, check) in &questions {
+            let started = std::time::Instant::now();
+            let line = match remote.ask(system, user, schema) {
+                Ok((value, _, stats)) => json!({
+                    "model": remote.model, "hosted": true, "question": name,
+                    "seconds": started.elapsed().as_secs_f64(), "gen_tps": stats.tokens_per_second,
+                    "tokens_out": stats.completion_tokens, "correct": check(&value), "answer": value,
+                }),
+                Err(error) => {
+                    json!({"model": remote.model, "hosted": true, "question": name, "error": error.to_string()})
+                }
+            };
+            println!("{line}");
+        }
+    }
     for spec in chosen {
         for (name, system, user, schema, check) in &questions {
             let started = std::time::Instant::now();
