@@ -5,7 +5,7 @@
 
 A $1,000 simulated account run by a desk of free, local language models. They trade news buzz sector by sector, decide every holding every day, and publish every decision.
 
-[Dashboard](https://mansoor-mamnoon.github.io/paper-trader/) · [Actions](https://github.com/mansoor-mamnoon/paper-trader/actions)
+[Dashboard](https://mansoor-mamnoon.github.io/paper-trader/) · [Ops](https://mansoor-mamnoon.github.io/paper-trader/#ops) · [Actions](https://github.com/mansoor-mamnoon/paper-trader/actions)
 </div>
 
 ## What happens each evening
