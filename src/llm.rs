@@ -89,7 +89,8 @@ fn now() -> f64 {
         .map_or(0.0, |d| d.as_secs_f64())
 }
 
-fn cache_dir() -> PathBuf {
+/// Where downloaded runtimes and model files are kept.
+pub fn cache_dir() -> PathBuf {
     std::env::var("PAPER_TRADER_CACHE").map_or_else(
         |_| {
             PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| ".".into()))
@@ -154,14 +155,14 @@ fn hex(bytes: &[u8]) -> String {
     })
 }
 
-/// Stream `spec` to `dest`, verifying the SHA-256 before it becomes visible.
-fn download(spec: &ModelSpec, dest: &Path) -> Result<()> {
+/// Stream `url` to `dest`, verifying size and SHA-256 before the file becomes visible.
+pub fn fetch_file(name: &str, url: &str, dest: &Path, sha256: &str, bytes: u64) -> Result<()> {
     let agent: ureq::Agent = ureq::Agent::config_builder()
         .timeout_global(Some(Duration::from_secs(3 * 3600)))
         .user_agent("paper-trader")
         .build()
         .into();
-    let response = agent.get(&spec.url()).call()?;
+    let response = agent.get(url).call()?;
     let mut reader = response.into_body().into_reader();
     let part = dest.with_extension("part");
     let mut file = File::create(&part)?;
@@ -177,23 +178,24 @@ fn download(spec: &ModelSpec, dest: &Path) -> Result<()> {
         hasher.update(&buffer[..n]);
         file.write_all(&buffer[..n])?;
         total += n as u64;
-        let quarter = total * 4 / spec.bytes.max(1);
+        let quarter = total * 4 / bytes.max(1);
         if quarter > reported && quarter < 4 {
             reported = quarter;
-            progress::log(&format!("download {} {}%", spec.id, quarter * 25));
+            progress::log(&format!("download {name} {}%", quarter * 25));
         }
     }
     file.flush()?;
     let got = hex(&hasher.finalize());
-    if got != spec.sha256 || total != spec.bytes {
+    if got != sha256 || total != bytes {
         let _ = std::fs::remove_file(&part);
-        bail!(
-            "{} failed verification: sha256 {got}, {total} bytes",
-            spec.id
-        );
+        bail!("{name} failed verification: sha256 {got}, {total} bytes");
     }
     std::fs::rename(part, dest)?;
     Ok(())
+}
+
+fn download(spec: &ModelSpec, dest: &Path) -> Result<()> {
+    fetch_file(spec.id, &spec.url(), dest, spec.sha256, spec.bytes)
 }
 
 struct Running {
