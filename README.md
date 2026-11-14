@@ -15,17 +15,20 @@ A $1,000 simulated account run by a desk of free, local language models. They tr
 After the US close, a GitHub Actions run does one trading day:
 
 1. **Settle.** Rust fills yesterday's orders at today's open, with a 0.1% fee and 0.2% adverse slippage on each side, and marks the book.
-2. **Buzz screen.** It reads the entire US market from the Nasdaq screener in one request. It keeps companies worth at least $1B, priced at least $3 and trading at least $25M a day, and drops every ETF, index fund, closed-end fund, ETN, preferred, warrant and unit. It scores each stock by attention: Reddit mentions and their growth, Yahoo and StockTwits trending lists, the size of the day's move, dollar volume, and volume against its 20-day average. The screen decides what the models read. It never decides a trade.
+2. **Buzz screen.** It reads the entire US market from the Nasdaq screener in one request. It keeps companies worth at least $5B, priced at least $3 and trading at least $25M a day, and drops every ETF, index fund, closed-end fund, ETN, preferred, warrant and unit. It scores each stock by attention: Reddit mentions and their growth, Yahoo and StockTwits trending lists, the size of the day's move, dollar volume, and volume against its 20-day average. The screen decides what the models read. It never decides a trade.
 3. **Scouts** (one per sector, 12 sectors) each write the day's newsbook entry from two days of sector news, the sector's tape, its most-buzzed stocks and their own earlier entries.
 4. **Strategist** reads the newsbook and picks one to three sectors to trade. The candidates are the eight most-buzzed stocks in those sectors, from the whole eligible market, plus the four most-buzzed stocks anywhere else.
 5. **Classifier** labels every headline of every holding and candidate (product launch, big deal, results beat, upgrade, approval, policy, takeover, retail frenzy, demand boom, bad news, noise, unrelated) with a buzz score from 0 to 3. CEO changes, filings, dividends and conference appearances are noise by definition.
-6. **Analyst** makes the case for each holding and each candidate. **Skeptic** attacks that case with the same file: is it fresh, is it priced in, is the buzz fading.
-7. **Manager** must answer KEEP or SELL for every holding. Every sale must be replaced: it picks the replacements and their weights from the argued candidates. It reads its own notes, decisions and closed trades from earlier days.
+6. **Analyst** makes the case for each holding and each candidate. **Skeptic** only argues against it, with the same file: is it fresh, is it priced in, is the buzz fading. If the analyst found no catalyst, the skeptic agrees and says why to avoid the stock; it never makes the bull case itself.
+7. **Manager** must answer KEEP or SELL for every holding. Every sale must be replaced: it picks the replacements and their weights from the candidates the analyst made a case for. A replacement must clearly beat what it replaces after the 0.6% round-trip cost. It reads its own notes, decisions and closed trades from earlier days.
 8. **Rust queues the orders** for the next open, writes everything to memory and publishes the dashboard.
 
 ## Rules no model can change
 
-- Always fully invested in at most five individual US stocks. Sales fill before purchases, and purchases share all the cash by weight. If the manager sells and buys nothing new, the freed cash tops up the stocks it kept.
+- Always fully invested in at most eight individual US stocks. Sales fill before purchases, and purchases share all the cash by weight. If the manager sells and buys nothing new, the freed cash tops up the stocks it kept.
+- No purchase may take a stock above 25% of the account. What a capped purchase cannot take goes to the other purchases.
+- A stock held fewer than three days is sold only when a headline labelled bad news has broken its case. Buzz rises and falls from day to day, and every swap costs about 0.6%, so a quiet day is not a reason to sell.
+- Only a stock the analyst made a case for can be bought.
 - No stop-losses, take-profit rules or momentum fallback. A model decides every holding and every purchase. If no model runs, the books are settled and nothing is traded.
 - Earnings dates are not a filter. Nothing stops the desk from holding through a report.
 - Each answer must match a JSON schema enforced by the model server. A holding can only get KEEP or SELL, a purchase can only be a stock the analyst argued that day, and a focus sector can only be one the scouts wrote about.
@@ -75,6 +78,21 @@ Both models answered every question correctly, so these questions are too easy t
 - **Why not a separate classifier model.** FinBERT-style models score sentiment, not catalyst type, and running one would add a Python or ONNX runtime to an otherwise all-Rust project. The LLM classifier is one more agent on the model already loaded.
 - **Why not fine-tune a smaller model from a larger one.** The MIT work in this area ([DisCIPL](https://news.mit.edu/2025/enabling-small-language-models-solve-complex-reasoning-tasks-1212)) has a large model plan and small models execute; distillation more generally needs a teacher and many labelled examples. The desk has no free teacher that can run on the runner and, so far, only a handful of closed trades to learn from. Revisit once the `trades` and `headlines` tables hold a few hundred labelled outcomes: they are exactly the training set a distilled classifier would need.
 - **Why the screen is buzz and not momentum.** The previous screen ranked 20- and 50-day trend winners and then the models explained them. Trend alone produced the CEO-change and pool-supply rationales in the old journal. The new screen surfaces what people are talking about today, and the models read the news to decide whether the talk is worth money.
+
+## Ops
+
+The dashboard's Ops tab shows how each run spent its time, so bottlenecks are easy to find:
+
+- every stage of the day, and inside the data stage every source (screener, fund list, buzz sources, daily bars, settling the books)
+- each agent's calls, failures, total and slowest time, tokens read and written, and reading and writing speed
+- the ten slowest model calls
+- model runtime events: llama.cpp download, model download and server start times
+- every data source's requests, failures, average and slowest latency, and bytes
+- the machine, the trigger, the GitHub run and the commit
+- trading: fills, dollars bought and sold, fees, turnover and orders queued
+- a history table comparing every run, and the run's problems and events
+
+The same numbers are stored in each day's report in the ledger, so trends can be studied later.
 
 ## Run locally
 
