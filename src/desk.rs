@@ -14,7 +14,8 @@ use crate::broker;
 use crate::buzz::{self, Attention, Buzz, SourceNote};
 use crate::config::{
     CLASSIFY_BATCH, FOCUS_CANDIDATES, HEADLINE_DAYS, HEADLINES_PER_STOCK, MANAGER_MEMORY,
-    MAX_FOCUS, NEWSBOOK_MEMORY, PRESCREEN, SCOUT_HEADLINES, SCOUT_NAMES, TRADE_MEMORY, WILDCARDS,
+    MAX_FOCUS, MIN_HOLD_DAYS, NEWSBOOK_MEMORY, PRESCREEN, SCOUT_HEADLINES, SCOUT_NAMES,
+    TRADE_MEMORY, WILDCARDS,
 };
 use crate::llm::Brain;
 use crate::market::{self, Listing, Quote};
@@ -600,7 +601,9 @@ pub fn run(
         candidates: report
             .cards
             .iter()
-            .filter(|c| c.holding.is_none() && c.case.is_some())
+            .filter(|c| {
+                c.holding.is_none() && c.case.as_ref().is_some_and(|k| k.catalyst != "none")
+            })
             .collect(),
     };
     let mut problems = Vec::new();
@@ -620,9 +623,31 @@ pub fn run(
             "The manager's review failed, so no holding was sold today: {error}"
         )),
     }
+    // A young holding is sold only on bad news: buzz alone rises and falls day to day.
+    for card in &book.holdings {
+        let Some(holding) = &card.holding else {
+            continue;
+        };
+        let bad_news = card
+            .headlines
+            .iter()
+            .any(|h| h.label == "bad_news" && h.buzz >= 1);
+        if holding.days_held < MIN_HOLD_DAYS
+            && !bad_news
+            && let Some(reason) = sells.remove(&card.symbol)
+        {
+            keeps.insert(
+                card.symbol.clone(),
+                format!(
+                    "Held under the minimum-hold rule: owned {} days with no bad news, so fading buzz is not enough to sell yet. The manager had said: {reason}",
+                    holding.days_held
+                ),
+            );
+        }
+    }
     let allowed: Vec<String> = book.candidates.iter().map(|c| c.symbol.clone()).collect();
-    if allowed.is_empty() && !sells.is_empty() {
-        problems.push("No candidate was argued today, so nothing could replace a sale and the sales were not placed.".into());
+    if allowed.is_empty() && keeps.is_empty() && !sells.is_empty() {
+        problems.push("No candidate had a case today and nothing was kept, so the sales were not placed: the money would have sat in cash.".into());
         keeps.append(&mut sells);
     }
     let surplus = broker::sales_required(&state).saturating_sub(sells.len());
@@ -1078,8 +1103,8 @@ mod tests {
         assert_eq!(kinds("SELL"), ["OLDA", "OLDB"]);
         assert_eq!(
             kinds("BUY").len(),
-            4,
-            "two sales free money and the book fills to five"
+            6,
+            "two sales free money; every argued candidate is bought on the way to eight"
         );
         assert!(!kinds("BUY").contains(&"CHIPA".to_string()));
         let state = store.load().unwrap();
@@ -1089,7 +1114,7 @@ mod tests {
         );
         assert_eq!(
             state.pending.values().filter(|o| o.side == "BUY").count(),
-            4
+            6
         );
         // The holdings were argued too.
         assert_eq!(brain.count(Agent::Analyst), 3 + 5 + 1);
@@ -1109,8 +1134,16 @@ mod tests {
         let mut state = state;
         broker::settle(&store, &mut state, &quotes, next).unwrap();
         assert!(state.cash.abs() < 1e-6);
-        assert_eq!(state.positions.len(), MAX_POSITIONS);
+        assert_eq!(state.positions.len(), 7);
         assert!(state.pending.is_empty());
+        let equity = state.equity();
+        assert!(
+            state
+                .positions
+                .values()
+                .filter(|p| p.symbol != "CHIPA")
+                .all(|p| p.cost <= 0.25 * equity + 1e-6)
+        );
     }
 
     #[test]
@@ -1120,13 +1153,12 @@ mod tests {
             cash: 0.0,
             ..State::default()
         };
-        for symbol in [
-            "CHIPA", "CHIPB", "CHIPC", "CHIPD", "CHIPE", "CHIPF", "BANKA",
-        ] {
-            state.positions.insert(symbol.into(), held(symbol));
+        for i in 1..=MAX_POSITIONS + 1 {
+            let symbol = format!("HELD{i}");
+            state.positions.insert(symbol.clone(), held(&symbol));
         }
         state.pending.insert(
-            "CHIPA".into(),
+            "HELD1".into(),
             Order {
                 side: "SELL".into(),
                 at: AT - 86400.0 * 3.0,
@@ -1138,23 +1170,79 @@ mod tests {
         let report = run(&store, Some(&brain), &fixture(), AT, 240.0).unwrap();
         let state = store.load().unwrap();
         assert!(
-            state.positions.contains_key("CHIPA"),
+            state.positions.contains_key("HELD1"),
             "the old desk's sale was cancelled, not filled"
         );
         assert!(store.events(5).unwrap().iter().any(|e| e.1 == "takeover"));
         let sells = report.decisions.iter().filter(|d| d.kind == "SELL").count();
-        assert_eq!(sells, 2, "seven holdings are cut to five");
+        assert_eq!(sells, 1, "nine holdings are cut to eight");
         assert_eq!(brain.count(Agent::Manager), 3, "review, trim and note");
-        // Nothing new is bought, so the freed cash goes to the five that were kept.
+        // Nothing new is bought, so the freed cash goes to the eight that were kept.
         assert_eq!(
             report
                 .decisions
                 .iter()
                 .filter(|d| d.kind == "TOP_UP")
                 .count(),
-            5
+            MAX_POSITIONS
         );
-        assert_eq!(state.pending.len(), 7);
+        assert_eq!(state.pending.len(), MAX_POSITIONS + 1);
+    }
+
+    #[test]
+    fn a_young_holding_is_kept_unless_bad_news_broke_it() {
+        let store = Store::open(":memory:").unwrap();
+        let mut state = State {
+            cash: 0.0,
+            engine: ENGINE.into(),
+            ..State::default()
+        };
+        let mut young = held("OLDA");
+        young.opened_at = AT - 86400.0;
+        state.positions.insert("OLDA".into(), young);
+        state.positions.insert("OLDB".into(), held("OLDB"));
+        store.save(&state).unwrap();
+        let brain = brain();
+        let report = run(&store, Some(&brain), &fixture(), AT, 240.0).unwrap();
+        let keep = report
+            .decisions
+            .iter()
+            .find(|d| d.symbol == "OLDA")
+            .unwrap();
+        assert_eq!(keep.kind, "KEEP");
+        assert!(keep.text.contains("minimum-hold"));
+        let sell = report
+            .decisions
+            .iter()
+            .find(|d| d.symbol == "OLDB")
+            .unwrap();
+        assert_eq!(
+            sell.kind, "SELL",
+            "a holding past the minimum is sold as decided"
+        );
+    }
+
+    #[test]
+    fn only_stocks_the_analyst_made_a_case_for_can_be_bought() {
+        let store = Store::open(":memory:").unwrap();
+        let inner = brain();
+        let brain = Scripted::new(move |agent, subject, user, schema| {
+            if agent == Agent::Analyst && subject != "CHIPA" {
+                return Ok(
+                    json!({"catalyst": "none", "thesis": "Nothing new.", "upside": 2, "kill": "n/a"}),
+                );
+            }
+            inner.ask(agent, subject, "", user, schema)
+        });
+        let report = run(&store, Some(&brain), &fixture(), AT, 240.0).unwrap();
+        let buys: Vec<&str> = report
+            .decisions
+            .iter()
+            .filter(|d| d.kind == "BUY")
+            .map(|d| d.symbol.as_str())
+            .collect();
+        assert_eq!(buys, ["CHIPA"]);
+        assert_eq!(store.load().unwrap().pending.len(), 1);
     }
 
     #[test]
