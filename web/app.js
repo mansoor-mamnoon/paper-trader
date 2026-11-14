@@ -10,7 +10,9 @@ const date = (t) => (t ? new Date(t * 1000).toLocaleDateString("en-US", { month:
 const when = (t) => (t ? new Date(t * 1000).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "–");
 let DATA = null;
 let SECTOR_NAMES = {};
-const sectorName = (id) => SECTOR_NAMES[id] || id || "–";
+const sectorName = (id) => SECTOR_NAMES[id] || id || "";
+let CARD_SECTOR = {};
+const sectorOf = (symbol, id) => sectorName(id || CARD_SECTOR[symbol]);
 
 function tabs() {
   const buttons = [...document.querySelectorAll(".tabs button")];
@@ -64,7 +66,7 @@ function holdings(d) {
     .sort((a, b) => b.market_value - a.market_value)
     .map((p) => {
       const r = p.cost ? (p.market_value / p.cost - 1) * 100 : 0;
-      return `<tr><td><b class="mono">${esc(p.symbol)}</b><div class="small muted">${esc(sectorName(p.sector))}</div>${p.thesis ? `<div class="small">${esc(p.thesis)}</div>` : ""}</td>
+      return `<tr><td><b class="mono">${esc(p.symbol)}</b><div class="small muted">${esc(sectorOf(p.symbol, p.sector))}</div>${p.thesis ? `<div class="small">${esc(p.thesis)}</div>` : ""}</td>
         <td class="num">${usd(p.market_value)}</td><td class="num ${tone(r)}">${pct(r)}</td><td class="num">${date(p.opened_at)}</td></tr>`;
     }).join("");
   $("holdings").innerHTML = `<table><thead><tr><th>Stock</th><th class="num">Value</th><th class="num">Return</th><th class="num">Since</th></tr></thead><tbody>${rows}</tbody></table>`;
@@ -78,7 +80,7 @@ function pending(d) {
     .sort((a, b) => a[1].side.localeCompare(b[1].side) * -1)
     .map(([s, o]) => {
       const share = o.side === "BUY" && total ? ` · ${Math.round(((o.weight || 1) / total) * 100)}% of the cash` : "";
-      return `<li><div class="line"><span class="badge ${o.side.toLowerCase()}">${o.side}</span><b>${esc(s)}</b><span class="small muted">${esc(sectorName(o.sector))}${share}</span></div><div class="small">${esc(o.reason)}</div></li>`;
+      return `<li><div class="line"><span class="badge ${o.side.toLowerCase()}">${o.side}</span><b>${esc(s)}</b><span class="small muted">${esc(sectorOf(s, o.sector))}${share}</span></div><div class="small">${esc(o.reason)}</div></li>`;
     }).join("") + '</ul><p class="small muted" style="margin-top:8px">Orders fill at the next session\'s open. Sales fill first, and purchases share all the cash by weight.</p>';
 }
 
@@ -202,6 +204,7 @@ async function main() {
     return;
   }
   for (const s of DATA.desk.sectors) SECTOR_NAMES[s.id] = s.name;
+  for (const c of DATA.latest?.cards || []) CARD_SECTOR[c.symbol] = c.sector;
   stats(DATA); chart(DATA.equity || []); holdings(DATA); pending(DATA); today(DATA);
   newsbook(DATA); desk(DATA); historyView(DATA); how(DATA);
   if (!$("notice").hidden) return;
