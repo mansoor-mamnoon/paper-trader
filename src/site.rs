@@ -81,7 +81,9 @@ pub fn export(store: &Store, output: &str) -> Result<Value> {
         "events": store.events(30)?,
         "desk": {
             "agents": Agent::ALL.iter().map(|a| json!({
-                "name": a.name(), "job": a.job(), "model": model_for(*a).name,
+                "name": a.name(), "job": a.job(),
+                "model": crate::remote::Remote::from_env().map_or_else(
+                    || model_for(*a).name.to_string(), |r| r.model),
             })).collect::<Vec<_>>(),
             "models": MODELS,
             "sectors": SECTORS.iter().map(|s| json!({"id": s.id, "name": s.name})).collect::<Vec<_>>(),

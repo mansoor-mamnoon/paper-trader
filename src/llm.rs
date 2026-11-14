@@ -247,25 +247,15 @@ impl LocalBrain {
             .ok()
             .and_then(|p| p.parse().ok())
             .unwrap_or(8091);
-        let mut events = Vec::new();
         Ok(LocalBrain {
             models,
-            server: {
-                let started = Instant::now();
-                let server = ensure_server()?;
-                events.push(ModelEvent {
-                    kind: "runtime".into(),
-                    model: format!("llama.cpp {LLAMA_BUILD}"),
-                    seconds: started.elapsed().as_secs_f64(),
-                    detail: "find or download llama-server".into(),
-                });
-                server
-            },
+            // Resolve the runtime only if a question actually needs the local fallback.
+            server: PathBuf::new(),
             port,
             prune: std::env::var("PAPER_TRADER_PRUNE_MODELS").is_ok(),
             running: RefCell::new(None),
             calls: RefCell::new(Vec::new()),
-            events: RefCell::new(events),
+            events: RefCell::new(Vec::new()),
             remote: crate::remote::Remote::from_env(),
         })
     }
@@ -337,11 +327,24 @@ impl LocalBrain {
             return Ok(());
         }
         self.stop();
+        let server = if self.server.as_os_str().is_empty() {
+            let started = Instant::now();
+            let server = ensure_server()?;
+            self.events.borrow_mut().push(ModelEvent {
+                kind: "runtime".into(),
+                model: format!("llama.cpp {LLAMA_BUILD}"),
+                seconds: started.elapsed().as_secs_f64(),
+                detail: "find or download llama-server for local fallback".into(),
+            });
+            server
+        } else {
+            self.server.clone()
+        };
         let path = self.fetch(spec)?;
         let _live = progress::begin(&format!("load {} ({})", spec.id, spec.company));
         let log = File::create(self.models.join("server.log"))?;
         let threads = std::thread::available_parallelism().map_or(4, std::num::NonZero::get);
-        let mut child = Command::new(&self.server)
+        let mut child = Command::new(&server)
             .arg("-m")
             .arg(&path)
             .args([
@@ -361,7 +364,7 @@ impl LocalBrain {
             .stdout(Stdio::from(log.try_clone()?))
             .stderr(Stdio::from(log))
             .spawn()
-            .with_context(|| format!("could not start {}", self.server.display()))?;
+            .with_context(|| format!("could not start {}", server.display()))?;
         let health = format!("http://127.0.0.1:{}/health", self.port);
         let started = Instant::now();
         loop {
