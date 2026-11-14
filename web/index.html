@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Paper Trader</title>
+<meta name="description" content="A $1,000 paper account run by a desk of free local language models that trade news buzz, sector by sector. Every decision is public.">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<script src="analytics-config.js"></script>
+<script src="analytics.js"></script>
+<script src="app.js" defer></script>
+</head>
+<body>
+<header class="top">
+  <div class="wrap bar">
+    <a class="brand" href="#today"><img src="favicon.svg" alt=""><span><b>Paper Trader</b><small>The $1,000 model desk</small></span></a>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button role="tab" data-tab="today" aria-selected="true">Today</button>
+      <button role="tab" data-tab="newsbook" aria-selected="false">Newsbook</button>
+      <button role="tab" data-tab="desk" aria-selected="false">The desk</button>
+      <button role="tab" data-tab="history" aria-selected="false">History</button>
+      <button role="tab" data-tab="how" aria-selected="false">How it works</button>
+    </nav>
+  </div>
+</header>
+<div class="wrap"><div id="notice" class="notice" role="status" hidden></div></div>
+
+<main class="wrap">
+  <section class="view" id="view-today">
+    <div class="hero">
+      <h1>A desk of local AI models runs <span class="mark">$1,000</span>.</h1>
+      <p>Every evening six agents read the day's news and buzz, keep a sector newsbook, argue each stock, and decide every holding: keep it or sell it and buy something better. The account is always fully invested.</p>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div class="card">
+      <div class="head"><h2>Equity</h2><div class="legend"><span><i class="sw"></i>Account</span><span><i class="sw spy"></i>SPY yardstick (never held)</span></div></div>
+      <svg id="chart" viewBox="0 0 900 260" role="img" aria-label="Account equity over time"></svg>
+    </div>
+    <div class="two">
+      <div class="card"><div class="head"><h2>Holdings</h2><span class="label" id="held-count"></span></div><div class="scroll" id="holdings"></div></div>
+      <div class="card"><div class="head"><h2>Orders for the next open</h2></div><div id="pending"></div></div>
+    </div>
+    <div class="card">
+      <div class="head"><h2>Today's decisions</h2><span class="label" id="today-day"></span></div>
+      <p id="focus" class="small"></p>
+      <ul class="list" id="decisions"></ul>
+      <p id="note" class="small muted"></p>
+    </div>
+  </section>
+
+  <section class="view" id="view-newsbook" hidden>
+    <div class="card"><h2>The sector newsbook</h2><p class="small muted" style="margin-top:6px">A scout keeps one page per sector. Each day it writes what changed: laws, spending, deals, launches, waves of excitement. It reads its own earlier entries, so the book carries the story across days. Highlighted sectors are the ones the strategist chose to trade.</p></div>
+    <div class="sectors" id="sectors"></div>
+  </section>
+
+  <section class="view" id="view-desk" hidden>
+    <div class="card"><h2>How each stock was argued today</h2><p class="small muted" style="margin-top:6px">The classifier labels every headline. The analyst makes the case; the skeptic attacks it; the manager reads both and decides.</p></div>
+    <div id="cards"></div>
+  </section>
+
+  <section class="view" id="view-history" hidden>
+    <div class="card"><div class="head"><h2>Day by day</h2></div><ul class="list" id="days"></ul></div>
+    <div class="card"><div class="head"><h2>Closed trades</h2></div><div class="scroll" id="trades"></div></div>
+    <div class="card"><div class="head"><h2>Fills</h2></div><div class="scroll" id="fills"></div></div>
+    <div class="card"><div class="head"><h2>Model transcripts</h2></div><p class="small muted">Every question the desk asked a model today and what it answered.</p><div id="calls"></div></div>
+  </section>
+
+  <section class="view" id="view-how" hidden>
+    <div class="card">
+      <h2>One trading day</h2>
+      <ol class="flow" style="margin-top:14px">
+        <li><b>Settle.</b> Rust fills yesterday's orders at today's open with 0.1% fees and 0.2% slippage, then marks the book.</li>
+        <li><b>Buzz screen.</b> Every US stock above $1B, $3 and $25M daily volume is scored on Reddit mentions, trending lists, the day's move and unusual volume. Funds, ETFs and index products are excluded. The screen decides what the models read, never what is bought.</li>
+        <li><b>Scouts</b> write each of 12 sectors' newsbook entries from the last two days of sector news, the tape and their own earlier entries.</li>
+        <li><b>Strategist</b> reads the newsbook and picks one to three sectors to trade.</li>
+        <li><b>Classifier</b> labels every headline of every holding and candidate: product launch, big deal, policy, retail frenzy, noise and so on, with a buzz score.</li>
+        <li><b>Analyst</b> makes the case for each stock; <b>skeptic</b> attacks it with the same file.</li>
+        <li><b>Manager</b> must answer KEEP or SELL for every holding, then picks replacements for every sale from the argued candidates. It reads its own notes, decisions and closed trades from earlier days.</li>
+        <li><b>Rust queues the orders</b> for the next open. All cash is spent; if nothing new is bought, freed cash tops up the stocks that were kept.</li>
+      </ol>
+    </div>
+    <div class="two">
+      <div class="card"><h2>The agents</h2><div class="scroll" id="agents" style="margin-top:10px"></div></div>
+      <div class="card"><h2>Rules no model can change</h2><ul class="list small" id="rules" style="margin-top:6px"></ul></div>
+    </div>
+    <div class="card"><h2>Data sources</h2><ul class="list small" id="sources" style="margin-top:6px"></ul></div>
+    <div class="card"><h2>Why it is built this way</h2><p class="small" style="margin-top:8px">The design, the model choice and the research behind it are written up in the <a href="https://github.com/mansoor-mamnoon/paper-trader#readme">README</a>. This is a paper account: no broker is connected and nothing here is advice.</p></div>
+  </section>
+</main>
+</body>
+</html>
