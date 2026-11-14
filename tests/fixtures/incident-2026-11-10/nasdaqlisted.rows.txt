@@ -1,8 +1,0 @@
-NVDD|Direxion Daily NVDA Bear 1X ETF|G|N|N|100|Y|N
-NVDS|Tradr 1.5X Short NVDA Daily ETF|G|N|N|100|Y|N
-OMH|Ohmyhome Limited - Class A Ordinary Shares|S|N|N|100|N|N
-OSW|OneSpaWorld Holdings Limited - Common Shares|S|N|N|100|N|N
-POOL|Pool Corporation - Common Stock|Q|N|N|100|N|N
-REAL|The RealReal, Inc. - Common Stock|Q|N|N|100|N|N
-REPL|Replimune Group, Inc. - Common Stock|Q|N|N|100|N|N
-ROP|Roper Technologies, Inc. - Common Stock|Q|N|N|40|N|N

@@ -1,13 +1,13 @@
 [package]
 name = "paper-trader"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 rust-version = "1.88"
-description = "A $1,000 paper-trading experiment for US stocks and crypto that publishes every decision."
+description = "A $1,000 paper account run by a desk of local language models that trade news buzz, sector by sector."
 license = "MIT"
 repository = "https://github.com/mansoor-mamnoon/paper-trader"
 readme = "README.md"
-keywords = ["paper-trading", "trading", "stocks", "crypto", "backtesting"]
+keywords = ["paper-trading", "trading", "stocks", "llm", "agents"]
 categories = ["finance", "command-line-utilities"]
 
 [dependencies]
@@ -15,10 +15,12 @@ anyhow = "1"
 chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
 chrono-tz = "0.10"
 clap = { version = "4", features = ["derive"] }
+flate2 = "1"
 rusqlite = { version = "0.41", features = ["bundled"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.10"
+tar = "0.4"
 ureq = "3"
 
 [lints.rust]
@@ -39,6 +41,8 @@ too_many_lines = "allow"
 too_many_arguments = "allow"
 similar_names = "allow"
 float_cmp = "allow"
+module_name_repetitions = "allow"
+struct_excessive_bools = "allow"
 
 [profile.release]
 lto = "thin"
