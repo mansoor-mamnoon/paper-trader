@@ -192,6 +192,82 @@ function how(d) {
   $("sources").innerHTML = fixed.map((t) => `<li>${esc(t)}</li>`).join("") + sources.map((s) => `<li>${esc(s.name)}: <span class="${s.ok ? "pos" : "neg"}">${s.ok ? "answered" : "failed"}</span> <span class="muted">${esc(s.detail)}</span></li>`).join("");
 }
 
+const secs = (v) => {
+  if (v == null || isNaN(v)) return "–";
+  if (v >= 3600) return `${Math.floor(v / 3600)}h ${Math.round((v % 3600) / 60)}m`;
+  if (v >= 60) return `${Math.floor(v / 60)}m ${Math.round(v % 60)}s`;
+  return `${v.toFixed(v < 10 ? 1 : 0)}s`;
+};
+const num = (v) => (v == null || isNaN(v) ? "–" : Number(v).toLocaleString("en-US", { maximumFractionDigits: 1 }));
+const table = (head, rows) => rows.length
+  ? `<table><thead><tr>${head.map((h) => `<th class="${h.endsWith(" ") ? "" : "num"}">${h.trim()}</th>`).join("")}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((c, i) => `<td class="${i === 0 ? "" : "num"}">${c}</td>`).join("")}</tr>`).join("")}</tbody></table>`
+  : '<p class="muted small">Nothing recorded for this run yet.</p>';
+
+function ops(d) {
+  const r = d.latest;
+  const m = r?.metrics;
+  if (!m || !m.seconds) {
+    $("ops-stages").innerHTML = '<p class="muted small">The next run records its metrics here.</p>';
+    return;
+  }
+  $("ops-day").textContent = `${r.day} · run ${secs(m.seconds)}`;
+  const agents = m.agents || [];
+  const writeTps = m.model_seconds ? agents.reduce((s, a) => s + a.completion_tokens, 0) / Math.max(1, agents.reduce((s, a) => s + (a.tokens_per_second ? a.completion_tokens / a.tokens_per_second : 0), 0)) : 0;
+  const calls = agents.reduce((s, a) => s + a.calls, 0);
+  const failed = agents.reduce((s, a) => s + a.failures, 0);
+  const cells = [
+    ["Run time", secs(m.seconds), `${Math.round((m.model_seconds / m.seconds) * 100)}% waiting on the model`],
+    ["Model calls", num(calls), `${failed} failed · ${secs(calls ? m.model_seconds / calls : 0)} each on average`],
+    ["Tokens", `${num(m.prompt_tokens / 1000)}k in`, `${num(m.completion_tokens / 1000)}k out · writes ${num(writeTps)} tokens/s`],
+    ["Turnover", `${num(m.trading?.turnover_pct)}%`, `${m.trading?.fills ?? 0} fills · fees ${usd(m.trading?.fees)}`],
+  ];
+  $("ops-stats").innerHTML = cells.map(([l, v, s]) => `<div class="card stat"><span class="label">${l}</span><strong>${v}</strong><small>${s}</small></div>`).join("");
+  const stages = m.stages || [];
+  const top = Math.max(...stages.map((st) => st.seconds), 1);
+  $("ops-stages").innerHTML = '<div class="bars">' + stages.map((st) => {
+    const sub = st.name.includes(": ");
+    return `<div class="barrow ${sub ? "sub" : ""}"><span>${esc(st.name)}</span><span class="track"><i style="width:${Math.max(0.5, (st.seconds / top) * 100)}%"></i></span><span class="num">${secs(st.seconds)}</span></div>`;
+  }).join("") + `</div><p class="small muted" style="margin-top:10px">Indented rows are steps inside the first stage. Total run ${secs(m.seconds)}.</p>`;
+  $("ops-agents").innerHTML = table(["Agent ", "Calls", "Failed", "Total", "Average", "Slowest", "Tokens in", "Tokens out", "Read tok/s", "Write tok/s"],
+    agents.map((a) => [`<b class="mono">${esc(a.agent)}</b><div class="small muted">${esc(a.model)}</div>`, a.calls, a.failures, secs(a.seconds), secs(a.seconds / Math.max(1, a.calls)), secs(a.max_seconds), num(a.prompt_tokens), num(a.completion_tokens), num(a.prompt_per_second), num(a.tokens_per_second)]));
+  $("ops-slowest").innerHTML = table(["Call ", "Time", "In", "Out"],
+    (m.slowest || []).map((c) => [`${esc(c.agent)} · ${esc(c.subject)}`, secs(c.seconds), num(c.prompt_tokens), num(c.completion_tokens)]));
+  $("ops-model").innerHTML = table(["Event ", "Time"],
+    (m.model || []).map((e) => [`<b>${esc(e.kind)}</b> ${esc(e.model)}<div class="small muted">${esc(e.detail)}</div>`, secs(e.seconds)]));
+  $("ops-sources").innerHTML = table(["Source ", "Requests", "Failed", "Average", "Slowest", "Total", "Data"],
+    (m.sources || []).slice().sort((a, b) => b.total_ms - a.total_ms).map((x) => [esc(x.source), x.requests, x.failures, secs(x.total_ms / Math.max(1, x.requests) / 1000), secs(x.max_ms / 1000), secs(x.total_ms / 1000), `${num(x.bytes / 1e6)} MB`]));
+  const mc = m.machine || {};
+  $("ops-machine").innerHTML = [
+    ["Trigger", mc.trigger],
+    ["Run", mc.run_id ? `<a href="https://github.com/mansoor-mamnoon/paper-trader/actions/runs/${esc(mc.run_id)}">${esc(mc.run_id)}</a>` : "local"],
+    ["Code", mc.git_sha ? `<a href="https://github.com/mansoor-mamnoon/paper-trader/commit/${esc(mc.git_sha)}">${esc(mc.git_sha)}</a>` : "–"],
+    ["Machine", `${esc(mc.os)} · ${mc.cores} cores · ${num((mc.ram_mb || 0) / 1024)} GB`],
+    ["CPU", esc(mc.cpu || "–")],
+    ["Started", when(m.started_at)],
+    ["Ledger size", `${num((m.database_bytes || 0) / 1e6)} MB`],
+  ].map(([k, v]) => `<li><b>${k}:</b> ${v}</li>`).join("");
+  const t = m.trading || {};
+  $("ops-trading").innerHTML = [
+    ["Fills at this open", t.fills ?? 0],
+    ["Bought", usd(t.bought)],
+    ["Sold", usd(t.sold)],
+    ["Fees", usd(t.fees)],
+    ["Turnover", `${num(t.turnover_pct)}% of the account`],
+    ["Orders queued for the next open", t.orders_queued ?? 0],
+    ["Funnel", r.funnel ? `${num(r.funnel.listed)} listed → ${num(r.funnel.eligible)} eligible → ${r.funnel.screened} screened → ${r.funnel.candidates} candidates · ${r.funnel.headlines} headlines` : "–"],
+  ].map(([k, v]) => `<li><b>${k}:</b> ${v}</li>`).join("");
+  $("ops-history").innerHTML = table(["Day ", "Run", "Model", "Calls", "Failed", "Tokens in", "Tokens out", "Turnover", "Fees", "Problems"],
+    (d.days || []).map((day) => {
+      const x = day.metrics || {};
+      const n = (x.agents || []).reduce((s, a) => s + a.calls, 0);
+      const f = (x.agents || []).reduce((s, a) => s + a.failures, 0);
+      return [esc(day.day), secs(x.seconds || (day.funnel?.minutes || 0) * 60), secs(x.model_seconds), n || day.funnel?.calls || 0, f, num(x.prompt_tokens), num(x.completion_tokens), x.trading ? `${num(x.trading.turnover_pct)}%` : "–", x.trading ? usd(x.trading.fees) : "–", (day.problems || []).length];
+    }));
+  const problems = (r.problems || []).map((p) => `<li><span class="badge hot">problem</span> ${esc(p)}</li>`);
+  const events = (d.events || []).map(([at, kind, msg]) => `<li><span class="badge">${esc(kind)}</span> <span class="muted">${when(at)}</span> ${esc(msg)}</li>`);
+  $("ops-events").innerHTML = problems.concat(events).join("") || '<li class="muted">None.</li>';
+}
+
 async function main() {
   tabs();
   try {
@@ -206,7 +282,7 @@ async function main() {
   for (const s of DATA.desk.sectors) SECTOR_NAMES[s.id] = s.name;
   for (const c of DATA.latest?.cards || []) CARD_SECTOR[c.symbol] = c.sector;
   stats(DATA); chart(DATA.equity || []); holdings(DATA); pending(DATA); today(DATA);
-  newsbook(DATA); desk(DATA); historyView(DATA); how(DATA);
+  newsbook(DATA); desk(DATA); historyView(DATA); ops(DATA); how(DATA);
   if (!$("notice").hidden) return;
   if (DATA.account.last_at) { $("notice").hidden = false; $("notice").textContent = "Last run: " + when(DATA.account.last_at); }
 }
