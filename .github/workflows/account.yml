@@ -3,20 +3,15 @@ on:
   workflow_dispatch:
     inputs:
       force:
-        description: Run even if the account already processed the latest session
+        description: Run even if the desk already processed the latest session
         type: boolean
         default: false
-  # An external webhook can also start a run:
-  #   curl -X POST -H "Authorization: Bearer $TOKEN" \
-  #     https://api.github.com/repos/mansoor-mamnoon/paper-trader/dispatches -d '{"event_type":"run-account"}'
   repository_dispatch:
     types: [run-account]
   schedule:
-    # GitHub can delay or silently drop a scheduled run when it is busy, so the same job is
-    # scheduled three times a day, and scripts/trigger.sh (launchd) or trigger/worker.js
-    # (Cloudflare cron) can start it from outside. The run skips itself when the account
-    # already processed the latest session (16:30 ET), so extra triggers cost nothing.
-    # 22:37 UTC is 17:37 New York in winter and 18:37 in summer, after the US session.
+    # GitHub can delay or drop a scheduled run, so the job is scheduled three times after
+    # the US session (22:37 UTC is 17:37 New York in winter). A run skips itself when the
+    # desk already processed the latest session, so extra triggers cost nothing.
     - cron: '37 22 * * 1-5'
     - cron: '47 0 * * 2-6'
     - cron: '23 3 * * 2-6'
@@ -31,7 +26,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 330
+    timeout-minutes: 340
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -41,9 +36,12 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Build
         run: cargo build --release --locked
-      - name: Install llama.cpp
-        # The Rust binary downloads, verifies and swaps the pinned models itself.
-        run: echo "PAPER_TRADER_LLAMA_SERVER=$(scripts/llm.sh install)" >> "$GITHUB_ENV"
+      - name: Cache the model file
+        # The desk downloads llama.cpp and the pinned model itself; the cache only saves time.
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/paper-trader-llm
+          key: llm-${{ hashFiles('src/models.rs', 'src/llm.rs') }}
       - name: Restore durable account (absence is an error, never a reset)
         uses: actions/checkout@v7
         with:
@@ -54,25 +52,15 @@ jobs:
           test -s account/account.sqlite
           test -f account/INITIALIZED
           test "$(sqlite3 account/account.sqlite 'PRAGMA integrity_check')" = ok
-          df -h / /mnt | tail -2
-      - name: Evaluate latest completed stock session and export dashboard
-        id: scan
+          df -h / | tail -1
+          free -g | head -2
+      - name: Run the desk and export the dashboard
+        id: desk
         continue-on-error: true
-        env:
-          PAPER_TRADER_MODELS_DIR: ${{ runner.temp }}/models
-          PAPER_TRADER_PRUNE_MODELS: "1"
-          PAPER_TRADER_FULLY_INVESTED: "1"
-          PAPER_TRADER_UNIVERSE: "equities"
-          PAPER_TRADER_DESK_MINUTES: "240"
-          # SEC EDGAR requires a real contact in the user agent. Set a repository variable
-          # named SEC_CONTACT to an email address to turn SEC filings on.
-          PAPER_TRADER_SEC_CONTACT: ${{ vars.SEC_CONTACT }}
-          PAPER_TRADER_SKIP_IF_CURRENT: ${{ inputs.force && '0' || '1' }}
-        run: ./target/release/paper-trader stocks --db account/account.sqlite --output account/site
+        run: ./target/release/paper-trader run --db account/account.sqlite --output account/site --minutes 250 ${{ inputs.force && '--force' || '' }}
       - name: Apply static dashboard
-        run: cp web/* account/site/
+        run: cp -r web/* account/site/
       - name: Configure visitor analytics
-        # Off unless the repository variables GOATCOUNTER_CODE and/or GA4_ID are set.
         env:
           GOATCOUNTER_CODE: ${{ vars.GOATCOUNTER_CODE }}
           GA4_ID: ${{ vars.GA4_ID }}
@@ -85,8 +73,8 @@ jobs:
         run: |
           git config user.name 'paper-trader[bot]'
           git config user.email 'paper-trader@users.noreply.github.com'
-          git add account.sqlite site INITIALIZED strategies
-          git diff --cached --quiet || git commit -m 'Record stock paper account observation'
+          git add -A account.sqlite site INITIALIZED
+          git diff --cached --quiet || git commit -m 'Record the desk day'
           git push origin HEAD:account
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
@@ -96,12 +84,10 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v5
       - name: Keep the schedule alive
-        # GitHub pauses scheduled workflows in repositories with no recent activity.
-        # Re-enabling this one on every run keeps the account running unattended.
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow enable account.yml --repo "$GITHUB_REPOSITORY" || true
-      - name: Report scan failure after preserving its evidence
-        if: steps.scan.outcome == 'failure'
+      - name: Report a desk failure after preserving its evidence
+        if: steps.desk.outcome == 'failure'
         run: exit 1
