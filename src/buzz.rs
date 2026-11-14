@@ -150,6 +150,9 @@ pub struct Buzz {
     pub score: f64,
     /// Latest volume against the 20-session average, once bars are known.
     pub relative_volume: Option<f64>,
+    /// FinBERT's net tone over the stock's fresh headlines, once they are read.
+    #[serde(default)]
+    pub news_tone: Option<f64>,
 }
 
 /// Points for the latest move. A rise counts in full and a fall counts half: bad news is
@@ -191,6 +194,7 @@ pub fn score_all(eligible: &[Listing], attention: &BTreeMap<String, Attention>) 
                 attention: seen,
                 score,
                 relative_volume: None,
+                news_tone: None,
             }
         })
         .collect();
@@ -203,6 +207,28 @@ pub fn prescreen(eligible: &[Listing], attention: &BTreeMap<String, Attention>) 
     let mut scored = score_all(eligible, attention);
     scored.truncate(PRESCREEN);
     scored
+}
+
+/// Points for the tone of fresh news: up to 2 for positive headlines, minus up to 1 for
+/// negative ones. `tones` holds each fresh headline's FinBERT score, -1 to 1.
+pub fn news_points(tones: &[f64]) -> f64 {
+    let positive: f64 = tones.iter().filter(|t| **t > 0.0).sum();
+    let negative: f64 = -tones.iter().filter(|t| **t < 0.0).sum::<f64>();
+    2.0 * (positive / 2.0).tanh() - (negative / 2.0).tanh()
+}
+
+/// Add the news-tone points once FinBERT has read the headlines, and rank again.
+pub fn add_news(scored: &mut [Buzz], tones: &BTreeMap<String, Vec<f64>>) {
+    for item in scored.iter_mut() {
+        if item.news_tone.is_some() {
+            continue;
+        }
+        if let Some(read) = tones.get(&item.listing.symbol) {
+            item.news_tone = Some(read.iter().sum());
+            item.score += news_points(read);
+        }
+    }
+    rank(scored);
 }
 
 /// Add up to 3 points for unusual volume once the bars are known, and rank again.
@@ -285,6 +311,26 @@ mod tests {
         assert_eq!(order, ["CHAT", "MOVER", "DROP", "QUIET"]);
         // A fall earns half the points of an equal rise.
         assert!((move_points(9.0) - 2.0 * move_points(-9.0)).abs() < 1e-9);
+    }
+
+    #[test]
+    fn good_news_lifts_a_stock_and_bad_news_lowers_it() {
+        let eligible = vec![
+            listing("AAA", 2.0, 1.0e8),
+            listing("BBB", 2.0, 1.0e8),
+            listing("CCC", 2.0, 1.0e8),
+        ];
+        let mut ranked = prescreen(&eligible, &BTreeMap::new());
+        let tones: BTreeMap<String, Vec<f64>> = [
+            ("BBB".to_string(), vec![0.9, 0.8]),
+            ("CCC".to_string(), vec![-0.9]),
+        ]
+        .into();
+        add_news(&mut ranked, &tones);
+        let order: Vec<&str> = ranked.iter().map(|b| b.listing.symbol.as_str()).collect();
+        assert_eq!(order, ["BBB", "AAA", "CCC"]);
+        assert!(news_points(&[1.0; 20]) <= 2.0 && news_points(&[-1.0; 20]) >= -1.0);
+        assert!(news_points(&[]).abs() < 1e-12);
     }
 
     #[test]
