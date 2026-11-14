@@ -111,9 +111,19 @@ fn run(db: &str, output: &str, force: bool, minutes: f64, as_of: Option<&str>) -
         Some(feed) => feed,
         None => &Live,
     };
-    let result = desk::run(
+    let finbert = match paper_trader::sentiment::FinBert::load() {
+        Ok(model) => Some(model),
+        Err(error) => {
+            eprintln!("FinBERT is unavailable ({error}): headlines go unscored today");
+            None
+        }
+    };
+    let result = desk::run_with(
         &store,
         brain.as_ref().map(|b| b as &dyn Brain),
+        finbert
+            .as_ref()
+            .map(|m| m as &dyn paper_trader::sentiment::Reader),
         feed,
         cutoff.unwrap_or_else(store::now),
         minutes,

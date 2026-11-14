@@ -23,6 +23,7 @@ use crate::metrics::{self, Lap, Metrics};
 use crate::models::Agent;
 use crate::news::{self, Headline};
 use crate::sectors::{self, SECTORS};
+use crate::sentiment::Reader;
 use crate::store::{self, ENGINE, Entry, Order, SectorNote, State, Store};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -79,6 +80,9 @@ pub struct Funnel {
     pub screened: usize,
     pub candidates: usize,
     pub headlines: usize,
+    /// Fresh headlines FinBERT scored across the whole screen.
+    #[serde(default)]
+    pub headlines_read: usize,
     pub calls: usize,
     pub failed_calls: usize,
     pub minutes: f64,
@@ -273,6 +277,73 @@ pub fn run(
     at: f64,
     minutes: f64,
 ) -> Result<Report> {
+    run_with(store, brain, None, feed, at, minutes)
+}
+
+/// Fetch and store the headlines of `symbols`, and have FinBERT read the ones it has not
+/// read yet. Returns each symbol's tone scores for headlines first seen today or yesterday.
+fn read_news(
+    store: &Store,
+    feed: &dyn Feed,
+    reader: Option<&dyn Reader>,
+    symbols: &BTreeSet<String>,
+    day: &str,
+    at: f64,
+    problems: &mut Vec<String>,
+) -> Result<BTreeMap<String, Vec<f64>>> {
+    let since = store::days_before(day, HEADLINE_DAYS);
+    let fetched = feed.ticker_news(symbols);
+    let mut unread = Vec::new();
+    for symbol in symbols {
+        let items = news::clean(
+            fetched.get(symbol).cloned().unwrap_or_default(),
+            at,
+            HEADLINE_DAYS,
+            HEADLINES_PER_STOCK,
+        );
+        store.remember_headlines(day, symbol, &items)?;
+        unread.extend(
+            store
+                .headlines(symbol, &since, HEADLINES_PER_STOCK)?
+                .into_iter()
+                .filter(|h| h.tone.is_empty()),
+        );
+    }
+    let mut tones = BTreeMap::new();
+    let Some(reader) = reader else {
+        return Ok(tones);
+    };
+    let titles: Vec<String> = unread.iter().map(|h| h.title.clone()).collect();
+    match reader.read(&titles) {
+        Ok(read) => {
+            for (headline, tone) in unread.iter().zip(read) {
+                store.tone_headline(headline.id, &tone.label, tone.score)?;
+            }
+        }
+        Err(error) => problems.push(format!("FinBERT could not read the headlines: {error}")),
+    }
+    let fresh = store::days_before(day, 1);
+    for symbol in symbols {
+        let scores: Vec<f64> = store
+            .headlines(symbol, &fresh, HEADLINES_PER_STOCK)?
+            .iter()
+            .filter(|h| !h.tone.is_empty())
+            .map(|h| h.tone_score)
+            .collect();
+        tones.insert(symbol.clone(), scores);
+    }
+    Ok(tones)
+}
+
+/// [`run`] with FinBERT reading the headlines when `reader` is given.
+pub fn run_with(
+    store: &Store,
+    brain: Option<&dyn Brain>,
+    reader: Option<&dyn Reader>,
+    feed: &dyn Feed,
+    at: f64,
+    minutes: f64,
+) -> Result<Report> {
     let started = Instant::now();
     let session = chrono::DateTime::from_timestamp(at as i64, 0).unwrap_or_default();
     let day = market::day_of(market::last_settled(session).timestamp() as f64);
@@ -344,6 +415,28 @@ pub fn run(
     // A stock must also be an equity according to the price provider.
     ranked.retain(|b| quotes.get(&b.listing.symbol).is_some_and(Quote::is_stock));
     buzz::refine(&mut ranked, &quotes);
+    // FinBERT reads the headlines of every screened stock and holding, and good news
+    // lifts a stock in the screen.
+    let mut news_read: BTreeSet<String> = BTreeSet::new();
+    if reader.is_some() {
+        let lap = Lap::quiet("FinBERT reads the screened stocks' headlines");
+        let mut symbols: BTreeSet<String> =
+            ranked.iter().map(|b| b.listing.symbol.clone()).collect();
+        symbols.extend(state.positions.keys().cloned());
+        let tones = read_news(
+            store,
+            feed,
+            reader,
+            &symbols,
+            &day,
+            at,
+            &mut report.problems,
+        )?;
+        report.funnel.headlines_read = tones.values().map(Vec::len).sum();
+        buzz::add_news(&mut ranked, &tones);
+        news_read = symbols;
+        report.metrics.stages.push(lap.end());
+    }
     report.funnel.listed = listings.len();
     report.funnel.eligible = eligible.len();
     report.funnel.screened = ranked.len();
@@ -382,7 +475,21 @@ pub fn run(
         let items = news::clean(items, at, 2, SCOUT_HEADLINES);
         let scope = format!("sector:{}", sector.id);
         store.remember_headlines(&day, &scope, &items)?;
+        let titles: Vec<String> = items.iter().map(|h| h.title.clone()).collect();
+        let tone = match reader.map(|r| r.read(&titles)) {
+            Some(Ok(read)) if !read.is_empty() => {
+                let count = |label: &str| read.iter().filter(|t| t.label == label).count();
+                format!(
+                    "{} positive, {} negative, {} neutral",
+                    count("positive"),
+                    count("negative"),
+                    count("neutral")
+                )
+            }
+            _ => String::new(),
+        };
         let brief = agents::ScoutBrief {
+            tone,
             day: day.clone(),
             sector: sector.id.into(),
             tape: report.tapes[sector.id].clone(),
@@ -510,18 +617,16 @@ pub fn run(
     let mut researched: Vec<String> = state.positions.keys().cloned().collect();
     researched.extend(candidates.iter().map(|b| b.listing.symbol.clone()));
     let since = store::days_before(&day, HEADLINE_DAYS);
-    let fetched = feed.ticker_news(&researched.iter().cloned().collect());
+    let unread: BTreeSet<String> = researched
+        .iter()
+        .filter(|s| !news_read.contains(*s))
+        .cloned()
+        .collect();
+    read_news(store, feed, reader, &unread, &day, at, &mut report.problems)?;
     for symbol in &researched {
         let company = by_symbol
             .get(symbol.as_str())
             .map_or(symbol.clone(), |l| l.company());
-        let items = news::clean(
-            fetched.get(symbol).cloned().unwrap_or_default(),
-            at,
-            HEADLINE_DAYS,
-            HEADLINES_PER_STOCK,
-        );
-        store.remember_headlines(&day, symbol, &items)?;
         let unlabelled: Vec<_> = store
             .headlines(symbol, &since, HEADLINES_PER_STOCK)?
             .into_iter()
@@ -665,10 +770,10 @@ pub fn run(
         if holding.thesis.is_empty() {
             continue;
         }
-        let bad_news = card
-            .headlines
-            .iter()
-            .any(|h| h.label == "bad_news" && h.buzz >= 1);
+        let bad_news = card.headlines.iter().any(|h| {
+            (h.label == "bad_news" && h.buzz >= 1)
+                || (h.tone_score <= -0.8 && !matches!(h.label.as_str(), "noise" | "unrelated"))
+        });
         if holding.days_held < MIN_HOLD_DAYS
             && !bad_news
             && let Some(reason) = sells.remove(&card.symbol)
@@ -1415,6 +1520,70 @@ mod tests {
             .collect();
         assert_eq!(buys, ["CHIPA"]);
         assert_eq!(store.load().unwrap().pending.len(), 1);
+    }
+
+    struct Keyword;
+    impl Reader for Keyword {
+        fn read(&self, texts: &[String]) -> Result<Vec<crate::sentiment::Tone>> {
+            Ok(texts
+                .iter()
+                .map(|t| {
+                    let (label, score) = if t.starts_with("CHIPF") {
+                        ("positive", 0.9)
+                    } else if t.starts_with("CHIPA") {
+                        ("negative", -0.9)
+                    } else {
+                        ("neutral", 0.0)
+                    };
+                    crate::sentiment::Tone {
+                        label: label.into(),
+                        score,
+                    }
+                })
+                .collect())
+        }
+    }
+
+    #[test]
+    fn finbert_tones_every_headline_and_moves_the_screen() {
+        let store = Store::open(":memory:").unwrap();
+        let brain = brain();
+        let report = run_with(&store, Some(&brain), Some(&Keyword), &fixture(), AT, 240.0).unwrap();
+        assert!(report.problems.is_empty(), "{:?}", report.problems);
+        assert_eq!(
+            report.funnel.headlines_read, 9,
+            "one headline per screened stock"
+        );
+        let card = |symbol: &str| report.cards.iter().find(|c| c.symbol == symbol).unwrap();
+        assert_eq!(card("CHIPF").headlines[0].tone, "positive");
+        assert_eq!(card("CHIPA").headlines[0].tone, "negative");
+        let item = |symbol: &str| {
+            report
+                .buzz
+                .iter()
+                .find(|b| b.listing.symbol == symbol)
+                .unwrap()
+        };
+        assert!(item("CHIPF").news_tone.unwrap() > 0.0);
+        // Good news lifts the least-moved chip stock above its neighbour.
+        assert!(item("CHIPF").score > item("CHIPE").score);
+        let asked = brain.asked.borrow();
+        let scout = asked.iter().find(|a| a.0 == Agent::Scout).unwrap();
+        assert!(scout.2.contains(
+            "by FinBERT, a financial sentiment model: 0 positive, 0 negative, 1 neutral"
+        ));
+        let analyst = asked
+            .iter()
+            .find(|a| a.0 == Agent::Analyst && a.1 == "CHIPF")
+            .unwrap();
+        assert!(analyst.2.contains("[FinBERT: positive +0.90]"));
+        assert!(
+            report
+                .metrics
+                .stages
+                .iter()
+                .any(|s| s.name.starts_with("FinBERT"))
+        );
     }
 
     #[test]
