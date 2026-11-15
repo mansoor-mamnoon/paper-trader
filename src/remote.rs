@@ -260,11 +260,6 @@ impl Remote {
             match status {
                 200..=299 => {
                     let reply: Value = serde_json::from_str(&text)?;
-                    let content = reply["choices"][0]["message"]["content"]
-                        .as_str()
-                        .filter(|t| !t.trim().is_empty())
-                        .ok_or_else(|| anyhow!("empty reply from the hosted model"))?
-                        .to_string();
                     let prompt = reply["usage"]["prompt_tokens"].as_u64().unwrap_or(estimate);
                     let written = reply["usage"]["completion_tokens"].as_u64().unwrap_or(0);
                     let reasoning =
@@ -275,6 +270,11 @@ impl Remote {
                     progress::log(&format!(
                         "hosted #{question}.{attempt}.{request}: {prompt} prompt tokens, {written} output tokens, reasoning_tokens={reasoning}, reasoning_chars={reasoning_chars}"
                     ));
+                    let content = reply["choices"][0]["message"]["content"]
+                        .as_str()
+                        .filter(|t| !t.trim().is_empty())
+                        .ok_or_else(|| anyhow!("empty reply from the hosted model"))?
+                        .to_string();
                     // The reservation includes the full output budget. Account for any
                     // underestimate without refunding quota while other calls are in flight.
                     if prompt + written > estimate {

@@ -85,6 +85,11 @@ pub fn run(levels: &str, samples: usize, timeout: u64, output: &str) -> Result<(
         let start = Instant::now();
         let answers = parallel::map(&jobs, workers, |job| {
             let (name, system, user, schema, check) = &questions[job % questions.len()];
+            let _sample = progress::track(&format!(
+                "benchmark round {} sample {} {name}",
+                index + 1,
+                job + 1
+            ));
             let user = format!(
                 "{user}\nBenchmark sample {}-{}; use the same decision rules.",
                 index + 1,
