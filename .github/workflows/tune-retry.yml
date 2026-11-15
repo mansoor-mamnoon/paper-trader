@@ -1,0 +1,50 @@
+name: Continue measured replay after a slow-provider result
+on:
+  workflow_run:
+    workflows: ['Measure concurrency and replay']
+    types: [completed]
+permissions:
+  contents: read
+  actions: write
+jobs:
+  continue:
+    if: github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.event == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SOURCE_RUN: ${{ github.event.workflow_run.id }}
+    steps:
+      - name: Read the completed measurement evidence
+        run: gh run download "$SOURCE_RUN" --repo "$GITHUB_REPOSITORY" --name concurrency-measurements --dir measurements
+      - name: Choose a measured replay or a longer follow-up deadline
+        id: next
+        run: |
+          python3 - <<'PY'
+          import json, os
+          report = json.load(open('measurements/concurrency.json'))
+          selected = report['selected_workers']
+          deadline = report['timeout_seconds']
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output, open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              if selected is not None:
+                  assert selected in [1, 2, 4]
+                  output.write(f'workers={selected}\n')
+                  summary.write(f'The benchmark selected {selected} workers but its workflow failed afterward. Retrying dispatch with the measured setting.\n')
+              else:
+                  followup = {180: 600, 600: 900}.get(deadline)
+                  if followup:
+                      output.write(f'deadline={followup}\n')
+                      summary.write(f'No level passed the {deadline}s deadline. Measuring again with {followup}s per request; no trading account changes have been made.\n')
+                  else:
+                      summary.write('No level passed even the longest 900s measurement deadline. Provider access/capacity needs attention; no unverified replay will start.\n')
+          PY
+      - name: Repeat measurements with a longer deadline
+        if: steps.next.outputs.deadline != ''
+        env:
+          DEADLINE: ${{ steps.next.outputs.deadline }}
+        run: gh workflow run tune.yml --repo "$GITHUB_REPOSITORY" --ref main -f timeout_seconds="$DEADLINE"
+      - name: Recover a failed replay dispatch using the measured setting
+        if: steps.next.outputs.workers != ''
+        env:
+          WORKERS: ${{ steps.next.outputs.workers }}
+        run: gh workflow run replay.yml --repo "$GITHUB_REPOSITORY" --ref main -f workers="$WORKERS"

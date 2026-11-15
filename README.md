@@ -72,7 +72,7 @@ The manual **Measure concurrency and replay** workflow measures 1, 2, and 4 work
 
 The optional `timeout_seconds` workflow input accepts 180, 600, or 900 seconds per request; the default is 180. A failed short-deadline round proves that no level met that deadline, not that requests can never complete. The benchmark also captures NVIDIA’s public model queue with a timestamp as supporting context, without assuming it gives an exact wait time for our API requests.
 
-The workflow preserves the measurements as the `concurrency-measurements` artifact and dispatches Thursday→Friday replay automatically with its measured worker count. If no level passes, it records the failure and does not start another unverified replay. The previous eight-worker replay stalled, so eight workers are no longer assumed to be faster. Normal runs use the conservative repository setting until a measured selection is applied.
+The workflow preserves the measurements as the `concurrency-measurements` artifact and dispatches Thursday→Friday replay automatically with its measured worker count. If no level passes, it records the failure and does not start another unverified replay. A one-off continuation workflow then retries measurement with 600 seconds, then 900 seconds per request, stopping at the first usable result or after the longest deadline fails. It has no schedule and does not retry indefinitely. The previous eight-worker replay stalled, so eight workers are no longer assumed to be faster. Normal runs use the conservative repository setting until a measured selection is applied.
 
 ```sh
 # Measure on GitHub and automatically launch a replay only after a usable result.
