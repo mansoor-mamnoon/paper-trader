@@ -178,6 +178,7 @@ impl Remote {
             "model": self.model,
             "temperature": 0.2,
             "max_tokens": 2500,
+            "stream": false,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": format!(
@@ -188,7 +189,8 @@ impl Remote {
         if self.model == "deepseek-ai/deepseek-v4.1-flash" {
             // Keep the output budget for the schema answer rather than hidden reasoning.
             body["temperature"] = json!(1.0);
-            body["chat_template_kwargs"] = json!({"thinking": false});
+            body["chat_template_kwargs"] =
+                json!({"thinking_mode": "chat", "enable_thinking": false});
         }
         body["response_format"] = if self.strict.load(Ordering::Relaxed) {
             json!({"type": "json_schema", "json_schema": {"name": "answer", "strict": true, "schema": schema}})
@@ -265,6 +267,14 @@ impl Remote {
                         .to_string();
                     let prompt = reply["usage"]["prompt_tokens"].as_u64().unwrap_or(estimate);
                     let written = reply["usage"]["completion_tokens"].as_u64().unwrap_or(0);
+                    let reasoning =
+                        &reply["usage"]["completion_tokens_details"]["reasoning_tokens"];
+                    let reasoning_chars = reply["choices"][0]["message"]["reasoning_content"]
+                        .as_str()
+                        .map_or(0, str::len);
+                    progress::log(&format!(
+                        "hosted #{question}.{attempt}.{request}: {prompt} prompt tokens, {written} output tokens, reasoning_tokens={reasoning}, reasoning_chars={reasoning_chars}"
+                    ));
                     // The reservation includes the full output budget. Account for any
                     // underestimate without refunding quota while other calls are in flight.
                     if prompt + written > estimate {
@@ -441,12 +451,15 @@ mod tests {
                     length = value.trim().parse::<usize>().unwrap();
                 }
             }
-            reader.read_exact(&mut vec![0; length]).unwrap();
+            let mut request = vec![0; length];
+            reader.read_exact(&mut request).unwrap();
             let body = r#"{"error":"rate limited"}"#;
             write!(stream, "HTTP/1.1 429 Too Many Requests\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()).unwrap();
+            serde_json::from_slice::<Value>(&request).unwrap()
         });
         let mut r = remote(20, 60_000);
         r.url = format!("http://{address}/v1");
+        r.model = "deepseek-ai/deepseek-v4.1-flash".into();
         let error = r
             .probe("system", "user", &json!({"type":"object"}))
             .unwrap_err();
@@ -455,7 +468,11 @@ mod tests {
             r.usable(),
             "a probe does not alter the production circuit breaker"
         );
-        server.join().unwrap();
+        let body = server.join().unwrap();
+        assert_eq!(body["stream"], false);
+        assert_eq!(body["chat_template_kwargs"]["thinking_mode"], "chat");
+        assert_eq!(body["chat_template_kwargs"]["enable_thinking"], false);
+        assert!(body["chat_template_kwargs"].get("thinking").is_none());
     }
 
     #[test]
