@@ -121,6 +121,8 @@ pub struct Metrics {
     /// Seconds spent waiting on the model, summed over calls.
     pub model_seconds: f64,
     pub database_bytes: u64,
+    /// Maximum number of independent model tasks run concurrently.
+    pub workers: usize,
 }
 
 /// Sum the calls by agent, in the order agents first appear.

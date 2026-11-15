@@ -220,7 +220,7 @@ function ops(d) {
   const calls = agents.reduce((s, a) => s + a.calls, 0);
   const failed = agents.reduce((s, a) => s + a.failures, 0);
   const cells = [
-    ["Run time", secs(m.seconds), `${Math.round((m.model_seconds / m.seconds) * 100)}% waiting on the model`],
+    ["Run time", secs(m.seconds), `${m.workers || 1} model workers · ${secs(m.model_seconds)} summed call time; concurrent calls overlap`],
     ["Model calls", num(calls), `${failed} failed · ${secs(calls ? m.model_seconds / calls : 0)} each on average`],
     ["Tokens", `${num(m.prompt_tokens / 1000)}k in`, `${num(m.completion_tokens / 1000)}k out · writes ${num(writeTps)} tokens/s`],
     ["Turnover", `${num(m.trading?.turnover_pct)}%`, `${m.trading?.fills ?? 0} fills · fees ${usd(m.trading?.fees)}`],

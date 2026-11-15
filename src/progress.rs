@@ -12,7 +12,7 @@ use std::time::{Duration, Instant};
 
 static ENABLED: AtomicBool = AtomicBool::new(false);
 static START: OnceLock<Instant> = OnceLock::new();
-/// What the run is doing now, outermost first.
+/// Open stages and tasks, in the order they started.
 static DOING: Mutex<Vec<(u64, String, Instant)>> = Mutex::new(Vec::new());
 static NEXT_ID: Mutex<u64> = Mutex::new(0);
 
@@ -57,7 +57,7 @@ pub fn log(message: &str) {
     }
 }
 
-/// The heartbeat text: every open activity with how long it has run, innermost last.
+/// The heartbeat text: every open stage or concurrent task with its elapsed time.
 fn heartbeat_line() -> Option<String> {
     let doing = DOING.lock().unwrap_or_else(PoisonError::into_inner);
     if doing.is_empty() {
@@ -67,7 +67,7 @@ fn heartbeat_line() -> Option<String> {
         .iter()
         .map(|(_, what, since)| format!("{what} ({})", human(since.elapsed())))
         .collect();
-    Some(format!("still working: {}", chain.join(" > ")))
+    Some(format!("still working: {}", chain.join(" | ")))
 }
 
 /// An open activity; it leaves the heartbeat when dropped.

@@ -917,6 +917,7 @@ fn finish(
     let elapsed = started.elapsed().as_secs_f64();
     let now = store::now();
     let m = &mut report.metrics;
+    m.workers = brain.map_or(1, Brain::workers);
     m.agents = metrics::agent_stats(&calls);
     m.slowest = metrics::slowest(&calls, 10);
     m.sources = crate::http::drain_fetches();
