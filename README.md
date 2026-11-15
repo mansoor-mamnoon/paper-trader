@@ -66,7 +66,20 @@ gh variable set PAPER_TRADER_API_MODEL --body deepseek-ai/deepseek-v4.1-flash
 
 [NVIDIA documents free endpoint access for prototyping](https://docs.api.nvidia.com/nim/docs/run-anywhere); provider availability, limits and terms can change. There is no paid API fallback or automatic purchase of credits. An unavailable endpoint falls back to the local model on the free public GitHub runner.
 
-`PAPER_TRADER_WORKERS` controls concurrent model tasks (default 8, range 1–32). The request/token limits remain shared across every worker and retry. More workers may hide provider latency, but do not bypass quotas or guarantee a proportional speedup. `PAPER_TRADER_API_TIMEOUT_SECONDS` sets each hosted request's timeout (default 900 seconds, range 1–3,600), with the existing retries and local fallback after persistent failures.
+`PAPER_TRADER_WORKERS` controls concurrent model tasks (safe default 1, range 1–32). The request/token limits remain shared across every worker and retry. More workers may hide provider latency, but do not bypass quotas or guarantee a proportional speedup. `PAPER_TRADER_API_TIMEOUT_SECONDS` sets each hosted request's timeout (default 900 seconds, range 1–3,600), with the existing retries and local fallback after persistent failures.
+
+The manual **Measure concurrency and replay** workflow measures 1, 2, and 4 workers, then repeats the 1-worker baseline to expose changing provider conditions. Each round uses the same four known-answer desk questions and the production Rust client, with a 180-second request timeout, no retries and no local fallback. A level is eligible only when all four answers are correct; higher concurrency must improve correct answers per minute by at least 15%. The last measurement of a level is used. This is a small operational sample, not a permanent provider-capacity guarantee or a test of trading profitability.
+
+The workflow preserves the measurements as the `concurrency-measurements` artifact and dispatches Thursday→Friday replay automatically with its measured worker count. If no level passes, it records the failure and does not start another unverified replay. The previous eight-worker replay stalled, so eight workers are no longer assumed to be faster. Normal runs use the conservative repository setting until a measured selection is applied.
+
+```sh
+# Measure on GitHub and automatically launch a replay only after a usable result.
+gh workflow run tune.yml --ref main
+# Or measure locally with PAPER_TRADER_API_KEY in the environment:
+./target/release/paper-trader tune --levels 1,2,4,1 --samples 4 --timeout 180 --output concurrency.json
+```
+
+Each hosted question now has a request ID linked to its agent and stock/sector. Progress logs report quota wait, request start, HTTP status and elapsed time, transport failures, and each retry. A heartbeat alone indicates an active task, not a completed answer.
 
 The desk defaults to `--minutes 0`: research every candidate without the previous early time cutoff. A positive value opts into a finite research budget. Daily and replay jobs allow the GitHub-hosted maximum of six hours per job; the desk step has 345 minutes, leaving time to preserve evidence and publish. Thursday and Friday have separate job allowances. These are platform limits, not unlimited execution. See [GitHub Actions limits](https://docs.github.com/en/actions/reference/limits).
 
