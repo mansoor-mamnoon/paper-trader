@@ -41,20 +41,6 @@ jobs:
           TIMEOUT_SECONDS: ${{ inputs.timeout_seconds || '180' }}
         run: |
           ./target/release/paper-trader tune --levels 1,2,4,1 --samples 4 --timeout "$TIMEOUT_SECONDS" --output concurrency.json
-          python3 - <<'PY'
-          import json, os
-          report = json.load(open('concurrency.json'))
-          workers = report['selected_workers']
-          deadline = report['timeout_seconds']
-          assert workers in [1, 2, 4]
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
-              out.write(f'workers={workers}\n')
-          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
-              out.write(f'Chosen concurrency: **{workers} workers**. All four answers must be correct within {deadline} seconds each; no retries or local fallback. Higher concurrency must improve successful answers per minute by at least 15%.\n\n')
-              out.write('| Round | Workers | Correct | Elapsed seconds |\n|---|---:|---:|---:|\n')
-              for i, r in enumerate(report['rounds'], 1):
-                  out.write(f"| {i} | {r['workers']} | {sum(s['correct'] for s in r['samples'])}/{len(r['samples'])} | {r['seconds']:.1f} |\n")
-          PY
       - name: Preserve benchmark evidence, including failed rounds
         if: always()
         uses: actions/upload-artifact@v6
@@ -65,9 +51,19 @@ jobs:
             provider-queue.json
             provider-queue-at.txt
           if-no-files-found: warn
+      - name: Choose the next action directly from the completed report
+        if: always() && !cancelled()
+        id: next
+        run: python3 scripts/tuning_next.py concurrency.json >> "$GITHUB_OUTPUT"
       - name: Start the sequential replay with the measured worker count
-        if: success()
+        if: "!cancelled() && steps.next.outcome == 'success' && steps.next.outputs.workers != ''"
         env:
           GH_TOKEN: ${{ github.token }}
-          WORKERS: ${{ steps.benchmark.outputs.workers }}
+          WORKERS: ${{ steps.next.outputs.workers }}
         run: gh workflow run replay.yml --repo "$GITHUB_REPOSITORY" --ref main -f workers="$WORKERS"
+      - name: Repeat measurements with a longer deadline
+        if: "!cancelled() && steps.next.outcome == 'success' && steps.next.outputs.deadline != ''"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEADLINE: ${{ steps.next.outputs.deadline }}
+        run: gh workflow run tune.yml --repo "$GITHUB_REPOSITORY" --ref main -f timeout_seconds="$DEADLINE"
