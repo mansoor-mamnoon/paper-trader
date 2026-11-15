@@ -17,7 +17,7 @@ use crate::config::{
     MAX_FOCUS, MIN_POSITIONS, NEWSBOOK_MEMORY, PRESCREEN, SCOUT_HEADLINES, SCOUT_NAMES,
     TRADE_MEMORY, WILDCARDS,
 };
-use crate::llm::Brain;
+use crate::llm::{Brain, map_questions};
 use crate::market::{self, Listing, Quote};
 use crate::metrics::{self, Lap, Metrics};
 use crate::models::Agent;
@@ -470,6 +470,7 @@ pub fn run_with(
 
     // 2. Scouts: one newsbook entry per sector.
     let stage = Lap::start("scouts write the sector newsbook");
+    let mut briefs = Vec::new();
     for sector in &SECTORS {
         let (items, _) = feed.topic_news(sector.query);
         let items = news::clean(items, at, 2, SCOUT_HEADLINES);
@@ -511,14 +512,19 @@ pub fn run_with(
                 .collect(),
             history: store.sector_history(sector.id, &day, NEWSBOOK_MEMORY)?,
         };
-        match agents::scout(brain, &brief) {
+        briefs.push(brief);
+    }
+    let notes = map_questions(brain, &briefs, agents::scout);
+    for (brief, result) in briefs.iter().zip(notes) {
+        match result {
             Ok(note) => {
                 store.write_note(&note)?;
                 report.newsbook.push(note);
             }
-            Err(error) => report
-                .problems
-                .push(format!("Scout for {} failed: {error}", sector.name)),
+            Err(error) => report.problems.push(format!(
+                "Scout for {} failed: {error}",
+                sectors::name_of(&brief.sector)
+            )),
         }
     }
     report
@@ -623,6 +629,7 @@ pub fn run_with(
         .cloned()
         .collect();
     read_news(store, feed, reader, &unread, &day, at, &mut report.problems)?;
+    let mut batches = Vec::new();
     for symbol in &researched {
         let company = by_symbol
             .get(symbol.as_str())
@@ -633,16 +640,22 @@ pub fn run_with(
             .filter(|h| h.label.is_empty())
             .collect();
         for batch in unlabelled.chunks(CLASSIFY_BATCH) {
-            match agents::classify(brain, symbol, &company, batch) {
-                Ok(labels) => {
-                    for (id, label, score) in labels {
-                        store.label_headline(id, &label, score)?;
-                    }
+            batches.push((symbol.clone(), company.clone(), batch.to_vec()));
+        }
+    }
+    let labels = map_questions(brain, &batches, |brain, (symbol, company, batch)| {
+        agents::classify(brain, symbol, company, batch)
+    });
+    for ((symbol, _, _), result) in batches.iter().zip(labels) {
+        match result {
+            Ok(labels) => {
+                for (id, label, score) in labels {
+                    store.label_headline(id, &label, score)?;
                 }
-                Err(error) => report
-                    .problems
-                    .push(format!("Classifier failed on {symbol}: {error}")),
             }
+            Err(error) => report
+                .problems
+                .push(format!("Classifier failed on {symbol}: {error}")),
         }
     }
     report.metrics.stages.push(stage.end());
@@ -696,31 +709,42 @@ pub fn run_with(
         .iter()
         .map(|n| (n.sector.clone(), n.clone()))
         .collect();
-    for card in &mut report.cards {
-        // Holdings are always argued. New candidates are skipped once most of the time is
-        // spent, so the manager is never left without time to decide.
-        if card.holding.is_none() && started.elapsed().as_secs_f64() > minutes * 60.0 * 0.75 {
-            report.problems.push(format!(
+    let argued = map_questions(brain, &report.cards, |brain, original| {
+        let mut card = original.clone();
+        let mut problems = Vec::new();
+        // A zero budget means every candidate is researched. Finite budgets still reserve
+        // time for the manager; holdings are always reviewed.
+        if minutes > 0.0
+            && card.holding.is_none()
+            && started.elapsed().as_secs_f64() > minutes * 60.0 * 0.75
+        {
+            problems.push(format!(
                 "Ran short of time before {} could be argued",
                 card.symbol
             ));
-            continue;
+            return (card, problems);
         }
         let note = notes.get(&card.sector);
-        match agents::analyst(brain, card, note, &day) {
+        match agents::analyst(brain, &card, note, &day) {
             Ok(case) => {
-                match agents::skeptic(brain, card, &case, note, &day) {
+                // Each skeptic sees its own analyst's completed case. Other stocks can
+                // progress independently; the manager waits until all workers finish.
+                match agents::skeptic(brain, &card, &case, note, &day) {
                     Ok(rebuttal) => card.rebuttal = Some(rebuttal),
-                    Err(error) => report
-                        .problems
-                        .push(format!("Skeptic failed on {}: {error}", card.symbol)),
+                    Err(error) => {
+                        problems.push(format!("Skeptic failed on {}: {error}", card.symbol));
+                    }
                 }
                 card.case = Some(case);
             }
-            Err(error) => report
-                .problems
-                .push(format!("Analyst failed on {}: {error}", card.symbol)),
+            Err(error) => problems.push(format!("Analyst failed on {}: {error}", card.symbol)),
         }
+        (card, problems)
+    });
+    report.cards.clear();
+    for (card, problems) in argued {
+        report.cards.push(card);
+        report.problems.extend(problems);
     }
     report.metrics.stages.push(stage.end());
 
@@ -1193,6 +1217,75 @@ mod tests {
             opened_at: AT - 5.0 * 86400.0,
             ..Position::default()
         }
+    }
+
+    #[test]
+    fn parallel_research_preserves_each_debate_and_waits_before_management() {
+        use std::sync::Mutex;
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        #[derive(Debug, Default)]
+        struct ConcurrentBrain {
+            active: AtomicUsize,
+            peak: AtomicUsize,
+            completed_cases: Mutex<BTreeSet<String>>,
+            finished_debates: Mutex<BTreeSet<String>>,
+        }
+        impl Brain for ConcurrentBrain {
+            fn shared(&self) -> Option<&(dyn Brain + Sync)> {
+                Some(self)
+            }
+            fn workers(&self) -> usize {
+                4
+            }
+            fn model_name(&self, _: Agent) -> String {
+                "concurrent-test".into()
+            }
+            fn take_calls(&self) -> Vec<crate::llm::Call> {
+                Vec::new()
+            }
+            fn ask(
+                &self,
+                agent: Agent,
+                subject: &str,
+                system: &str,
+                user: &str,
+                schema: &serde_json::Value,
+            ) -> Result<serde_json::Value> {
+                let active = self.active.fetch_add(1, Ordering::SeqCst) + 1;
+                self.peak.fetch_max(active, Ordering::SeqCst);
+                std::thread::sleep(std::time::Duration::from_millis(5));
+                if agent == Agent::Skeptic {
+                    assert!(self.completed_cases.lock().unwrap().contains(subject));
+                    assert!(user.contains(&format!("{subject} has a live order.")));
+                }
+                if agent == Agent::Manager {
+                    assert_eq!(active, 1, "the manager must run alone after research");
+                    assert_eq!(self.finished_debates.lock().unwrap().len(), 9);
+                }
+                let result = brain().ask(agent, subject, system, user, schema);
+                if agent == Agent::Analyst {
+                    self.completed_cases.lock().unwrap().insert(subject.into());
+                } else if agent == Agent::Skeptic {
+                    self.finished_debates.lock().unwrap().insert(subject.into());
+                }
+                self.active.fetch_sub(1, Ordering::SeqCst);
+                result
+            }
+        }
+        let store = Store::open(":memory:").unwrap();
+        let concurrent = ConcurrentBrain::default();
+        let parallel = run(&store, Some(&concurrent), &fixture(), AT, 0.0).unwrap();
+        let serial_store = Store::open(":memory:").unwrap();
+        let serial = run(&serial_store, Some(&brain()), &fixture(), AT, 0.0).unwrap();
+        assert!(concurrent.peak.load(Ordering::SeqCst) > 1);
+        assert!(concurrent.peak.load(Ordering::SeqCst) <= 4);
+        assert_eq!(parallel.decisions, serial.decisions);
+        assert_eq!(
+            store.load().unwrap().pending,
+            serial_store.load().unwrap().pending
+        );
+        assert_eq!(parallel.cards, serial.cards);
     }
 
     #[test]
