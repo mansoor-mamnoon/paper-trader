@@ -525,7 +525,7 @@ impl Brain for LocalBrain {
         let mut model = spec.id.to_string();
         let mut outcome = None;
         if let Some(remote) = self.remote.as_ref().filter(|r| r.usable()) {
-            match remote.ask(system, user, schema) {
+            match remote.ask_named(&format!("{} {subject}", agent.name()), system, user, schema) {
                 Ok(answer) => {
                     model.clone_from(&remote.model);
                     outcome = Some(Ok(answer));

@@ -3,17 +3,18 @@
 //! client paces itself, checks every answer against the schema, and gives up cleanly so the
 //! local model can take over.
 
-use crate::http;
 use crate::llm::{Stats, extract_json};
+use crate::{http, progress};
 use anyhow::{Result, anyhow, bail};
 use serde_json::{Value, json};
 use std::collections::VecDeque;
 use std::sync::Mutex;
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
 /// After this many failed questions in a row the hosted model is left alone for the run.
 const MAX_FAILURES: u32 = 3;
+static NEXT_QUESTION: AtomicU64 = AtomicU64::new(1);
 
 /// A hosted model and its limits.
 #[derive(Debug)]
@@ -202,7 +203,15 @@ impl Remote {
         )
     }
 
-    fn attempt(&self, system: &str, user: &str, schema: &Value) -> Result<(Value, String, Stats)> {
+    fn attempt(
+        &self,
+        system: &str,
+        user: &str,
+        schema: &Value,
+        question: u64,
+        attempt: u32,
+        max_requests: u32,
+    ) -> Result<(Value, String, Stats)> {
         let estimate = estimate_tokens(system)
             + estimate_tokens(user)
             + estimate_tokens(&schema.to_string())
@@ -213,10 +222,39 @@ impl Remote {
                 self.tpm
             );
         }
-        for _ in 0..4 {
+        for request in 1..=max_requests {
+            let waiting = Instant::now();
             self.reserve(estimate);
+            progress::log(&format!(
+                "hosted #{question}.{attempt}.{request}: sending to {} ({} tokens reserved, {}s timeout, {:.1}s quota wait, schema={})",
+                self.model,
+                estimate,
+                self.timeout.as_secs(),
+                waiting.elapsed().as_secs_f64(),
+                self.strict.load(Ordering::Relaxed)
+            ));
             let started = Instant::now();
-            let (status, text) = self.post(system, user, schema)?;
+            let (status, text) = match self.post(system, user, schema) {
+                Ok(response) => response,
+                Err(error) => {
+                    progress::log(&format!(
+                        "hosted #{question}.{attempt}.{request}: transport failure after {:.1}s: {error}",
+                        started.elapsed().as_secs_f64()
+                    ));
+                    return Err(error);
+                }
+            };
+            progress::log(&format!(
+                "hosted #{question}.{attempt}.{request}: HTTP {status} after {:.1}s ({} bytes)",
+                started.elapsed().as_secs_f64(),
+                text.len()
+            ));
+            if max_requests == 1 && !(200..=299).contains(&status) {
+                bail!(
+                    "HTTP {status}: {}",
+                    text.chars().take(240).collect::<String>()
+                );
+            }
             match status {
                 200..=299 => {
                     let reply: Value = serde_json::from_str(&text)?;
@@ -268,17 +306,47 @@ impl Remote {
         bail!("the hosted model kept refusing the request")
     }
 
+    /// One measured request, with no retries or local fallback. Used to compare provider
+    /// concurrency without hiding failures behind long retry sequences.
+    pub fn probe(
+        &self,
+        system: &str,
+        user: &str,
+        schema: &Value,
+    ) -> Result<(Value, String, Stats)> {
+        let question = NEXT_QUESTION.fetch_add(1, Ordering::Relaxed);
+        self.attempt(system, user, schema, question, 1, 1)
+    }
+
     /// Ask the hosted model, trying twice. Three failed questions in a row switch it off
     /// for the rest of the run.
     pub fn ask(&self, system: &str, user: &str, schema: &Value) -> Result<(Value, String, Stats)> {
+        self.ask_named("question", system, user, schema)
+    }
+
+    /// Ask a named agent question, so request and retry IDs can be traced in parallel logs.
+    pub fn ask_named(
+        &self,
+        label: &str,
+        system: &str,
+        user: &str,
+        schema: &Value,
+    ) -> Result<(Value, String, Stats)> {
         let mut last = anyhow!("no attempt made");
-        for _ in 0..2 {
-            match self.attempt(system, user, schema) {
+        let question = NEXT_QUESTION.fetch_add(1, Ordering::Relaxed);
+        progress::log(&format!("hosted #{question}: {label}"));
+        for attempt in 1..=2 {
+            match self.attempt(system, user, schema, question, attempt, 4) {
                 Ok(answer) => {
                     self.failures.store(0, Ordering::Relaxed);
                     return Ok(answer);
                 }
-                Err(error) => last = error,
+                Err(error) => {
+                    progress::log(&format!(
+                        "hosted #{question}: attempt {attempt}/2 failed: {error}"
+                    ));
+                    last = error;
+                }
             }
         }
         self.failures.fetch_add(1, Ordering::Relaxed);
