@@ -423,6 +423,42 @@ mod tests {
     }
 
     #[test]
+    fn a_benchmark_probe_reports_http_errors_without_retrying_or_disabling_the_model() {
+        use std::io::{BufRead, BufReader, Read, Write};
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut reader = BufReader::new(stream.try_clone().unwrap());
+            let mut length = 0;
+            loop {
+                let mut line = String::new();
+                reader.read_line(&mut line).unwrap();
+                if line == "\r\n" {
+                    break;
+                }
+                if let Some(value) = line.to_ascii_lowercase().strip_prefix("content-length:") {
+                    length = value.trim().parse::<usize>().unwrap();
+                }
+            }
+            reader.read_exact(&mut vec![0; length]).unwrap();
+            let body = r#"{"error":"rate limited"}"#;
+            write!(stream, "HTTP/1.1 429 Too Many Requests\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()).unwrap();
+        });
+        let mut r = remote(20, 60_000);
+        r.url = format!("http://{address}/v1");
+        let error = r
+            .probe("system", "user", &json!({"type":"object"}))
+            .unwrap_err();
+        assert!(error.to_string().contains("HTTP 429"));
+        assert!(
+            r.usable(),
+            "a probe does not alter the production circuit breaker"
+        );
+        server.join().unwrap();
+    }
+
+    #[test]
     fn an_oversized_question_and_a_dead_server_fail_cleanly() {
         let r = remote(10, 100);
         let schema = json!({"type": "object"});
