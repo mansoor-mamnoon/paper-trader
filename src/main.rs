@@ -40,6 +40,17 @@ enum Cli {
         /// One or more headlines
         text: Vec<String>,
     },
+    /// Measure hosted concurrency on known-answer questions without retries or fallback
+    Tune {
+        #[arg(long, default_value = "1,2,4,1")]
+        levels: String,
+        #[arg(long, default_value_t = 4)]
+        samples: usize,
+        #[arg(long, default_value_t = 180)]
+        timeout: u64,
+        #[arg(long)]
+        output: String,
+    },
     /// Put the same desk questions to several models and compare speed and answers
     Bench {
         /// Comma-separated model ids; all registered models when empty
@@ -63,6 +74,15 @@ fn main() -> Result<()> {
             Ok(())
         }
         Cli::Bench { models } => bench(&models),
+        Cli::Tune {
+            levels,
+            samples,
+            timeout,
+            output,
+        } => {
+            progress::enable(std::time::Duration::from_secs(30));
+            paper_trader::tune::run(&levels, samples, timeout, &output)
+        }
         Cli::Tone { text } => {
             use paper_trader::sentiment::{FinBert, Reader};
             let started = std::time::Instant::now();
