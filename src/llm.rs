@@ -506,7 +506,7 @@ impl Brain for LocalBrain {
         std::env::var("PAPER_TRADER_WORKERS")
             .ok()
             .and_then(|v| v.parse().ok())
-            .unwrap_or(8)
+            .unwrap_or(1)
             .clamp(1, 32)
     }
 

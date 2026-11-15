@@ -2,6 +2,11 @@ name: One-off Thursday then Friday replay
 run-name: DeepSeek replay of November 12 and 13
 on:
   workflow_dispatch:
+    inputs:
+      workers:
+        description: Measured worker count override; empty uses the repository setting
+        type: string
+        default: ''
 permissions:
   contents: write
   pages: write
@@ -19,7 +24,7 @@ jobs:
       PAPER_TRADER_API_MODEL: ${{ vars.PAPER_TRADER_API_MODEL }}
       PAPER_TRADER_API_RPM: ${{ vars.PAPER_TRADER_API_RPM }}
       PAPER_TRADER_API_TPM: ${{ vars.PAPER_TRADER_API_TPM }}
-      PAPER_TRADER_WORKERS: ${{ vars.PAPER_TRADER_WORKERS }}
+      PAPER_TRADER_WORKERS: ${{ inputs.workers || vars.PAPER_TRADER_WORKERS }}
       PAPER_TRADER_API_TIMEOUT_SECONDS: ${{ vars.PAPER_TRADER_API_TIMEOUT_SECONDS }}
     steps:
       - uses: actions/checkout@v7
@@ -84,7 +89,7 @@ jobs:
       PAPER_TRADER_API_MODEL: ${{ vars.PAPER_TRADER_API_MODEL }}
       PAPER_TRADER_API_RPM: ${{ vars.PAPER_TRADER_API_RPM }}
       PAPER_TRADER_API_TPM: ${{ vars.PAPER_TRADER_API_TPM }}
-      PAPER_TRADER_WORKERS: ${{ vars.PAPER_TRADER_WORKERS }}
+      PAPER_TRADER_WORKERS: ${{ inputs.workers || vars.PAPER_TRADER_WORKERS }}
       PAPER_TRADER_API_TIMEOUT_SECONDS: ${{ vars.PAPER_TRADER_API_TIMEOUT_SECONDS }}
     steps:
       - uses: actions/checkout@v7

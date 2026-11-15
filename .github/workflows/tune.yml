@@ -1,0 +1,56 @@
+name: Measure concurrency and replay
+run-name: Measure DeepSeek concurrency before Thursday-Friday replay
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: write
+concurrency:
+  group: stock-account
+  cancel-in-progress: false
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    env:
+      PAPER_TRADER_API_KEY: ${{ secrets.PAPER_TRADER_API_KEY }}
+      PAPER_TRADER_API_URL: ${{ vars.PAPER_TRADER_API_URL }}
+      PAPER_TRADER_API_MODEL: ${{ vars.PAPER_TRADER_API_MODEL }}
+      PAPER_TRADER_API_RPM: ${{ vars.PAPER_TRADER_API_RPM }}
+      PAPER_TRADER_API_TPM: ${{ vars.PAPER_TRADER_API_TPM }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
+        run: cargo build --release --locked
+      - name: Compare one, two and four workers and repeat the serial baseline
+        id: benchmark
+        run: |
+          ./target/release/paper-trader tune --levels 1,2,4,1 --samples 4 --timeout 180 --output concurrency.json
+          python3 - <<'PY'
+          import json, os
+          report = json.load(open('concurrency.json'))
+          workers = report['selected_workers']
+          assert workers in [1, 2, 4]
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+              out.write(f'workers={workers}\n')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
+              out.write(f'Chosen concurrency: **{workers} workers**. All four answers must be correct within 180 seconds each; no retries or local fallback. Higher concurrency must improve successful answers per minute by at least 15%.\n\n')
+              out.write('| Round | Workers | Correct | Elapsed seconds |\n|---|---:|---:|---:|\n')
+              for i, r in enumerate(report['rounds'], 1):
+                  out.write(f"| {i} | {r['workers']} | {sum(s['correct'] for s in r['samples'])}/{len(r['samples'])} | {r['seconds']:.1f} |\n")
+          PY
+      - name: Preserve benchmark evidence, including failed rounds
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: concurrency-measurements
+          path: concurrency.json
+          if-no-files-found: warn
+      - name: Start the sequential replay with the measured worker count
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WORKERS: ${{ steps.benchmark.outputs.workers }}
+        run: gh workflow run replay.yml --repo "$GITHUB_REPOSITORY" --ref main -f workers="$WORKERS"
