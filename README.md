@@ -72,7 +72,7 @@ The manual **Measure concurrency and replay** workflow measures 1, 2, and 4 work
 
 The optional `timeout_seconds` workflow input accepts 180, 600, or 900 seconds per request; the default is 180. A failed short-deadline round proves that no level met that deadline, not that requests can never complete. The benchmark also captures NVIDIA’s public model queue with a timestamp as supporting context, without assuming it gives an exact wait time for our API requests.
 
-The workflow preserves the measurements as the `concurrency-measurements` artifact and dispatches Thursday→Friday replay automatically with its measured worker count. If no level passes, it records the failure and does not start another unverified replay. A one-off continuation workflow then retries measurement with 600 seconds, then 900 seconds per request, stopping at the first usable result or after the longest deadline fails. It has no schedule and does not retry indefinitely. The previous eight-worker replay stalled, so eight workers are no longer assumed to be faster. Normal runs use the conservative repository setting until a measured selection is applied.
+The workflow preserves the measurements as the `concurrency-measurements` artifact and dispatches Thursday→Friday replay automatically with its measured worker count. If no level passes, it records the failure and does not start another unverified replay. The measurement job itself directly dispatches follow-up measurements with 600 seconds, then 900 seconds per request, stopping at the first usable result or after the longest deadline fails. It has no schedule and does not retry indefinitely. The previous eight-worker replay stalled, so eight workers are no longer assumed to be faster. Normal runs use the conservative repository setting until a measured selection is applied.
 
 ```sh
 # Measure on GitHub and automatically launch a replay only after a usable result.
@@ -92,7 +92,7 @@ Measured on 15 November 2026 UTC, using the corrected chat-mode request ([run](h
 | 4 | 0 / 4 | 180.2 s |
 | 1, repeated baseline | 0 / 4 | 720.9 s |
 
-All 16 requests ended in a transport timeout, with no complete response inside the 180-second request deadline. No worker count qualified. This is evidence of poor responsiveness even at one worker, not proof that longer requests cannot complete. The continuation workflow tests longer deadlines before selecting a setting and starting the replay. NVIDIA’s [public model queue](https://buildapi.ngc.nvidia.com/v2/predict/queues/models/qc69jvmznzxy/deepseek-v4.1-flash) reported roughly 1,600 pending requests during the test; that is supporting congestion context, not our exact position or wait time.
+All 16 requests ended in a transport timeout, with no complete response inside the 180-second request deadline. No worker count qualified. This is evidence of poor responsiveness even at one worker, not proof that longer requests cannot complete. The same workflow tests longer deadlines before selecting a setting and starting the replay. NVIDIA’s [public model queue](https://buildapi.ngc.nvidia.com/v2/predict/queues/models/qc69jvmznzxy/deepseek-v4.1-flash) reported roughly 1,600 pending requests during the test; that is supporting congestion context, not our exact position or wait time.
 
 The 600-second follow-up also failed to qualify a level ([run](https://github.com/mansoor-mamnoon/paper-trader/actions/runs/43668904595), [raw measurements](docs/concurrency-2026-11-15-600s.json)):
 
@@ -103,7 +103,7 @@ The 600-second follow-up also failed to qualify a level ([run](https://github.co
 | 4 | 0 / 4 | 192.8 s |
 | 1, repeated baseline | 0 / 4 | 1208.6 s |
 
-Only 3 of 16 requests succeeded. The other 13 returned provider HTTP 500 or 504 errors; most gateway timeouts arrived after about 302 seconds despite the longer client deadline. No Thursday→Friday replay was dispatched from these results, and the live account was not replaced. The original continuation callback did not launch the promised 900-second follow-up; the handoff is being replaced with direct dispatch from the measurement job.
+Only 3 of 16 requests succeeded. The other 13 returned provider HTTP 500 or 504 errors; most gateway timeouts arrived after about 302 seconds despite the longer client deadline. No Thursday→Friday replay was dispatched from these results, and the live account was not replaced. The original continuation callback did not launch the promised 900-second follow-up; the callback dependency has been removed, and the measurement job now directly dispatches its bounded follow-ups.
 
 Each hosted question now has a request ID linked to its agent and stock/sector. Progress logs report quota wait, request start, HTTP status and elapsed time, transport failures, and each retry. A heartbeat alone indicates an active task, not a completed answer.
 
