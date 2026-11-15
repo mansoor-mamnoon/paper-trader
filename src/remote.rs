@@ -7,8 +7,9 @@ use crate::http;
 use crate::llm::{Stats, extract_json};
 use anyhow::{Result, anyhow, bail};
 use serde_json::{Value, json};
-use std::cell::{Cell, RefCell};
 use std::collections::VecDeque;
+use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::time::{Duration, Instant};
 
 /// After this many failed questions in a row the hosted model is left alone for the run.
@@ -26,9 +27,9 @@ pub struct Remote {
     /// Tokens allowed per minute, prompt and answer together.
     pub tpm: u64,
     /// Whether the provider accepts a JSON schema in `response_format`.
-    strict: Cell<bool>,
-    recent: RefCell<VecDeque<(Instant, u64)>>,
-    failures: Cell<u32>,
+    strict: AtomicBool,
+    recent: Mutex<VecDeque<(Instant, u64)>>,
+    failures: AtomicU32,
 }
 
 /// Whether `value` has the shape `schema` asks for: required keys, enum members, number
@@ -95,24 +96,37 @@ impl Remote {
                 .unwrap_or_else(|| "deepseek-ai/deepseek-v4.1-flash".into()),
             rpm: var("PAPER_TRADER_API_RPM")
                 .and_then(|v| v.parse().ok())
-                .unwrap_or(20),
+                .unwrap_or(20)
+                .max(1),
             tpm: var("PAPER_TRADER_API_TPM")
                 .and_then(|v| v.parse().ok())
-                .unwrap_or(60_000),
-            strict: Cell::new(true),
-            recent: RefCell::new(VecDeque::new()),
-            failures: Cell::new(0),
+                .unwrap_or(60_000)
+                .max(1),
+            strict: AtomicBool::new(true),
+            recent: Mutex::new(VecDeque::new()),
+            failures: AtomicU32::new(0),
         })
     }
 
     /// Whether the hosted model is still worth asking in this run.
     pub fn usable(&self) -> bool {
-        self.failures.get() < MAX_FAILURES
+        self.failures.load(Ordering::Relaxed) < MAX_FAILURES
     }
 
     /// How long to wait before sending `tokens` more, given the last minute's traffic.
+    #[cfg(test)]
     fn wait_for(&self, tokens: u64, now: Instant) -> Duration {
-        let mut recent = self.recent.borrow_mut();
+        let mut recent = self.recent.lock().unwrap();
+        Self::delay(&mut recent, self.rpm, self.tpm, tokens, now)
+    }
+
+    fn delay(
+        recent: &mut VecDeque<(Instant, u64)>,
+        rpm: usize,
+        tpm: u64,
+        tokens: u64,
+        now: Instant,
+    ) -> Duration {
         while recent
             .front()
             .is_some_and(|(at, _)| now.duration_since(*at) >= Duration::from_secs(60))
@@ -123,7 +137,7 @@ impl Remote {
         let mut count = recent.len();
         let mut wait = Duration::ZERO;
         for (at, spent) in recent.iter() {
-            if count < self.rpm && used + tokens <= self.tpm {
+            if count < rpm && used + tokens <= tpm {
                 break;
             }
             wait = Duration::from_secs(60).saturating_sub(now.duration_since(*at));
@@ -131,6 +145,23 @@ impl Remote {
             count -= 1;
         }
         wait
+    }
+
+    /// Reserve quota before sending, so concurrent in-flight requests share the limits.
+    fn reserve(&self, tokens: u64) {
+        loop {
+            let wait = {
+                let mut recent = self.recent.lock().unwrap();
+                let now = Instant::now();
+                let wait = Self::delay(&mut recent, self.rpm, self.tpm, tokens, now);
+                if wait.is_zero() {
+                    recent.push_back((now, tokens));
+                    return;
+                }
+                wait
+            };
+            std::thread::sleep(wait + Duration::from_millis(100));
+        }
     }
 
     fn post(&self, system: &str, user: &str, schema: &Value) -> Result<(u16, String)> {
@@ -150,7 +181,7 @@ impl Remote {
             body["temperature"] = json!(1.0);
             body["chat_template_kwargs"] = json!({"thinking": false});
         }
-        body["response_format"] = if self.strict.get() {
+        body["response_format"] = if self.strict.load(Ordering::Relaxed) {
             json!({"type": "json_schema", "json_schema": {"name": "answer", "strict": true, "schema": schema}})
         } else {
             json!({"type": "json_object"})
@@ -164,7 +195,10 @@ impl Remote {
     }
 
     fn attempt(&self, system: &str, user: &str, schema: &Value) -> Result<(Value, String, Stats)> {
-        let estimate = estimate_tokens(system) + estimate_tokens(user) + 800;
+        let estimate = estimate_tokens(system)
+            + estimate_tokens(user)
+            + estimate_tokens(&schema.to_string())
+            + 2500;
         if estimate > self.tpm {
             bail!(
                 "the question is about {estimate} tokens, over the hosted model's {} a minute",
@@ -172,10 +206,7 @@ impl Remote {
             );
         }
         for _ in 0..4 {
-            let wait = self.wait_for(estimate, Instant::now());
-            if !wait.is_zero() {
-                std::thread::sleep(wait + Duration::from_millis(500));
-            }
+            self.reserve(estimate);
             let started = Instant::now();
             let (status, text) = self.post(system, user, schema)?;
             match status {
@@ -188,9 +219,14 @@ impl Remote {
                         .to_string();
                     let prompt = reply["usage"]["prompt_tokens"].as_u64().unwrap_or(estimate);
                     let written = reply["usage"]["completion_tokens"].as_u64().unwrap_or(0);
-                    self.recent
-                        .borrow_mut()
-                        .push_back((Instant::now(), prompt + written));
+                    // The reservation includes the full output budget. Account for any
+                    // underestimate without refunding quota while other calls are in flight.
+                    if prompt + written > estimate {
+                        self.recent
+                            .lock()
+                            .unwrap()
+                            .push_back((Instant::now(), prompt + written - estimate));
+                    }
                     let value = extract_json(&content)?;
                     if !conforms(&value, schema) {
                         bail!("the hosted model's answer does not match the schema");
@@ -208,15 +244,12 @@ impl Remote {
                     ));
                 }
                 429 => {
-                    self.recent
-                        .borrow_mut()
-                        .push_back((Instant::now(), estimate));
                     std::thread::sleep(Duration::from_secs(20));
                 }
                 500..=599 => std::thread::sleep(Duration::from_secs(5)),
-                400 | 422 if self.strict.get() => {
+                400 | 422 if self.strict.load(Ordering::Relaxed) => {
                     // Some providers and models take only plain JSON mode.
-                    self.strict.set(false);
+                    self.strict.store(false, Ordering::Relaxed);
                 }
                 _ => bail!(
                     "HTTP {status}: {}",
@@ -234,13 +267,13 @@ impl Remote {
         for _ in 0..2 {
             match self.attempt(system, user, schema) {
                 Ok(answer) => {
-                    self.failures.set(0);
+                    self.failures.store(0, Ordering::Relaxed);
                     return Ok(answer);
                 }
                 Err(error) => last = error,
             }
         }
-        self.failures.set(self.failures.get() + 1);
+        self.failures.fetch_add(1, Ordering::Relaxed);
         Err(last)
     }
 }
@@ -256,9 +289,9 @@ mod tests {
             model: "m".into(),
             rpm,
             tpm,
-            strict: Cell::new(true),
-            recent: RefCell::new(VecDeque::new()),
-            failures: Cell::new(0),
+            strict: AtomicBool::new(true),
+            recent: Mutex::new(VecDeque::new()),
+            failures: AtomicU32::new(0),
         }
     }
 
@@ -290,14 +323,26 @@ mod tests {
         let r = remote(2, 1000);
         let now = Instant::now();
         assert!(r.wait_for(400, now).is_zero());
-        r.recent.borrow_mut().push_back((now, 700));
+        r.recent.lock().unwrap().push_back((now, 700));
         // 700 + 400 is over the token limit, so wait for the first request to age out.
         assert!(r.wait_for(400, now) > Duration::from_secs(59));
         assert!(r.wait_for(200, now).is_zero());
-        r.recent.borrow_mut().push_back((now, 100));
+        r.recent.lock().unwrap().push_back((now, 100));
         // Two requests in the minute is the request limit.
         assert!(r.wait_for(10, now) > Duration::from_secs(59));
         assert_eq!(estimate_tokens("abcdefg"), 2);
+    }
+
+    #[test]
+    fn concurrent_requests_reserve_quota_before_they_start() {
+        let r = remote(8, 800);
+        std::thread::scope(|scope| {
+            for _ in 0..8 {
+                scope.spawn(|| r.reserve(100));
+            }
+        });
+        assert_eq!(r.recent.lock().unwrap().len(), 8);
+        assert!(r.wait_for(1, Instant::now()) > Duration::from_secs(59));
     }
 
     #[test]
