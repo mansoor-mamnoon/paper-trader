@@ -94,6 +94,17 @@ Measured on 15 November 2026 UTC, using the corrected chat-mode request ([run](h
 
 All 16 requests ended in a transport timeout, with no complete response inside the 180-second request deadline. No worker count qualified. This is evidence of poor responsiveness even at one worker, not proof that longer requests cannot complete. The continuation workflow tests longer deadlines before selecting a setting and starting the replay. NVIDIA’s [public model queue](https://buildapi.ngc.nvidia.com/v2/predict/queues/models/qc69jvmznzxy/deepseek-v4.1-flash) reported roughly 1,600 pending requests during the test; that is supporting congestion context, not our exact position or wait time.
 
+The 600-second follow-up also failed to qualify a level ([run](https://github.com/mansoor-mamnoon/paper-trader/actions/runs/43668904595), [raw measurements](docs/concurrency-2026-11-15-600s.json)):
+
+| Workers | Correct / attempted | Round time |
+|---|---:|---:|
+| 1, initial baseline | 2 / 4 | 1175.2 s |
+| 2 | 1 / 4 | 569.0 s |
+| 4 | 0 / 4 | 192.8 s |
+| 1, repeated baseline | 0 / 4 | 1208.6 s |
+
+Only 3 of 16 requests succeeded. The other 13 returned provider HTTP 500 or 504 errors; most gateway timeouts arrived after about 302 seconds despite the longer client deadline. No Thursday→Friday replay was dispatched from these results, and the live account was not replaced. The original continuation callback did not launch the promised 900-second follow-up; the handoff is being replaced with direct dispatch from the measurement job.
+
 Each hosted question now has a request ID linked to its agent and stock/sector. Progress logs report quota wait, request start, HTTP status and elapsed time, transport failures, and each retry. A heartbeat alone indicates an active task, not a completed answer.
 
 The desk defaults to `--minutes 0`: research every candidate without the previous early time cutoff. A positive value opts into a finite research budget. Daily and replay jobs allow the GitHub-hosted maximum of six hours per job; the desk step has 345 minutes, leaving time to preserve evidence and publish. Thursday and Friday have separate job allowances. These are platform limits, not unlimited execution. See [GitHub Actions limits](https://docs.github.com/en/actions/reference/limits).

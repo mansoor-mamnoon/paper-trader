@@ -1,0 +1,128 @@
+{
+  "model": "deepseek-ai/deepseek-v4.1-flash",
+  "timeout_seconds": 600,
+  "retries": 0,
+  "rounds": [
+    {
+      "workers": 1,
+      "seconds": 1175.218207529,
+      "samples": [
+        {
+          "question": "classify",
+          "seconds": 290.221141253,
+          "correct": true,
+          "error": null
+        },
+        {
+          "question": "review",
+          "seconds": 280.700080998,
+          "correct": true,
+          "error": null
+        },
+        {
+          "question": "pick",
+          "seconds": 302.187359454,
+          "correct": false,
+          "error": "HTTP 504: "
+        },
+        {
+          "question": "classify",
+          "seconds": 302.109600286,
+          "correct": false,
+          "error": "HTTP 504: "
+        }
+      ]
+    },
+    {
+      "workers": 2,
+      "seconds": 569.035946294,
+      "samples": [
+        {
+          "question": "classify",
+          "seconds": 302.161273049,
+          "correct": false,
+          "error": "HTTP 504: "
+        },
+        {
+          "question": "review",
+          "seconds": 302.165414932,
+          "correct": false,
+          "error": "HTTP 504: "
+        },
+        {
+          "question": "pick",
+          "seconds": 266.874474765,
+          "correct": true,
+          "error": null
+        },
+        {
+          "question": "classify",
+          "seconds": 242.235715335,
+          "correct": false,
+          "error": "HTTP 500: {\"message\":\"Internal server error\",\"type\":\"Internal Server Error\",\"code\":500,\"details\":{\"backend_status\":500}}"
+        }
+      ]
+    },
+    {
+      "workers": 4,
+      "seconds": 192.756188898,
+      "samples": [
+        {
+          "question": "classify",
+          "seconds": 192.576167364,
+          "correct": false,
+          "error": "HTTP 500: {\"message\":\"Internal server error\",\"type\":\"Internal Server Error\",\"code\":500,\"details\":{\"backend_status\":500}}"
+        },
+        {
+          "question": "review",
+          "seconds": 192.128710088,
+          "correct": false,
+          "error": "HTTP 500: {\"message\":\"Internal server error\",\"type\":\"Internal Server Error\",\"code\":500,\"details\":{\"backend_status\":500}}"
+        },
+        {
+          "question": "pick",
+          "seconds": 192.400867377,
+          "correct": false,
+          "error": "HTTP 500: {\"message\":\"Internal server error\",\"type\":\"Internal Server Error\",\"code\":500,\"details\":{\"backend_status\":500}}"
+        },
+        {
+          "question": "classify",
+          "seconds": 192.755770584,
+          "correct": false,
+          "error": "HTTP 500: {\"message\":\"Internal server error\",\"type\":\"Internal Server Error\",\"code\":500,\"details\":{\"backend_status\":500}}"
+        }
+      ]
+    },
+    {
+      "workers": 1,
+      "seconds": 1208.608586906,
+      "samples": [
+        {
+          "question": "classify",
+          "seconds": 302.178204787,
+          "correct": false,
+          "error": "HTTP 504: "
+        },
+        {
+          "question": "review",
+          "seconds": 302.093986696,
+          "correct": false,
+          "error": "HTTP 504: "
+        },
+        {
+          "question": "pick",
+          "seconds": 302.127534908,
+          "correct": false,
+          "error": "HTTP 504: "
+        },
+        {
+          "question": "classify",
+          "seconds": 302.208835358,
+          "correct": false,
+          "error": "HTTP 504: "
+        }
+      ]
+    }
+  ],
+  "selected_workers": null
+}
