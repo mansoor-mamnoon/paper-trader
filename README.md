@@ -70,6 +70,8 @@ gh variable set PAPER_TRADER_API_MODEL --body deepseek-ai/deepseek-v4.1-flash
 
 The manual **Measure concurrency and replay** workflow measures 1, 2, and 4 workers, then repeats the 1-worker baseline to expose changing provider conditions. Each round uses the same four known-answer desk questions and the production Rust client, with a 180-second request timeout, no retries and no local fallback. A level is eligible only when all four answers are correct; higher concurrency must improve correct answers per minute by at least 15%. The last measurement of a level is used. This is a small operational sample, not a permanent provider-capacity guarantee or a test of trading profitability.
 
+The optional `timeout_seconds` workflow input accepts 180, 600, or 900 seconds per request; the default is 180. A failed short-deadline round proves that no level met that deadline, not that requests can never complete. The benchmark also captures NVIDIA’s public model queue with a timestamp as supporting context, without assuming it gives an exact wait time for our API requests.
+
 The workflow preserves the measurements as the `concurrency-measurements` artifact and dispatches Thursday→Friday replay automatically with its measured worker count. If no level passes, it records the failure and does not start another unverified replay. The previous eight-worker replay stalled, so eight workers are no longer assumed to be faster. Normal runs use the conservative repository setting until a measured selection is applied.
 
 ```sh

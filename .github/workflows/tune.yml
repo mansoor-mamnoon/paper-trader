@@ -2,6 +2,12 @@ name: Measure concurrency and replay
 run-name: Measure DeepSeek concurrency before Thursday-Friday replay
 on:
   workflow_dispatch:
+    inputs:
+      timeout_seconds:
+        description: Per-request measurement deadline; larger values distinguish slow service from short-deadline failures
+        type: choice
+        options: ['180', '600', '900']
+        default: '180'
 permissions:
   contents: read
   actions: write
@@ -11,7 +17,7 @@ concurrency:
 jobs:
   measure:
     runs-on: ubuntu-latest
-    timeout-minutes: 70
+    timeout-minutes: 360
     env:
       PAPER_TRADER_API_KEY: ${{ secrets.PAPER_TRADER_API_KEY }}
       PAPER_TRADER_API_URL: ${{ vars.PAPER_TRADER_API_URL }}
@@ -24,19 +30,27 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Build
         run: cargo build --release --locked
+      - name: Snapshot the public model queue
+        continue-on-error: true
+        run: |
+          curl -fsS --max-time 15 'https://buildapi.ngc.nvidia.com/v2/predict/queues/models/qc69jvmznzxy/deepseek-v4.1-flash' > provider-queue.json
+          date -u +%FT%TZ > provider-queue-at.txt
       - name: Compare one, two and four workers and repeat the serial baseline
         id: benchmark
+        env:
+          TIMEOUT_SECONDS: ${{ inputs.timeout_seconds || '180' }}
         run: |
-          ./target/release/paper-trader tune --levels 1,2,4,1 --samples 4 --timeout 180 --output concurrency.json
+          ./target/release/paper-trader tune --levels 1,2,4,1 --samples 4 --timeout "$TIMEOUT_SECONDS" --output concurrency.json
           python3 - <<'PY'
           import json, os
           report = json.load(open('concurrency.json'))
           workers = report['selected_workers']
+          deadline = report['timeout_seconds']
           assert workers in [1, 2, 4]
           with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
               out.write(f'workers={workers}\n')
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
-              out.write(f'Chosen concurrency: **{workers} workers**. All four answers must be correct within 180 seconds each; no retries or local fallback. Higher concurrency must improve successful answers per minute by at least 15%.\n\n')
+              out.write(f'Chosen concurrency: **{workers} workers**. All four answers must be correct within {deadline} seconds each; no retries or local fallback. Higher concurrency must improve successful answers per minute by at least 15%.\n\n')
               out.write('| Round | Workers | Correct | Elapsed seconds |\n|---|---:|---:|---:|\n')
               for i, r in enumerate(report['rounds'], 1):
                   out.write(f"| {i} | {r['workers']} | {sum(s['correct'] for s in r['samples'])}/{len(r['samples'])} | {r['seconds']:.1f} |\n")
@@ -46,7 +60,10 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: concurrency-measurements
-          path: concurrency.json
+          path: |
+            concurrency.json
+            provider-queue.json
+            provider-queue-at.txt
           if-no-files-found: warn
       - name: Start the sequential replay with the measured worker count
         if: success()
