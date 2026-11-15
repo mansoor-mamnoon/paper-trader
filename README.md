@@ -24,6 +24,8 @@ After the US close, a GitHub Actions run does one trading day:
 8. **Manager** must answer KEEP or SELL for every holding. Every sale must be replaced: it picks the replacements and their weights from the candidates the analyst made a case for. A replacement must clearly beat what it replaces after the 0.6% round-trip cost. It reads its own notes, decisions and closed trades from earlier days.
 9. **Rust queues the orders** for the next open, writes everything to memory and publishes the dashboard.
 
+Independent research runs concurrently: the 12 scouts, headline-classification batches, and debates for different stocks share a bounded worker pool. Each skeptic waits for its own analyst; the strategist waits for the scouts, and the manager waits for all research. SQLite writes stay on the main thread, and results retain their original order. Local fallback inference is serialized so concurrent calls cannot swap its model or overload the single local server.
+
 ## Rules no model can change
 
 - Always fully invested in at most eight individual US stocks. Sales fill before purchases, and purchases share all the cash by weight. If the manager sells and buys nothing new, the freed cash tops up the stocks it kept.
@@ -60,9 +62,13 @@ gh variable set PAPER_TRADER_API_URL --body https://integrate.api.nvidia.com/v1
 gh variable set PAPER_TRADER_API_MODEL --body deepseek-ai/deepseek-v4.1-flash
 ```
 
-`PAPER_TRADER_API_RPM` and `PAPER_TRADER_API_TPM` set the requests and tokens allowed per minute (defaults 20 and 60,000). The client paces requests, retries transient failures and validates each answer against its JSON schema. DeepSeek answers without hidden thinking so the 2,500-token output budget goes to the structured answer. The dashboard records the model that actually answered each question.
+`PAPER_TRADER_API_RPM` and `PAPER_TRADER_API_TPM` set the requests and tokens allowed per minute (defaults 20 and 60,000). Workers reserve request and token quota under one shared limiter before sending, including the full output budget. The client paces requests, retries transient failures and validates each answer against its JSON schema. DeepSeek answers without hidden thinking so the 2,500-token output budget goes to the structured answer. The dashboard records the model that actually answered each question.
 
 [NVIDIA documents free endpoint access for prototyping](https://docs.api.nvidia.com/nim/docs/run-anywhere); provider availability, limits and terms can change. There is no paid API fallback or automatic purchase of credits. An unavailable endpoint falls back to the local model on the free public GitHub runner.
+
+`PAPER_TRADER_WORKERS` controls concurrent model tasks (default 8, range 1–32). The request/token limits remain shared across every worker and retry. More workers may hide provider latency, but do not bypass quotas or guarantee a proportional speedup. `PAPER_TRADER_API_TIMEOUT_SECONDS` sets each hosted request's timeout (default 900 seconds, range 1–3,600), with the existing retries and local fallback after persistent failures.
+
+The desk defaults to `--minutes 0`: research every candidate without the previous early time cutoff. A positive value opts into a finite research budget. Daily and replay jobs allow the GitHub-hosted maximum of six hours per job; the desk step has 345 minutes, leaving time to preserve evidence and publish. Thursday and Friday have separate job allowances. These are platform limits, not unlimited execution. See [GitHub Actions limits](https://docs.github.com/en/actions/reference/limits).
 
 **A local model as the fallback, and the default with no key.** Qwen3.5 9B (Apache-2.0, 4-bit, 5.7 GB) runs with llama.cpp on the runner. Any question the hosted model fails, whether from a rate limit, an outage, or an answer that does not match the required JSON shape, goes to the local model, so decisions can continue without the provider. After three failed questions in a row the hosted model is left alone for the rest of the run. Rust downloads llama.cpp and the model itself, pins each file to a Hugging Face commit and checks its SHA-256.
 
@@ -104,6 +110,7 @@ The dashboard's Ops tab shows how each run spent its time, so bottlenecks are ea
 
 - every stage of the day, and inside the data stage every source (screener, fund list, buzz sources, daily bars, settling the books)
 - each agent's calls, failures, total and slowest time, tokens read and written, and reading and writing speed
+- configured model workers and summed model-call time; overlapping calls can sum to more than the run's elapsed time
 - the ten slowest model calls
 - model runtime events: llama.cpp download, model download and server start times
 - every data source's requests, failures, average and slowest latency, and bytes
