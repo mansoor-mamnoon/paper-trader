@@ -1,0 +1,144 @@
+{
+  "day": "2026-11-12",
+  "cutoff": 1794521263.0,
+  "holdings": [
+    "OSW",
+    "PCOR",
+    "PNR",
+    "POOL",
+    "REAL",
+    "REPL",
+    "ROP",
+    "SITE",
+    "VFC",
+    "WING"
+  ],
+  "pending": {
+    "BP": "BUY",
+    "OSW": "SELL",
+    "OXY": "BUY",
+    "PCOR": "SELL",
+    "PNR": "SELL",
+    "POOL": "SELL",
+    "PSX": "BUY",
+    "REAL": "SELL",
+    "REPL": "SELL",
+    "ROP": "SELL",
+    "SITE": "SELL",
+    "SM": "BUY",
+    "VFC": "SELL",
+    "VG": "BUY",
+    "WING": "SELL"
+  },
+  "decisions": [
+    {
+      "day": "2026-11-12",
+      "at": 1794521263.0,
+      "symbol": "OSW",
+      "kind": "SELL",
+      "text": "Previous-desk momentum buy with no news case; analyst and skeptic agree there is no catalyst, buzz 0/3, volume 0.6x, bearish sector. Rule says sell a stock bought with no news case."
+    },
+    {
+      "day": "2026-11-12",
+      "at": 1794521263.0,
+      "symbol": "PCOR",
+      "kind": "SELL",
+      "text": "Only catalyst is a Jefferies sector top-pick nod, not a business event; +31.8% in 20 sessions and at its 3-month high on 0.5x volume, no crowd. Sell-side headline has no follow-through."
+    },
+    {
+      "day": "2026-11-12",
+      "at": 1794521263.0,
+      "symbol": "PNR",
+      "kind": "SELL",
+      "text": "No company-specific catalyst at all; analyst and skeptic agree. Up 27.5% over 20 sessions but rolling over (-2.3% 5d, -1.7% today) on 0.4x volume. Stretched momentum with nothing fresh."
+    },
+    {
+      "day": "2026-11-12",
+      "at": 1794521263.0,
+      "symbol": "POOL",
+      "kind": "SELL",
+      "text": "No catalyst, only a negative valuation piece and a dividend listicle; 20-session +26.7% is the move already spent, sitting 3% off highs and drifting on 0.6x volume. Nothing to buy here."
+    },
+    {
+      "day": "2026-11-12",
+      "at": 1794521263.0,
+      "symbol": "REAL",
+      "kind": "SELL",
+      "text": "Sole headline is a noise-labeled price recap, buzz 0/3; bearish retail tape, 1.0x volume, only 2 Reddit mentions. Previous-desk momentum buy with no news case; case broken."
+    },
+    {
+      "day": "2026-11-12",
+      "at": 1794521263.0,
+      "symbol": "REPL",
+      "kind": "SELL",
+      "text": "Tudriqev launch is a real event, but the headline credits the entire 80%-in-a-month move to it: +87.1% over 20 sessions, volume only 0.9x, no chatter. Catalyst already played out; late entry."
+    },
+    {
+      "day": "2026-11-12",
+      "at": 1794521263.0,
+      "symbol": "ROP",
+      "kind": "SELL",
+      "text": "Skeptic is right: the Jefferies 'construction software' top-pick headline never names Roper, a diversified industrial. Catalyst may not even apply, 0.5x volume, weak tape. Case broken."
+    },
+    {
+      "day": "2026-11-12",
+      "at": 1794521263.0,
+      "symbol": "SITE",
+      "kind": "SELL",
+      "text": "No headlines, no catalyst, weak retail tape (October sales, holiday worry); 19.4% 20-session run on 0.6x volume with no chatter. Previous-desk momentum buy with no news case."
+    },
+    {
+      "day": "2026-11-12",
+      "at": 1794521263.0,
+      "symbol": "VFC",
+      "kind": "SELL",
+      "text": "Only item is a store-opening PR, not a real partnership surprise, buzz thin at 0.5x volume, -3.0% today and down 3.5% since purchase. Weak holiday retail backdrop; no follow-through."
+    },
+    {
+      "day": "2026-11-12",
+      "at": 1794521263.0,
+      "symbol": "WING",
+      "kind": "SELL",
+      "text": "Lone headline is a noise-labeled income comparison, no company-specific catalyst, 0.6x volume, no chatter, -4.5% today. Previous-desk momentum buy with no news case."
+    },
+    {
+      "day": "2026-11-12",
+      "at": 1794521263.0,
+      "symbol": "OXY",
+      "kind": "BUY",
+      "text": "Company-specific Q3 earnings beat on strong oil prices, the cleanest catalyst here, prices aligned with firming crude on Iran tensions, and volume at 1.8x normal signals real flow rather than chatter. (weight 3)"
+    },
+    {
+      "day": "2026-11-12",
+      "at": 1794521263.0,
+      "symbol": "SM",
+      "kind": "BUY",
+      "text": "Moody's upgrade to Ba2 on rapid post-merger deleveraging is a fresh company-specific catalyst, and the stock leads the sector today (+5.2%) on 1.3x volume within a broad crude-driven energy rally. (weight 2)"
+    },
+    {
+      "day": "2026-11-12",
+      "at": 1794521263.0,
+      "symbol": "VG",
+      "kind": "BUY",
+      "text": "Q3 call highlights a higher outlook and record earnings, a genuine company-specific beat-and-raise catalyst paired with the crude tailwind, though only 0.8x volume and one Reddit mention warrant a smaller size. (weight 2)"
+    },
+    {
+      "day": "2026-11-12",
+      "at": 1794521263.0,
+      "symbol": "BP",
+      "kind": "BUY",
+      "text": "Completed $6B Castrol stake sale genuinely strengthens the balance sheet and rides a sector with 74% of names up; volume is light at 0.7x, so a modest position is appropriate. (weight 1)"
+    },
+    {
+      "day": "2026-11-12",
+      "at": 1794521263.0,
+      "symbol": "PSX",
+      "kind": "BUY",
+      "text": "Wider heavy crude discounts are a real margin tailwind for the refiner within the broad crude rally, but the catalyst is framed as a question and volume is just 0.9x, so the smallest weight. (weight 1)"
+    }
+  ],
+  "new_fills": [],
+  "problems": [],
+  "calls": 75,
+  "deepseek_calls": 75
+}
