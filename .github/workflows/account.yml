@@ -30,7 +30,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 340
+    timeout-minutes: 360
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -64,6 +64,7 @@ jobs:
           mkdir -p "account/archive/rerun-${GITHUB_RUN_ID}"
           cp account/account.sqlite "account/archive/rerun-${GITHUB_RUN_ID}/account.sqlite"
       - name: Run the desk and export the dashboard
+        timeout-minutes: 345
         id: desk
         continue-on-error: true
         env:
@@ -74,10 +75,12 @@ jobs:
           PAPER_TRADER_API_MODEL: ${{ vars.PAPER_TRADER_API_MODEL }}
           PAPER_TRADER_API_RPM: ${{ vars.PAPER_TRADER_API_RPM }}
           PAPER_TRADER_API_TPM: ${{ vars.PAPER_TRADER_API_TPM }}
+          PAPER_TRADER_WORKERS: ${{ vars.PAPER_TRADER_WORKERS }}
+          PAPER_TRADER_API_TIMEOUT_SECONDS: ${{ vars.PAPER_TRADER_API_TIMEOUT_SECONDS }}
           FORCE_RERUN: ${{ inputs.force }}
           AS_OF: ${{ inputs.as_of }}
         run: |
-          args=(run --db account/account.sqlite --output account/site --minutes 250)
+          args=(run --db account/account.sqlite --output account/site --minutes 0)
           if [ "$FORCE_RERUN" = true ]; then args+=(--force); fi
           if [ -n "$AS_OF" ]; then args+=(--as-of "$AS_OF"); fi
           ./target/release/paper-trader "${args[@]}"

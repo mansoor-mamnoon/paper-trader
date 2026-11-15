@@ -26,6 +26,8 @@ pub struct Remote {
     pub rpm: usize,
     /// Tokens allowed per minute, prompt and answer together.
     pub tpm: u64,
+    /// Maximum time for one hosted request, including provider queueing.
+    pub timeout: Duration,
     /// Whether the provider accepts a JSON schema in `response_format`.
     strict: AtomicBool,
     recent: Mutex<VecDeque<(Instant, u64)>>,
@@ -102,6 +104,12 @@ impl Remote {
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(60_000)
                 .max(1),
+            timeout: Duration::from_secs(
+                var("PAPER_TRADER_API_TIMEOUT_SECONDS")
+                    .and_then(|v| v.parse().ok())
+                    .unwrap_or(900)
+                    .clamp(1, 3600),
+            ),
             strict: AtomicBool::new(true),
             recent: Mutex::new(VecDeque::new()),
             failures: AtomicU32::new(0),
@@ -190,7 +198,7 @@ impl Remote {
             &format!("{}/chat/completions", self.url),
             &self.key,
             &body.to_string(),
-            Duration::from_secs(300),
+            self.timeout,
         )
     }
 
@@ -289,6 +297,7 @@ mod tests {
             model: "m".into(),
             rpm,
             tpm,
+            timeout: Duration::from_secs(1),
             strict: AtomicBool::new(true),
             recent: Mutex::new(VecDeque::new()),
             failures: AtomicU32::new(0),

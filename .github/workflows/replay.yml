@@ -12,13 +12,15 @@ concurrency:
 jobs:
   thursday:
     runs-on: ubuntu-latest
-    timeout-minutes: 340
+    timeout-minutes: 360
     env:
       PAPER_TRADER_API_KEY: ${{ secrets.PAPER_TRADER_API_KEY }}
       PAPER_TRADER_API_URL: ${{ vars.PAPER_TRADER_API_URL }}
       PAPER_TRADER_API_MODEL: ${{ vars.PAPER_TRADER_API_MODEL }}
       PAPER_TRADER_API_RPM: ${{ vars.PAPER_TRADER_API_RPM }}
       PAPER_TRADER_API_TPM: ${{ vars.PAPER_TRADER_API_TPM }}
+      PAPER_TRADER_WORKERS: ${{ vars.PAPER_TRADER_WORKERS }}
+      PAPER_TRADER_API_TIMEOUT_SECONDS: ${{ vars.PAPER_TRADER_API_TIMEOUT_SECONDS }}
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
@@ -49,10 +51,11 @@ jobs:
           git diff --cached --quiet || git commit -m 'Archive current account and original Thursday baseline for DeepSeek replay'
           git push origin HEAD:account
       - name: Decide Thursday orders using only Thursday evidence
+        timeout-minutes: 345
         run: |
           ./target/release/paper-trader run \
             --db "account/archive/deepseek-replay-${GITHUB_RUN_ID}/thursday.sqlite" \
-            --output "$RUNNER_TEMP/thursday-site" --minutes 250 --force \
+            --output "$RUNNER_TEMP/thursday-site" --minutes 0 --force \
             --as-of 2026-11-12T22:07:43.379Z
       - name: Validate Thursday decisions
         run: |
@@ -74,13 +77,15 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    timeout-minutes: 340
+    timeout-minutes: 360
     env:
       PAPER_TRADER_API_KEY: ${{ secrets.PAPER_TRADER_API_KEY }}
       PAPER_TRADER_API_URL: ${{ vars.PAPER_TRADER_API_URL }}
       PAPER_TRADER_API_MODEL: ${{ vars.PAPER_TRADER_API_MODEL }}
       PAPER_TRADER_API_RPM: ${{ vars.PAPER_TRADER_API_RPM }}
       PAPER_TRADER_API_TPM: ${{ vars.PAPER_TRADER_API_TPM }}
+      PAPER_TRADER_WORKERS: ${{ vars.PAPER_TRADER_WORKERS }}
+      PAPER_TRADER_API_TIMEOUT_SECONDS: ${{ vars.PAPER_TRADER_API_TIMEOUT_SECONDS }}
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
@@ -102,9 +107,10 @@ jobs:
           test -s "account/archive/deepseek-replay-${GITHUB_RUN_ID}/thursday.json"
           cp "account/archive/deepseek-replay-${GITHUB_RUN_ID}/thursday.sqlite" "$RUNNER_TEMP/friday.sqlite"
       - name: Fill Thursday orders at Friday open and decide Friday orders
+        timeout-minutes: 345
         run: |
           ./target/release/paper-trader run --db "$RUNNER_TEMP/friday.sqlite" \
-            --output "$RUNNER_TEMP/friday-site" --minutes 250 --force \
+            --output "$RUNNER_TEMP/friday-site" --minutes 0 --force \
             --as-of 2026-11-13T22:07:43.379Z
       - name: Validate Friday fills and decisions before replacing the live account
         run: |

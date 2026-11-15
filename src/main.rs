@@ -21,8 +21,8 @@ enum Cli {
         /// Run even if the latest session was already processed
         #[arg(long)]
         force: bool,
-        /// Minutes the desk may spend before it stops arguing new candidates
-        #[arg(long, default_value_t = 240.0)]
+        /// Research budget in minutes; zero researches every candidate without an early cutoff
+        #[arg(long, default_value_t = 0.0)]
         minutes: f64,
         /// Run as of an earlier moment (RFC 3339 or epoch seconds): every source is cut there
         #[arg(long)]
