@@ -1,0 +1,128 @@
+{
+  "model": "deepseek-ai/deepseek-v4.1-flash",
+  "timeout_seconds": 180,
+  "retries": 0,
+  "rounds": [
+    {
+      "workers": 1,
+      "seconds": 724.188074691,
+      "samples": [
+        {
+          "question": "classify",
+          "seconds": 183.516106356,
+          "correct": false,
+          "error": "timeout: global"
+        },
+        {
+          "question": "review",
+          "seconds": 180.22393366,
+          "correct": false,
+          "error": "timeout: global"
+        },
+        {
+          "question": "pick",
+          "seconds": 180.223965489,
+          "correct": false,
+          "error": "timeout: global"
+        },
+        {
+          "question": "classify",
+          "seconds": 180.224039742,
+          "correct": false,
+          "error": "timeout: global"
+        }
+      ]
+    },
+    {
+      "workers": 2,
+      "seconds": 360.447854416,
+      "samples": [
+        {
+          "question": "classify",
+          "seconds": 180.224289332,
+          "correct": false,
+          "error": "timeout: global"
+        },
+        {
+          "question": "review",
+          "seconds": 180.223651039,
+          "correct": false,
+          "error": "timeout: global"
+        },
+        {
+          "question": "pick",
+          "seconds": 180.224005173,
+          "correct": false,
+          "error": "timeout: global"
+        },
+        {
+          "question": "classify",
+          "seconds": 180.22345559,
+          "correct": false,
+          "error": "timeout: global"
+        }
+      ]
+    },
+    {
+      "workers": 4,
+      "seconds": 180.223948935,
+      "samples": [
+        {
+          "question": "classify",
+          "seconds": 180.223830174,
+          "correct": false,
+          "error": "timeout: global"
+        },
+        {
+          "question": "review",
+          "seconds": 180.223573464,
+          "correct": false,
+          "error": "timeout: global"
+        },
+        {
+          "question": "pick",
+          "seconds": 180.223397619,
+          "correct": false,
+          "error": "timeout: global"
+        },
+        {
+          "question": "classify",
+          "seconds": 180.223194949,
+          "correct": false,
+          "error": "timeout: global"
+        }
+      ]
+    },
+    {
+      "workers": 1,
+      "seconds": 720.895439947,
+      "samples": [
+        {
+          "question": "classify",
+          "seconds": 180.223445824,
+          "correct": false,
+          "error": "timeout: global"
+        },
+        {
+          "question": "review",
+          "seconds": 180.223981224,
+          "correct": false,
+          "error": "timeout: global"
+        },
+        {
+          "question": "pick",
+          "seconds": 180.224005541,
+          "correct": false,
+          "error": "timeout: global"
+        },
+        {
+          "question": "classify",
+          "seconds": 180.223983854,
+          "correct": false,
+          "error": "timeout: global"
+        }
+      ]
+    }
+  ],
+  "selected_workers": null
+}
