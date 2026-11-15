@@ -62,7 +62,7 @@ gh variable set PAPER_TRADER_API_URL --body https://integrate.api.nvidia.com/v1
 gh variable set PAPER_TRADER_API_MODEL --body deepseek-ai/deepseek-v4.1-flash
 ```
 
-`PAPER_TRADER_API_RPM` and `PAPER_TRADER_API_TPM` set the requests and tokens allowed per minute (defaults 20 and 60,000). Workers reserve request and token quota under one shared limiter before sending, including the full output budget. The client paces requests, retries transient failures and validates each answer against its JSON schema. DeepSeek answers without hidden thinking so the 2,500-token output budget goes to the structured answer. The dashboard records the model that actually answered each question.
+`PAPER_TRADER_API_RPM` and `PAPER_TRADER_API_TPM` set the requests and tokens allowed per minute (defaults 20 and 60,000). Workers reserve request and token quota under one shared limiter before sending, including the full output budget. The client paces requests, retries transient failures and validates each answer against its JSON schema. The client requests chat mode using DeepSeek’s documented `thinking_mode="chat"` and `enable_thinking=false` template settings, leaving the 2,500-token output budget for the structured answer. Returned reasoning-token counts and reasoning-content length are logged when available. The dashboard records the model that actually answered each question.
 
 [NVIDIA documents free endpoint access for prototyping](https://docs.api.nvidia.com/nim/docs/run-anywhere); provider availability, limits and terms can change. There is no paid API fallback or automatic purchase of credits. An unavailable endpoint falls back to the local model on the free public GitHub runner.
 
@@ -78,6 +78,8 @@ gh workflow run tune.yml --ref main
 # Or measure locally with PAPER_TRADER_API_KEY in the environment:
 ./target/release/paper-trader tune --levels 1,2,4,1 --samples 4 --timeout 180 --output concurrency.json
 ```
+
+An earlier `thinking: false` template argument was replaced with the documented chat-mode settings before remeasurement; the old flag was not evidence that reasoning was disabled. See the [published DeepSeek template](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash/blob/main/chat_template.jinja).
 
 Each hosted question now has a request ID linked to its agent and stock/sector. Progress logs report quota wait, request start, HTTP status and elapsed time, transport failures, and each retry. A heartbeat alone indicates an active task, not a completed answer.
 
