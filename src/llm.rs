@@ -9,11 +9,11 @@ use anyhow::{Context, Result, anyhow, bail};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
-use std::cell::RefCell;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
+use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 /// The llama.cpp release the runtime uses.
@@ -63,6 +63,14 @@ pub trait Brain {
         user: &str,
         schema: &Value,
     ) -> Result<Value>;
+    /// A thread-safe view for independent questions, when this implementation supports it.
+    fn shared(&self) -> Option<&(dyn Brain + Sync)> {
+        None
+    }
+    /// The number of independent questions that may run at once.
+    fn workers(&self) -> usize {
+        1
+    }
     /// The display name of the model that answers for `agent`.
     fn model_name(&self, agent: Agent) -> String;
     /// Every call made since the last time this was asked.
@@ -70,6 +78,26 @@ pub trait Brain {
     /// Model downloads and loads since the last time this was asked.
     fn take_events(&self) -> Vec<ModelEvent> {
         Vec::new()
+    }
+}
+
+/// Run independent agent tasks concurrently when the brain supports shared access.
+/// Test brains and local-only inference keep their sequential behavior.
+pub fn map_questions<T: Sync, R: Send>(
+    brain: &dyn Brain,
+    items: &[T],
+    work: impl Fn(&dyn Brain, &T) -> R + Sync,
+) -> Vec<R> {
+    match brain.shared() {
+        Some(shared) => {
+            let workers = brain.workers();
+            progress::log(&format!(
+                "{} independent tasks, up to {workers} workers",
+                items.len()
+            ));
+            crate::parallel::map(items, workers, |item| work(shared, item))
+        }
+        None => items.iter().map(|item| work(brain, item)).collect(),
     }
 }
 
@@ -211,11 +239,13 @@ pub struct LocalBrain {
     port: u16,
     /// Delete a model file once the desk has moved on, to bound disk use.
     prune: bool,
-    running: RefCell<Option<Running>>,
-    calls: RefCell<Vec<Call>>,
-    events: RefCell<Vec<ModelEvent>>,
+    running: Mutex<Option<Running>>,
+    calls: Mutex<Vec<Call>>,
+    events: Mutex<Vec<ModelEvent>>,
     /// A larger hosted model asked first, when one is configured.
     remote: Option<crate::remote::Remote>,
+    /// One local server can answer only one question at a time.
+    local: Mutex<()>,
 }
 
 impl std::fmt::Debug for LocalBrain {
@@ -253,10 +283,11 @@ impl LocalBrain {
             server: PathBuf::new(),
             port,
             prune: std::env::var("PAPER_TRADER_PRUNE_MODELS").is_ok(),
-            running: RefCell::new(None),
-            calls: RefCell::new(Vec::new()),
-            events: RefCell::new(Vec::new()),
+            running: Mutex::new(None),
+            calls: Mutex::new(Vec::new()),
+            events: Mutex::new(Vec::new()),
             remote: crate::remote::Remote::from_env(),
+            local: Mutex::new(()),
         })
     }
 
@@ -267,7 +298,7 @@ impl LocalBrain {
 
     /// Stop the server. The next question starts it again.
     pub fn stop(&self) {
-        if let Some(mut running) = self.running.borrow_mut().take() {
+        if let Some(mut running) = self.running.lock().unwrap().take() {
             let _ = running.child.kill();
             let _ = running.child.wait();
             if self.prune {
@@ -292,7 +323,7 @@ impl LocalBrain {
         for attempt in 1..=3 {
             match download(spec, &path) {
                 Ok(()) => {
-                    self.events.borrow_mut().push(ModelEvent {
+                    self.events.lock().unwrap().push(ModelEvent {
                         kind: "download".into(),
                         model: spec.id.into(),
                         seconds: started.elapsed().as_secs_f64(),
@@ -320,7 +351,8 @@ impl LocalBrain {
     pub fn load(&self, spec: &'static ModelSpec) -> Result<()> {
         if self
             .running
-            .borrow()
+            .lock()
+            .unwrap()
             .as_ref()
             .is_some_and(|r| r.spec.id == spec.id)
         {
@@ -330,7 +362,7 @@ impl LocalBrain {
         let server = if self.server.as_os_str().is_empty() {
             let started = Instant::now();
             let server = ensure_server()?;
-            self.events.borrow_mut().push(ModelEvent {
+            self.events.lock().unwrap().push(ModelEvent {
                 kind: "runtime".into(),
                 model: format!("llama.cpp {LLAMA_BUILD}"),
                 seconds: started.elapsed().as_secs_f64(),
@@ -380,13 +412,13 @@ impl LocalBrain {
             }
             std::thread::sleep(Duration::from_millis(1500));
         }
-        self.events.borrow_mut().push(ModelEvent {
+        self.events.lock().unwrap().push(ModelEvent {
             kind: "load".into(),
             model: spec.id.into(),
             seconds: started.elapsed().as_secs_f64(),
             detail: format!("context {} tokens, {threads} threads", spec.ctx),
         });
-        *self.running.borrow_mut() = Some(Running { spec, child, path });
+        *self.running.lock().unwrap() = Some(Running { spec, child, path });
         Ok(())
     }
 
@@ -446,6 +478,7 @@ impl LocalBrain {
         user: &str,
         schema: &Value,
     ) -> Result<(Value, String, Stats)> {
+        let _local = self.local.lock().unwrap();
         self.load(spec)?;
         let mut last = anyhow!("no attempt made");
         for attempt in 0..2 {
@@ -462,6 +495,21 @@ impl LocalBrain {
 }
 
 impl Brain for LocalBrain {
+    fn shared(&self) -> Option<&(dyn Brain + Sync)> {
+        Some(self)
+    }
+
+    fn workers(&self) -> usize {
+        if self.remote.is_none() {
+            return 1;
+        }
+        std::env::var("PAPER_TRADER_WORKERS")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(8)
+            .clamp(1, 32)
+    }
+
     fn ask(
         &self,
         agent: Agent,
@@ -487,7 +535,7 @@ impl Brain for LocalBrain {
                         "{} {subject}: hosted model failed ({error}); asking the local model",
                         agent.name()
                     ));
-                    self.events.borrow_mut().push(ModelEvent {
+                    self.events.lock().unwrap().push(ModelEvent {
                         kind: "fallback".into(),
                         model: remote.model.clone(),
                         seconds: started.elapsed().as_secs_f64(),
@@ -531,7 +579,7 @@ impl Brain for LocalBrain {
                 Err(error)
             }
         };
-        self.calls.borrow_mut().push(call);
+        self.calls.lock().unwrap().push(call);
         result
     }
 
@@ -547,11 +595,11 @@ impl Brain for LocalBrain {
     }
 
     fn take_calls(&self) -> Vec<Call> {
-        std::mem::take(&mut *self.calls.borrow_mut())
+        std::mem::take(&mut *self.calls.lock().unwrap())
     }
 
     fn take_events(&self) -> Vec<ModelEvent> {
-        std::mem::take(&mut *self.events.borrow_mut())
+        std::mem::take(&mut *self.events.lock().unwrap())
     }
 }
 
@@ -589,10 +637,11 @@ mod tests {
             server: dir.join("missing-llama-server"),
             port: 18999,
             prune: false,
-            running: RefCell::new(None),
-            calls: RefCell::new(Vec::new()),
-            events: RefCell::new(Vec::new()),
+            running: Mutex::new(None),
+            calls: Mutex::new(Vec::new()),
+            events: Mutex::new(Vec::new()),
             remote: None,
+            local: Mutex::new(()),
         };
         let error = brain
             .ask(Agent::Manager, "book", "s", "u", &json!({}))

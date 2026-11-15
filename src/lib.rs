@@ -16,6 +16,7 @@ pub mod market;
 pub mod metrics;
 pub mod models;
 pub mod news;
+pub mod parallel;
 pub mod progress;
 pub mod remote;
 pub mod replay;
