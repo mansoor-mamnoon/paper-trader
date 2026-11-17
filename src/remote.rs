@@ -96,7 +96,7 @@ impl Remote {
                 .to_string(),
             key: key.trim().to_string(),
             model: var("PAPER_TRADER_API_MODEL")
-                .unwrap_or_else(|| "deepseek-ai/deepseek-v4.1-flash".into()),
+                .unwrap_or_else(|| "nvidia/nemotron-3-ultra-550b-a55b".into()),
             rpm: var("PAPER_TRADER_API_RPM")
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(20)

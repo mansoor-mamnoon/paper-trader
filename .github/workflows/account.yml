@@ -68,7 +68,7 @@ jobs:
         id: desk
         continue-on-error: true
         env:
-          # DeepSeek V4.1 Flash via NVIDIA; the key stays in Actions secrets.
+          # Nemotron 3 Ultra 550B via NVIDIA; the key stays in Actions secrets.
           # The local model remains available if the free endpoint is unavailable.
           PAPER_TRADER_API_KEY: ${{ secrets.PAPER_TRADER_API_KEY }}
           PAPER_TRADER_API_URL: ${{ vars.PAPER_TRADER_API_URL }}

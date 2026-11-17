@@ -3,7 +3,7 @@
 
 # Paper Trader
 
-A $1,000 simulated account run by DeepSeek V4.1 Flash through NVIDIA’s free hosted API, with a local model available as a fallback. They trade news buzz sector by sector, decide every holding every day, and publish every decision.
+A $1,000 simulated account run by Nemotron 3 Ultra 550B through NVIDIA’s free hosted API, with a local model available as a fallback. They trade news buzz sector by sector, decide every holding every day, and publish every decision.
 
 [Dashboard](https://mansoor-mamnoon.github.io/paper-trader/) · [Ops](https://mansoor-mamnoon.github.io/paper-trader/#ops) · [Actions](https://github.com/mansoor-mamnoon/paper-trader/actions)
 </div>
@@ -53,16 +53,16 @@ Everything lives in one SQLite file on the `account` branch:
 
 The desk uses three kinds of model, each for what it is good at.
 
-**DeepSeek V4.1 Flash makes the decisions.** All six agent roles use `deepseek-ai/deepseek-v4.1-flash` through NVIDIA's OpenAI-compatible endpoint. The repository is configured with `PAPER_TRADER_API_KEY` in GitHub Actions secrets, and the URL and model in repository variables. The key is never exported to the dashboard or committed. A live authenticated request succeeded on 14 November 2026.
+**Nemotron 3 Ultra 550B makes the decisions.** All six agent roles use `nvidia/nemotron-3-ultra-550b-a55b` through NVIDIA's OpenAI-compatible endpoint. The repository is configured with `PAPER_TRADER_API_KEY` in GitHub Actions secrets, and the URL and model in repository variables. The key is never exported to the dashboard or committed. A live authenticated structured-output request succeeded on 17 November 2026. NVIDIA retired the previous DeepSeek V4.1 Flash endpoint on 16 November 2026.
 
 ```sh
 # For a separate installation; never put the key in source code.
 gh secret set PAPER_TRADER_API_KEY
 gh variable set PAPER_TRADER_API_URL --body https://integrate.api.nvidia.com/v1
-gh variable set PAPER_TRADER_API_MODEL --body deepseek-ai/deepseek-v4.1-flash
+gh variable set PAPER_TRADER_API_MODEL --body nvidia/nemotron-3-ultra-550b-a55b
 ```
 
-`PAPER_TRADER_API_RPM` and `PAPER_TRADER_API_TPM` set the requests and tokens allowed per minute (defaults 20 and 60,000). Workers reserve request and token quota under one shared limiter before sending, including the full output budget. The client paces requests, retries transient failures and validates each answer against its JSON schema. The client requests chat mode using DeepSeek’s documented `thinking_mode="chat"` and `enable_thinking=false` template settings, leaving the 2,500-token output budget for the structured answer. Returned reasoning-token counts and reasoning-content length are logged when available. The dashboard records the model that actually answered each question.
+`PAPER_TRADER_API_RPM` and `PAPER_TRADER_API_TPM` set the requests and tokens allowed per minute (defaults 20 and 60,000). Workers reserve request and token quota under one shared limiter before sending, including the full output budget. The client paces requests, retries transient failures and validates each answer against its JSON schema. Nemotron uses the standard chat-completions request with a 2,500-token output budget, including any reasoning tokens. The DeepSeek-specific chat-template settings are not sent to Nemotron. Returned reasoning-token counts and reasoning-content length are logged when available. The dashboard records the model that actually answered each question.
 
 [NVIDIA documents free endpoint access for prototyping](https://docs.api.nvidia.com/nim/docs/run-anywhere); provider availability, limits and terms can change. There is no paid API fallback or automatic purchase of credits. An unavailable endpoint falls back to the local model on the free public GitHub runner.
 
@@ -83,7 +83,7 @@ gh workflow run tune.yml --ref main
 
 An earlier `thinking: false` template argument was replaced with the documented chat-mode settings before remeasurement; the old flag was not evidence that reasoning was disabled. See the [published DeepSeek template](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash/blob/main/chat_template.jinja).
 
-Measured on 15 November 2026 UTC, using the corrected chat-mode request ([run](https://github.com/mansoor-mamnoon/paper-trader/actions/runs/43666102619), [raw measurements](docs/concurrency-2026-11-15-180s.json)):
+Historical DeepSeek measurements on 15 November 2026 UTC, using the corrected chat-mode request ([run](https://github.com/mansoor-mamnoon/paper-trader/actions/runs/43666102619), [raw measurements](docs/concurrency-2026-11-15-180s.json)):
 
 | Workers | Correct / attempted | Round time |
 |---|---:|---:|
@@ -132,7 +132,7 @@ First results, on an Apple M2 Pro (Metal), 13 November 2026:
 | Qwen3.5 9B | 8 / 8 | 3 / 3 | 2 / 2 | 26 tokens/s |
 | Qwen3 4B Instruct | 8 / 8 | 3 / 3 | 2 / 2 | 48 tokens/s |
 
-Both models answered every question correctly, so these questions are too easy to separate them. DeepSeek now handles the open-ended work; the 9B model remains available for fallback. The runner has no GPU, so it is several times slower there. The questions should get harder as the journal collects real cases the desk got wrong.
+Both models answered every question correctly, so these questions are too easy to separate them. Nemotron 3 Ultra now handles the open-ended work; the 9B model remains available for fallback. The runner has no GPU, so it is several times slower there. The questions should get harder as the journal collects real cases the desk got wrong.
 
 ## Why the desk is built this way
 
@@ -168,7 +168,7 @@ cargo build --release --locked
 ./target/release/paper-trader bench --models qwen3.5-9b,qwen3-4b-instruct
 ```
 
-With `PAPER_TRADER_API_KEY` set, DeepSeek answers first and no local runtime is downloaded unless a fallback is needed. Without a key, the first question downloads llama.cpp and the local model (5.7 GB) to `~/.cache/paper-trader-llm`. Public market data and local inference need no paid service. Open `site/index.html` after copying `web/*` into `site/`.
+With `PAPER_TRADER_API_KEY` set, Nemotron 3 Ultra answers first and no local runtime is downloaded unless a fallback is needed. Without a key, the first question downloads llama.cpp and the local model (5.7 GB) to `~/.cache/paper-trader-llm`. Public market data and local inference need no paid service. Open `site/index.html` after copying `web/*` into `site/`.
 
 To run the desk on GitHub now instead of waiting for the evening schedule:
 

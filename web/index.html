@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
 <title>Paper Trader</title>
-<meta name="description" content="A $1,000 paper account run by DeepSeek V4.1 Flash with a local fallback that trade news buzz, sector by sector. Every decision is public.">
+<meta name="description" content="A $1,000 paper account run by Nemotron 3 Ultra 550B with a local fallback that trade news buzz, sector by sector. Every decision is public.">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap">
@@ -108,7 +108,7 @@
       <div class="card"><h2>Rules no model can change</h2><ul class="list small" id="rules" style="margin-top:6px"></ul></div>
     </div>
     <div class="card"><h2>Data sources</h2><ul class="list small" id="sources" style="margin-top:6px"></ul></div>
-    <div class="card"><h2>Which model answers</h2><p class="small" style="margin-top:8px">DeepSeek V4.1 Flash on NVIDIA answers every agent role first. If it is rate-limited, down, or gives an answer that does not match the required shape, the same question goes to the local Qwen3.5 9B on the runner. The Ops tab shows the model that actually answered each call and every fallback. The key stays in GitHub Actions secrets.</p></div>
+    <div class="card"><h2>Which model answers</h2><p class="small" style="margin-top:8px">Nemotron 3 Ultra 550B on NVIDIA answers every agent role first. If it is rate-limited, down, or gives an answer that does not match the required shape, the same question goes to the local Qwen3.5 9B on the runner. The Ops tab shows the model that actually answered each call and every fallback. The key stays in GitHub Actions secrets.</p></div>
     <div class="card"><h2>Parallel research</h2><p class="small" style="margin-top:8px">Scouts, headline classification and debates for different stocks support concurrent execution. Benchmarks compare worker counts before choosing settings for a replay. Each skeptic waits for its analyst; the manager waits for all research. Research covers every candidate without an early cutoff, within GitHub’s six-hour session limit. Ops separates elapsed run time from summed time across overlapping calls. Actions logs show individual requests, failures, retries and reported reasoning usage.</p></div>
     <div class="card"><h2>Provider measurements</h2><p class="small" style="margin-top:8px">On 15 November 2026 UTC, the three-minute-deadline test completed 0 of 16 requests. With a ten-minute deadline, 3 of 16 succeeded; the rest returned provider errors. Neither test qualified a worker count for the replay. Longer follow-ups are dispatched directly by the measurement job; no unverified setting starts a replay. <a href="https://github.com/mansoor-mamnoon/paper-trader/actions/workflows/tune.yml">View current measurements</a>.</p></div>
     <div class="card"><h2>Historical replays</h2><p class="small" style="margin-top:8px">A replay runs sessions in order: decisions made after Thursday’s close fill at Friday’s open, and Friday’s desk then uses that resulting portfolio. Future price bars and dated headlines are excluded; historical trending lists are omitted. Replays remain simulations, with limitations in historical data and model knowledge.</p></div>
