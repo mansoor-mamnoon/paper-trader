@@ -3,7 +3,7 @@
 
 # Paper Trader
 
-A $1,000 simulated account run by Nemotron 3 Ultra 550B through NVIDIA’s free hosted API, with a local model available as a fallback. They trade news buzz sector by sector, decide every holding every day, and publish every decision.
+A $1,000 simulated account run by NVIDIA Nemotron 3 Ultra 550B. One hosted model plays all six roles: scout, strategist, classifier, analyst, skeptic and manager. The desk researches news buzz sector by sector after the US close and publishes every decision, with local Qwen3.5 9B inference available as a fallback.
 
 [Dashboard](https://mansoor-mamnoon.github.io/paper-trader/) · [Ops](https://mansoor-mamnoon.github.io/paper-trader/#ops) · [Actions](https://github.com/mansoor-mamnoon/paper-trader/actions)
 </div>
@@ -53,6 +53,12 @@ Everything lives in one SQLite file on the `account` branch:
 
 The desk uses three kinds of model, each for what it is good at.
 
+| Work | Model | Where it runs |
+|---|---|---|
+| Scout, strategist, classifier, analyst, skeptic and manager | NVIDIA Nemotron 3 Ultra 550B (`nvidia/nemotron-3-ultra-550b-a55b`) | NVIDIA hosted API |
+| Any agent question that cannot be answered by the hosted model | Qwen3.5 9B | Local inference on the GitHub runner |
+| Headline tone across the screened stocks | ProsusAI FinBERT | Rust on the GitHub runner |
+
 **Nemotron 3 Ultra 550B makes the decisions.** All six agent roles use `nvidia/nemotron-3-ultra-550b-a55b` through NVIDIA's OpenAI-compatible endpoint. The repository is configured with `PAPER_TRADER_API_KEY` in GitHub Actions secrets, and the URL and model in repository variables. The key is never exported to the dashboard or committed. A live authenticated structured-output request succeeded on 17 November 2026. NVIDIA retired the previous DeepSeek V4.1 Flash endpoint on 16 November 2026.
 
 ```sh
@@ -68,7 +74,9 @@ gh variable set PAPER_TRADER_API_MODEL --body nvidia/nemotron-3-ultra-550b-a55b
 
 `PAPER_TRADER_WORKERS` controls concurrent model tasks (safe default 1, range 1–32). The request/token limits remain shared across every worker and retry. More workers may hide provider latency, but do not bypass quotas or guarantee a proportional speedup. `PAPER_TRADER_API_TIMEOUT_SECONDS` sets each hosted request's timeout (default 900 seconds, range 1–3,600), with the existing retries and local fallback after persistent failures.
 
-The manual **Measure concurrency and replay** workflow measures 1, 2, and 4 workers, then repeats the 1-worker baseline to expose changing provider conditions. Each round uses the same four known-answer desk questions and the production Rust client, with a 180-second request timeout, no retries and no local fallback. A level is eligible only when all four answers are correct; higher concurrency must improve correct answers per minute by at least 15%. The last measurement of a level is used. This is a small operational sample, not a permanent provider-capacity guarantee or a test of trading profitability.
+The manual **Measure concurrency and replay** workflow was built for the previous DeepSeek desk. Its replay validator still requires DeepSeek calls and its queue snapshot targets that retired endpoint; the automatic replay path has not been migrated to Nemotron. Daily account runs use Nemotron independently of this historical replay tooling.
+
+The measurement job measures 1, 2, and 4 workers, then repeats the 1-worker baseline to expose changing provider conditions. Each round uses the same four known-answer desk questions and the production Rust client, with a 180-second request timeout, no retries and no local fallback. A level is eligible only when all four answers are correct; higher concurrency must improve correct answers per minute by at least 15%. The last measurement of a level is used. This is a small operational sample, not a permanent provider-capacity guarantee or a test of trading profitability.
 
 The optional `timeout_seconds` workflow input accepts 180, 600, or 900 seconds per request; the default is 180. A failed short-deadline round proves that no level met that deadline, not that requests can never complete. The benchmark also captures NVIDIA’s public model queue with a timestamp as supporting context, without assuming it gives an exact wait time for our API requests.
 
@@ -81,7 +89,7 @@ gh workflow run tune.yml --ref main
 ./target/release/paper-trader tune --levels 1,2,4,1 --samples 4 --timeout 180 --output concurrency.json
 ```
 
-An earlier `thinking: false` template argument was replaced with the documented chat-mode settings before remeasurement; the old flag was not evidence that reasoning was disabled. See the [published DeepSeek template](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash/blob/main/chat_template.jinja).
+For those historical DeepSeek measurements, an earlier `thinking: false` template argument was replaced with the documented chat-mode settings before remeasurement; the old flag was not evidence that reasoning was disabled. See the [published DeepSeek template](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash/blob/main/chat_template.jinja).
 
 Historical DeepSeek measurements on 15 November 2026 UTC, using the corrected chat-mode request ([run](https://github.com/mansoor-mamnoon/paper-trader/actions/runs/43666102619), [raw measurements](docs/concurrency-2026-11-15-180s.json)):
 
@@ -190,7 +198,7 @@ gh workflow run account.yml --ref main -f force=true -f as_of=2026-11-14T06:00:4
 
 ## One-off Thursday → Friday replay
 
-The manual-only `replay.yml` workflow rebuilds November 12–13 with DeepSeek and the current rules, including no minimum holding period. It starts from the original November 12 close (account commit `aa1b9e2418744ba67222cf11771ed245c6d0ba24`), preserving the ten actual Thursday holdings and the earlier ledger. It archives the current account before doing any replay work.
+The legacy manual-only `replay.yml` workflow was built to rebuild November 12–13 with DeepSeek, including no minimum holding period. It reads the repository’s current model setting, but its validator still requires successful DeepSeek calls; it must be migrated before it can validate a Nemotron replay. It starts from the original November 12 close (account commit `aa1b9e2418744ba67222cf11771ed245c6d0ba24`), preserving the ten actual Thursday holdings and the earlier ledger. It archives the current account before doing any replay work.
 
 Thursday's cutoff is `2026-11-12T22:07:43.379Z`. Its orders fill at Friday's open; Friday then researches and decides at `2026-11-13T22:07:43.379Z` using Thursday's resulting account and memory. The jobs run in sequence with the same account lock as normal daily updates. Friday cannot start until Thursday validates and its checkpoint is committed. Validation checks successful DeepSeek calls, a decision for every holding, and that Friday's new fills came from Thursday's orders. Only a validated Friday result replaces the live account and publishes the dashboard.
 
