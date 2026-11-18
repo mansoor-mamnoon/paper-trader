@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>Paper Trader</title>
-<meta name="description" content="A $1,000 paper account run by Nemotron 3 Ultra 550B with a local fallback that trade news buzz, sector by sector. Every decision is public.">
+<title>Paper Trader · Nemotron 3 Ultra</title>
+<meta name="description" content="A $1,000 paper account run by NVIDIA Nemotron 3 Ultra 550B across six agent roles, with a local Qwen3.5 9B fallback. Every decision is public.">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap">
@@ -33,8 +33,8 @@
 <main class="wrap">
   <section class="view" id="view-today">
     <div class="hero">
-      <h1>A desk of local AI models runs <span class="mark">$1,000</span>.</h1>
-      <p>Every evening six agents read the day's news and buzz, keep a sector newsbook, argue each stock, and decide every holding: keep it or sell it and buy something better. The account is always fully invested.</p>
+      <h1>Nemotron 3 Ultra runs a <span class="mark">$1,000</span> paper account.</h1>
+      <p>After the US close, NVIDIA’s hosted 550B model plays all six roles: scout, strategist, classifier, analyst, skeptic and manager. The agents read the news, debate each stock, and decide every holding. Local Qwen3.5 9B answers when hosted inference fails. Every decision and model transcript is public.</p>
     </div>
     <div class="stats" id="stats"></div>
     <div class="card">
@@ -110,7 +110,7 @@
     <div class="card"><h2>Data sources</h2><ul class="list small" id="sources" style="margin-top:6px"></ul></div>
     <div class="card"><h2>Which model answers</h2><p class="small" style="margin-top:8px">Nemotron 3 Ultra 550B on NVIDIA answers every agent role first. If it is rate-limited, down, or gives an answer that does not match the required shape, the same question goes to the local Qwen3.5 9B on the runner. The Ops tab shows the model that actually answered each call and every fallback. The key stays in GitHub Actions secrets.</p></div>
     <div class="card"><h2>Parallel research</h2><p class="small" style="margin-top:8px">Scouts, headline classification and debates for different stocks support concurrent execution. Benchmarks compare worker counts before choosing settings for a replay. Each skeptic waits for its analyst; the manager waits for all research. Research covers every candidate without an early cutoff, within GitHub’s six-hour session limit. Ops separates elapsed run time from summed time across overlapping calls. Actions logs show individual requests, failures, retries and reported reasoning usage.</p></div>
-    <div class="card"><h2>Provider measurements</h2><p class="small" style="margin-top:8px">On 15 November 2026 UTC, the three-minute-deadline test completed 0 of 16 requests. With a ten-minute deadline, 3 of 16 succeeded; the rest returned provider errors. Neither test qualified a worker count for the replay. Longer follow-ups are dispatched directly by the measurement job; no unverified setting starts a replay. <a href="https://github.com/mansoor-mamnoon/paper-trader/actions/workflows/tune.yml">View current measurements</a>.</p></div>
+    <div class="card"><h2>Historical provider measurements</h2><p class="small" style="margin-top:8px">These measurements used the previous DeepSeek endpoint, which NVIDIA retired on 16 November 2026. They do not measure Nemotron: the three-minute-deadline test completed 0 of 16 requests; with a ten-minute deadline, 3 of 16 succeeded. The desk switched to Nemotron 3 Ultra on 17 November. Per-call results in Ops identify the model that actually answered each question. <a href="https://github.com/mansoor-mamnoon/paper-trader/actions/workflows/tune.yml">View measurement workflow</a>.</p></div>
     <div class="card"><h2>Historical replays</h2><p class="small" style="margin-top:8px">A replay runs sessions in order: decisions made after Thursday’s close fill at Friday’s open, and Friday’s desk then uses that resulting portfolio. Future price bars and dated headlines are excluded; historical trending lists are omitted. Replays remain simulations, with limitations in historical data and model knowledge.</p></div>
     <div class="card"><h2>Runs automatically</h2><p class="small" style="margin-top:8px">GitHub Actions runs the desk after each US close, with two catch-up triggers and a morning watchdog. Orders wait for the next market open. This public project uses free runners, GitHub Pages and NVIDIA’s free prototyping endpoint, with local inference available if the endpoint fails. Provider limits and GitHub scheduling can change; no paid fallback is configured.</p></div>
     <div class="card"><h2>Why it is built this way</h2><p class="small" style="margin-top:8px">The design, the model choice and the research behind it are written up in the <a href="https://github.com/mansoor-mamnoon/paper-trader#readme">README</a>. This is a paper account: no broker is connected and nothing here is advice.</p></div>
