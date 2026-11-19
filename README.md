@@ -24,6 +24,10 @@ qualify as fresh news. A headline must have a recognized bullish label and buzz 
 least 2. A sector-only case requires today's bullish note for that same sector and an
 explicit driver; it cannot rescue a citation to rejected evidence.
 
+Forced full investment has also been removed: the manager may select no purchases,
+valid exits stand even without replacements, and kept holdings receive no automatic
+top-ups. This changes the prior investment policy deliberately to avoid forced weak trades.
+
 These are correctness repairs, not evidence of improved returns. Historical decisions
 and their transcripts remain unchanged. See [the decision audit](docs/DECISIONS-2026-11-19.md).
 
@@ -40,18 +44,18 @@ After the US close, a GitHub Actions run does one trading day:
 5. **Strategist** reads the newsbook and picks one to three sectors to trade. The candidates are the eight most-buzzed stocks in those sectors, from the whole eligible market, plus the four most-buzzed stocks anywhere else.
 6. **Classifier** labels every headline of every holding and candidate (product launch, big deal, results beat, upgrade, approval, policy, takeover, retail frenzy, demand boom, bad news, noise, unrelated) with a buzz score from 0 to 3. CEO changes, filings, dividends and conference appearances are noise by definition.
 7. **Analyst** makes the case for each holding and each candidate, and must name the one headline the case rests on. A case that cites no headline, or cites one labelled noise, unrelated or bad news, does not count, so the stock cannot be bought on it. Only a sector-wide catalyst may rest on the newsbook instead. **Skeptic** only argues against it, with the same file: is it fresh, is it priced in, is the buzz fading. If the analyst found no catalyst, the skeptic agrees and says why to avoid the stock; it never makes the bull case itself.
-8. **Manager** must answer KEEP or SELL for every holding. Every sale must be replaced: it picks the replacements and their weights from the candidates the analyst made a case for. A replacement must clearly beat what it replaces after the 0.6% round-trip cost. It reads its own notes, decisions and closed trades from earlier days.
+8. **Manager** must answer KEEP or SELL for every holding. It may choose zero to eight purchases from eligible candidates, with weights, and retain cash when replacements are weak. A replacement must clearly beat what it replaces after the 0.6% round-trip cost. It reads its own notes, decisions and closed trades from earlier days.
 9. **Rust queues the orders** for the next open, writes everything to memory and publishes the dashboard.
 
 Independent research runs concurrently: the 12 scouts, headline-classification batches, and debates for different stocks share a bounded worker pool. Each skeptic waits for its own analyst; the strategist waits for the scouts, and the manager waits for all research. SQLite writes stay on the main thread, and results retain their original order. Local fallback inference is serialized so concurrent calls cannot swap its model or overload the single local server.
 
 ## Rules no model can change
 
-- Always fully invested in at most eight individual US stocks. Sales fill before purchases, and purchases share all the cash by weight. If the manager sells and buys nothing new, the freed cash tops up the stocks it kept.
+- At most eight individual US stocks, with cash allowed. Sales fill before purchases. The manager may decline all purchases; kept holdings receive no automatic top-ups.
 - No purchase may take a stock above 25% of the account. What a capped purchase cannot take goes to the other purchases.
 - No minimum holding period. The manager can replace any holding, including one bought at the latest open, when the evidence supports the swap after its roughly 0.6% round-trip cost.
-- Only a stock the analyst made a case for can be bought. A clear sector driver that lifts the company, such as oil prices for an oil producer, counts as a case, and so do earnings beats.
-- The book never drops below four stocks, so the money always fits under the 25% cap. If too few candidates have a case to replace the day's sales, the manager chooses which sales to call off. Cash a capped purchase cannot take is spread over the other holdings at the same open.
+- Only a stock with a bullish analyst case and a completed skeptic verdict of `stands` or `weakened` can be bought. A clear sector driver that lifts the company, such as oil prices for an oil producer, counts as a case, and so do earnings beats.
+- There is no minimum position count. A valid exit is not cancelled for lack of replacements. Cash that approved purchases cannot take under the 25% cap stays in cash.
 - No stop-losses, take-profit rules or momentum fallback. A model decides every holding and every purchase. If no model runs, the books are settled and nothing is traded.
 - Earnings dates are not a filter. Nothing stops the desk from holding through a report.
 - Each answer must match a JSON schema enforced by the model server. A holding can only get KEEP or SELL, a purchase can only be a stock the analyst argued that day, and a focus sector can only be one the scouts wrote about.

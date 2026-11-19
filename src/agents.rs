@@ -443,7 +443,7 @@ pub fn scout(brain: &dyn Brain, brief: &ScoutBrief) -> Result<SectorNote> {
     })
 }
 
-const STRATEGIST: &str = "You set sector strategy for a small stock account that trades news buzz and is always fully invested. Read the sector newsbook and choose the one to three sectors where excitement is strongest and most likely to keep pushing prices up over the next few days. Prefer sectors with a concrete driver, such as a law, a spending wave, a product cycle or a wave of deals, over sectors that are merely busy. Concentrate: fewer sectors is better. Your earlier choices are shown so you can stay with a story that is working or leave one that has faded.";
+const STRATEGIST: &str = "You set sector strategy for a small stock account that trades news buzz and may hold cash. Read the sector newsbook and choose the one to three sectors where excitement is strongest and most likely to keep pushing prices up over the next few days. Prefer sectors with a concrete driver, such as a law, a spending wave, a product cycle or a wave of deals, over sectors that are merely busy. Concentrate: fewer sectors is better. Your earlier choices are shown so you can stay with a story that is working or leave one that has faded.";
 
 /// The strategist's choice.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -707,7 +707,7 @@ pub fn skeptic(
     })
 }
 
-const MANAGER: &str = "You manage a $1,000 stock account that trades news buzz. Rules you cannot change: the account is always fully invested, it holds at most eight individual stocks, no stock may grow past a quarter of the account by purchase, and every holding is decided again every day. You make every decision and nobody overrides you. Act. Holding is the default. Sell a stock when its case is broken: bad news, the catalyst has clearly played out, or the buzz and the volume have died away for several days. Also sell when a candidate is clearly better after the cost of swapping. A quiet day or a small dip is not a reason to sell. A stock the previous desk bought with no news case should be sold. Do not sell because of an executive change or an upcoming earnings date. Each swap costs about 0.6% in fees and slippage, so a replacement must clearly beat what it replaces after that cost; do not swap one story for another that is only slightly better. There is no minimum holding period: you may sell any holding, including one bought at the latest open, when the evidence supports replacing it after costs. Buy only stocks the analyst made a case for; the skeptic tells you what could go wrong, not what to buy. Weigh the analyst against the skeptic and decide.";
+const MANAGER: &str = "You manage a $1,000 stock account that trades news buzz. Rules you cannot change: cash is allowed when evidence is weak, it holds at most eight individual stocks, no stock may grow past a quarter of the account by purchase, and every holding is decided again every day. Your choices must pass the evidence checks. Holding is the default. Sell a stock when its case is broken: bad news, the catalyst has clearly played out, or the buzz and the volume have died away for several days. Also sell when a candidate is clearly better after the cost of swapping. A quiet day or a small dip is not a reason to sell. A stock bought on a false or unsupported thesis should be sold. A lack of new headlines does not invalidate an existing thesis. Distinguish a factual contradiction from a quiet day; a price dip alone does not prove a catalyst is priced in. Do not sell because of an executive change or an upcoming earnings date. Each swap costs about 0.6% in fees and slippage, so a replacement must clearly beat what it replaces after that cost; do not swap one story for another that is only slightly better. There is no minimum holding period: you may sell any holding, including one bought at the latest open, when the evidence supports replacing it after costs. Buy only stocks the analyst made a case for; the skeptic tells you what could go wrong, not what to buy. Broken or missing skeptic research disqualifies a new purchase. Do not treat speculative rebounds, distance below highs or small weights as repairs for weak evidence. Cash is preferable to a forced replacement. Weigh the analyst against the skeptic and decide.";
 
 /// What the manager remembers from earlier days.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -871,40 +871,6 @@ pub fn trim(
     Ok(out)
 }
 
-/// Choose exactly `count` of the stocks the manager meant to sell to keep after all,
-/// because too few replacements were found to hold the money. Returns the symbols kept.
-pub fn reprieve(
-    brain: &dyn Brain,
-    book: &Book,
-    selling: &[String],
-    count: usize,
-) -> Result<Vec<String>> {
-    let user = format!(
-        "{}\nYou chose to sell {}, but too few candidates have a case to replace them, and the account must hold at least four stocks so the money stays invested with no stock above a quarter of the account. Choose exactly {count} of the stocks you meant to sell to keep instead: the ones with the most life left in them.",
-        book_text(book),
-        selling.join(", ")
-    );
-    let schema = object(
-        &json!({"keep": {
-            "type": "array", "minItems": count, "maxItems": count,
-            "items": object(
-                &json!({"symbol": {"type": "string", "enum": selling}, "reason": string(220)}),
-                &["symbol", "reason"],
-            ),
-        }}),
-        &["keep"],
-    );
-    let answer = brain.ask(Agent::Manager, "reprieve", MANAGER, &user, &schema)?;
-    let mut out: Vec<String> = Vec::new();
-    for item in answer["keep"].as_array().into_iter().flatten() {
-        let symbol = text(item, "symbol");
-        if selling.contains(&symbol) && !out.contains(&symbol) && out.len() < count {
-            out.push(symbol);
-        }
-    }
-    Ok(out)
-}
-
 /// One purchase the manager chose.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Purchase {
@@ -914,8 +880,7 @@ pub struct Purchase {
     pub reason: String,
 }
 
-/// Choose exactly `count` stocks to buy from `allowed`. Fewer come back only when the
-/// model repeats itself; the caller asks again for the rest.
+/// Choose up to `count` stocks to buy from `allowed`, including none.
 pub fn pick(
     brain: &dyn Brain,
     book: &Book,
@@ -924,7 +889,7 @@ pub fn pick(
     already: &[String],
 ) -> Result<Vec<Purchase>> {
     let mut user = format!(
-        "{}\nMoney is available and it must all be invested. Choose exactly {count} different stocks to buy from this list: {}.",
+        "{}\nMoney is available. Choose zero to {count} different stocks to buy from this list; choose fewer or none when the cases do not clearly justify new exposure after costs. Unallocated cash is allowed: {}.",
         book_text(book),
         allowed.join(", ")
     );
@@ -934,7 +899,7 @@ pub fn pick(
     user.push_str(" Give each a weight from 1 to 3: a stock with weight 3 gets three times the money of a stock with weight 1. Prefer today's focus sectors, the strongest analyst cases and the cases the skeptic could not break.");
     let schema = object(
         &json!({"buys": {
-            "type": "array", "minItems": count, "maxItems": count,
+            "type": "array", "minItems": 0, "maxItems": count,
             "items": object(
                 &json!({
                     "symbol": {"type": "string", "enum": allowed},

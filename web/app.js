@@ -180,14 +180,14 @@ function how(d) {
   $("agents").innerHTML = `<table><thead><tr><th>Agent</th><th>Job</th><th>Model</th></tr></thead><tbody>${d.desk.agents.map((a) => `<tr><td><b class="mono">${esc(a.name)}</b></td><td class="small">${esc(a.job)}</td><td class="small">${esc(d.latest?.models?.[a.name] || a.model)}</td></tr>`).join("")}<tr><td><b class="mono">finbert</b></td><td class="small">Scores the tone of every headline of every screened stock, from -1 to +1</td><td class="small">ProsusAI FinBERT, run in Rust</td></tr></tbody></table>`;
   const r = d.rules;
   $("rules").innerHTML = [
-    `Always fully invested in at most ${r.max_positions} individual US stocks.`,
+    `At most ${r.max_positions} individual US stocks; cash is allowed.`,
     "No ETFs, index funds, mutual funds, ETNs, preferreds, warrants or units.",
     `Only companies worth at least $${(r.min_market_cap / 1e9).toFixed(0)} billion, priced at least $${r.min_price} and trading $${(r.min_dollar_volume / 1e6).toFixed(0)} million a day.`,
-    "Every holding gets a KEEP or SELL every day. Every sale is replaced by a purchase.",
+    "Every holding gets a KEEP or SELL every day. Sales may leave cash when replacements are weak.",
     `No purchase may take a stock above ${Math.round((r.max_weight ?? 0.25) * 100)}% of the account; what it cannot take goes to the other purchases.`,
     "No minimum holding period: the manager can replace even a newly bought stock when the evidence justifies the cost.",
     "New purchases require a bullish analyst case and a completed skeptic verdict of stands or weakened. Broken cases and failed skeptic research are excluded.",
-    "The book never drops below four stocks; cash a capped purchase cannot take goes to the other holdings.",
+    "No minimum position count and no automatic top-ups of kept holdings. Unallocated cash stays in cash.",
     `Orders fill at the next open, with ${(r.fee * 100).toFixed(1)}% fees and ${(r.slippage * 100).toFixed(1)}% slippage each way.`,
     "No stop-losses, no momentum fallback and no rule picks a stock: only the models decide.",
   ].map((t) => `<li>${esc(t)}</li>`).join("");

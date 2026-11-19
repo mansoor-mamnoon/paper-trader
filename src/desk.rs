@@ -14,8 +14,7 @@ use crate::broker;
 use crate::buzz::{self, Attention, Buzz, SourceNote};
 use crate::config::{
     CLASSIFY_BATCH, FOCUS_CANDIDATES, HEADLINE_DAYS, HEADLINES_PER_STOCK, MANAGER_MEMORY,
-    MAX_FOCUS, MIN_POSITIONS, NEWSBOOK_MEMORY, PRESCREEN, SCOUT_HEADLINES, SCOUT_NAMES,
-    TRADE_MEMORY, WILDCARDS,
+    MAX_FOCUS, NEWSBOOK_MEMORY, PRESCREEN, SCOUT_HEADLINES, SCOUT_NAMES, TRADE_MEMORY, WILDCARDS,
 };
 use crate::llm::{Brain, map_questions};
 use crate::market::{self, Listing, Quote};
@@ -784,10 +783,6 @@ pub fn run_with(
         )),
     }
     let allowed: Vec<String> = book.candidates.iter().map(|c| c.symbol.clone()).collect();
-    if allowed.is_empty() && keeps.is_empty() && !sells.is_empty() {
-        problems.push("No candidate had a case today and nothing was kept, so the sales were not placed: the money would have sat in cash.".into());
-        keeps.append(&mut sells);
-    }
     let surplus = broker::sales_required(&state).saturating_sub(sells.len());
     if surplus > 0 && !keeps.is_empty() {
         let kept: Vec<String> = keeps.keys().cloned().collect();
@@ -801,54 +796,20 @@ pub fn run_with(
             Err(error) => problems.push(format!("The manager could not trim the book: {error}")),
         }
     }
-    // The book must hold at least MIN_POSITIONS stocks so the money fits under the cap. If
-    // too few candidates can replace the sales, the manager calls some of them off.
-    let book_after = keeps.len() + broker::purchases_needed(&state, sells.len()).min(allowed.len());
-    if book_after < MIN_POSITIONS && !sells.is_empty() {
-        let short = (MIN_POSITIONS - book_after).min(sells.len());
-        let selling: Vec<String> = sells.keys().cloned().collect();
-        match agents::reprieve(brain, &book, &selling, short) {
-            Ok(saved) => {
-                for symbol in saved {
-                    if let Some(reason) = sells.remove(&symbol) {
-                        keeps.insert(
-                            symbol,
-                            format!("Kept after all: too few candidates had a case to replace it. The manager had said: {reason}"),
-                        );
-                    }
-                }
-            }
-            Err(error) => problems.push(format!(
-                "The manager could not choose which sales to call off: {error}"
-            )),
-        }
-    }
-    let needed = broker::purchases_needed(&state, sells.len()).min(allowed.len());
-    let mut purchases: Vec<agents::Purchase> = Vec::new();
-    for _ in 0..3 {
-        if purchases.len() >= needed {
-            break;
-        }
-        let chosen: Vec<String> = purchases.iter().map(|p| p.symbol.clone()).collect();
-        let open: Vec<String> = allowed
-            .iter()
-            .filter(|s| !chosen.contains(s))
-            .cloned()
-            .collect();
-        match agents::pick(brain, &book, &open, needed - purchases.len(), &chosen) {
-            Ok(more) => purchases.extend(more),
+    let capacity = broker::purchases_needed(&state, sells.len()).min(allowed.len());
+    let purchases = if capacity > 0 {
+        match agents::pick(brain, &book, &allowed, capacity, &[]) {
+            Ok(purchases) => purchases,
             Err(error) => {
-                problems.push(format!("The manager's purchase call failed: {error}"));
-                break;
+                problems.push(format!(
+                    "The manager's purchase call failed; cash retained: {error}"
+                ));
+                Vec::new()
             }
         }
-    }
-    if purchases.len() < needed {
-        problems.push(format!(
-            "The manager named {} of the {needed} purchases needed",
-            purchases.len()
-        ));
-    }
+    } else {
+        Vec::new()
+    };
     let mut buys: BTreeMap<String, Order> = BTreeMap::new();
     for purchase in &purchases {
         let card = report.cards.iter().find(|c| c.symbol == purchase.symbol);
@@ -866,7 +827,7 @@ pub fn run_with(
             },
         );
     }
-    let topped = broker::queue(&mut state, &sells, &buys, at);
+    broker::queue(&mut state, &sells, &buys, at);
     let line = |symbol: &str, kind: &str, text: &str| Entry {
         day: day.clone(),
         at,
@@ -885,13 +846,6 @@ pub fn run_with(
             &purchase.symbol,
             "BUY",
             &format!("{} (weight {})", purchase.reason, purchase.weight),
-        ));
-    }
-    for symbol in &topped {
-        report.decisions.push(line(
-            symbol,
-            "TOP_UP",
-            "The book is full, so freed cash is added to this kept stock",
         ));
     }
     match agents::note(brain, &book, &report.decisions) {
@@ -1165,7 +1119,7 @@ mod tests {
                 }
                 (Agent::Manager, "purchases") => {
                     let items = &schema["properties"]["buys"];
-                    let n = items["minItems"].as_u64().unwrap() as usize;
+                    let n = items["maxItems"].as_u64().unwrap() as usize;
                     let allowed = items["items"]["properties"]["symbol"]["enum"]
                         .as_array()
                         .unwrap();
@@ -1176,22 +1130,9 @@ mod tests {
                         .collect();
                     json!({"buys": buys})
                 }
-                (Agent::Manager, "reprieve") => {
-                    let items = &schema["properties"]["keep"];
-                    let n = items["minItems"].as_u64().unwrap() as usize;
-                    let selling = items["items"]["properties"]["symbol"]["enum"]
-                        .as_array()
-                        .unwrap();
-                    let keep: Vec<Value> = selling
-                        .iter()
-                        .take(n)
-                        .map(|s| json!({"symbol": s, "reason": "most life left"}))
-                        .collect();
-                    json!({"keep": keep})
-                }
                 (Agent::Manager, "trim") => {
                     let items = &schema["properties"]["sell"];
-                    let n = items["minItems"].as_u64().unwrap() as usize;
+                    let n = items["maxItems"].as_u64().unwrap() as usize;
                     let kept = items["items"]["properties"]["symbol"]["enum"]
                         .as_array()
                         .unwrap();
@@ -1456,16 +1397,16 @@ mod tests {
         let sells = report.decisions.iter().filter(|d| d.kind == "SELL").count();
         assert_eq!(sells, 1, "nine holdings are cut to eight");
         assert_eq!(brain.count(Agent::Manager), 3, "review, trim and note");
-        // Nothing new is bought, so the freed cash goes to the eight that were kept.
+        // No automatic purchases of kept holdings.
         assert_eq!(
             report
                 .decisions
                 .iter()
                 .filter(|d| d.kind == "TOP_UP")
                 .count(),
-            MAX_POSITIONS
+            0
         );
-        assert_eq!(state.pending.len(), MAX_POSITIONS + 1);
+        assert_eq!(state.pending.len(), 1);
     }
 
     #[test]
@@ -1503,7 +1444,7 @@ mod tests {
     }
 
     #[test]
-    fn sales_are_called_off_when_too_few_stocks_would_remain() {
+    fn valid_sales_survive_a_shortage_of_replacements() {
         let store = Store::open(":memory:").unwrap();
         let mut state = State {
             cash: 0.0,
@@ -1532,15 +1473,11 @@ mod tests {
                 .map(|d| d.symbol.clone())
                 .collect()
         };
-        // Two sales and one replacement would leave three stocks, so one sale is called off.
-        assert_eq!(kinds("SELL"), ["OLDB"]);
+        // Two exits remain valid even when only one replacement qualifies.
+        assert_eq!(kinds("SELL"), ["OLDA", "OLDB"]);
         assert_eq!(kinds("BUY"), ["CHIPA"]);
-        assert!(kinds("KEEP").contains(&"OLDA".to_string()));
-        assert_eq!(
-            brain.count(Agent::Manager),
-            4,
-            "review, reprieve, purchases, note"
-        );
+        assert!(!kinds("KEEP").contains(&"OLDA".to_string()));
+        assert_eq!(brain.count(Agent::Manager), 3, "review, purchases, note");
     }
 
     #[test]
@@ -1612,6 +1549,49 @@ mod tests {
             );
             assert!(!store.load().unwrap().pending.contains_key("CHIPA"));
         }
+    }
+
+    #[test]
+    fn the_manager_can_decline_all_replacements_and_keep_cash() {
+        let store = Store::open(":memory:").unwrap();
+        let mut state = State {
+            cash: 0.0,
+            engine: ENGINE.into(),
+            ..State::default()
+        };
+        state.positions.insert("OLDA".into(), held("OLDA"));
+        store.save(&state).unwrap();
+        let inner = brain();
+        let brain = Scripted::new(move |agent, subject, user, schema| {
+            if agent == Agent::Manager && subject == "purchases" {
+                assert_eq!(schema["properties"]["buys"]["minItems"], 0);
+                return Ok(json!({"buys": []}));
+            }
+            inner.ask(agent, subject, "", user, schema)
+        });
+        let report = run(&store, Some(&brain), &fixture(), AT, 0.0).unwrap();
+        let mut state = store.load().unwrap();
+        assert_eq!(state.pending.len(), 1);
+        assert_eq!(state.pending["OLDA"].side, "SELL");
+        assert!(report.problems.is_empty());
+        let quotes = [(
+            "OLDA".into(),
+            Quote {
+                bars: vec![Bar {
+                    at: AT + 86400.0,
+                    open: 50.0,
+                    close: 50.0,
+                    volume: 1.0e6,
+                }],
+                actions: Vec::new(),
+                instrument_type: Some("EQUITY".into()),
+            },
+        )]
+        .into();
+        broker::settle(&store, &mut state, &quotes, AT + 90000.0).unwrap();
+        assert!(state.positions.is_empty());
+        assert!(state.cash > 0.0);
+        assert!(state.pending.is_empty());
     }
 
     struct Keyword;

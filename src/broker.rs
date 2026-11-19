@@ -1,5 +1,5 @@
 //! The books. Orders fill at the next session's open with a fee and slippage, sales fill
-//! before purchases, and purchases spend all the cash there is. Nothing here chooses a
+//! before purchases; unallocated cash stays in the account. Nothing here chooses a
 //! stock: it carries out what the manager decided.
 
 use crate::config::{FEE, MAX_POSITIONS, MAX_WEIGHT, MIN_ORDER, SLIP, START_CASH};
@@ -158,60 +158,6 @@ fn buy(
     })
 }
 
-/// Cash the cap kept out of the purchases goes to every holding with room left, equally,
-/// at the same session's open, so the account stays invested.
-fn spread_leftover(
-    store: &Store,
-    state: &mut State,
-    quotes: &BTreeMap<String, Quote>,
-    bar_at: f64,
-    signal_at: f64,
-) -> Result<()> {
-    if state.cash < MIN_ORDER {
-        return Ok(());
-    }
-    let value = |p: &Position| {
-        if p.market_value > 0.0 {
-            p.market_value
-        } else {
-            p.cost
-        }
-    };
-    let equity = state.cash + state.positions.values().map(value).sum::<f64>();
-    let mut targets = Vec::new();
-    for (symbol, position) in &state.positions {
-        let open = quotes
-            .get(symbol)
-            .and_then(|q| q.bars.iter().find(|b| b.at == bar_at))
-            .map(|b| b.open);
-        if let Some(open) = open {
-            targets.push((
-                symbol.clone(),
-                open,
-                (MAX_WEIGHT * equity - value(position)).max(0.0),
-            ));
-        }
-    }
-    let weights = vec![1.0; targets.len()];
-    let rooms: Vec<f64> = targets.iter().map(|t| t.2).collect();
-    let budgets = allocate(state.cash, &weights, &rooms);
-    let order = Order {
-        side: "BUY".into(),
-        at: signal_at,
-        reason:
-            "Cash the 25% cap kept out of the day's purchases, spread over the holdings with room"
-                .into(),
-        weight: 1.0,
-        ..Order::default()
-    };
-    for ((symbol, open, _), budget) in targets.into_iter().zip(budgets) {
-        if budget >= MIN_ORDER {
-            buy(store, state, &symbol, &order, bar_at, open, budget)?;
-        }
-    }
-    Ok(())
-}
-
 /// Bring the account up to date with the market: apply corporate actions, fill queued orders
 /// at the first open after they were placed, mark every holding at its last close and add a
 /// point to the equity curve. `quotes` must cover holdings, queued orders and SPY.
@@ -262,17 +208,12 @@ pub fn settle(
         })
         .collect();
     let budgets = allocate(state.cash, &weights, &rooms);
-    let mut session = None;
     for ((symbol, order, bar_at, open), budget) in buys.into_iter().zip(budgets) {
         if budget >= MIN_ORDER {
             buy(store, state, &symbol, &order, bar_at, open, budget)?;
-            session = Some((bar_at, order.at));
         } else {
             waiting.insert(symbol, order);
         }
-    }
-    if let Some((bar_at, signal_at)) = session {
-        spread_leftover(store, state, quotes, bar_at, signal_at)?;
     }
     state.pending = waiting;
     if state.cash.abs() < 1e-6 {
@@ -341,8 +282,7 @@ pub fn allocate(cash: f64, weights: &[f64], rooms: &[f64]) -> Vec<f64> {
     budgets
 }
 
-/// How many new stocks the manager must pick. Money is on its way whenever something is
-/// sold or cash is idle, and it fills the book up to [`MAX_POSITIONS`].
+/// Maximum new purchases available when a sale or idle cash can fund them.
 pub fn purchases_needed(state: &State, sells: usize) -> usize {
     let kept = state.positions.len().saturating_sub(sells);
     if sells > 0 || state.cash >= MIN_ORDER {
@@ -358,15 +298,13 @@ pub fn sales_required(state: &State) -> usize {
     state.positions.len().saturating_sub(MAX_POSITIONS)
 }
 
-/// Replace the queue with today's decisions. When money is freed and the book is already
-/// full, it is spread evenly over the stocks that were kept, so no cash is left idle.
-/// Returns the symbols topped up that way.
+/// Replace the queue with explicit decisions only. Cash is retained unless a buy was chosen.
 pub fn queue(
     state: &mut State,
     sells: &BTreeMap<String, String>,
     buys: &BTreeMap<String, Order>,
     at: f64,
-) -> Vec<String> {
+) {
     state.pending.clear();
     for (symbol, reason) in sells {
         if state.positions.contains_key(symbol) {
@@ -394,30 +332,6 @@ pub fn queue(
             );
         }
     }
-    let money_coming = !sells.is_empty() || state.cash >= MIN_ORDER;
-    let mut topped = Vec::new();
-    if money_coming && buys.is_empty() {
-        for symbol in state.positions.keys() {
-            if !sells.contains_key(symbol) {
-                topped.push(symbol.clone());
-            }
-        }
-        for symbol in &topped {
-            state.pending.insert(
-                symbol.clone(),
-                Order {
-                    side: "BUY".into(),
-                    at,
-                    reason:
-                        "The book is full, so freed cash is added to the stocks the manager kept"
-                            .into(),
-                    weight: 1.0,
-                    ..Order::default()
-                },
-            );
-        }
-    }
-    topped
 }
 
 #[cfg(test)]
@@ -486,7 +400,7 @@ mod tests {
             ("ALSO".to_string(), buy_order(0.0, 1.0)),
         ]
         .into();
-        assert!(queue(&mut state, &sells, &buys, 100.0).is_empty());
+        queue(&mut state, &sells, &buys, 100.0);
         assert_eq!(state.pending.len(), 3);
         let quotes: BTreeMap<String, Quote> = [
             (
@@ -544,10 +458,10 @@ mod tests {
     }
 
     #[test]
-    fn cash_the_cap_keeps_out_goes_to_the_other_holdings() {
+    fn capped_cash_is_not_spent_on_unapproved_holdings() {
         let store = Store::open(":memory:").unwrap();
         let mut state = State {
-            cash: 0.0,
+            cash: 200.0,
             ..State::default()
         };
         for symbol in ["A", "B", "C"] {
@@ -573,9 +487,12 @@ mod tests {
             .iter()
             .map(|s| ((*s).to_string(), q()))
             .collect();
-        // Only one purchase for the whole sale: the cap stops it short, the rest spreads out.
+        // A cap-limited purchase does not authorize topping up any other holding.
         settle(&store, &mut state, &quotes, 300.0).unwrap();
-        assert!(state.cash.abs() < 1e-6, "cash {}", state.cash);
+        assert!(state.cash > 0.0);
+        for symbol in ["A", "B", "C"] {
+            assert_eq!(state.positions[symbol].quantity, 1.0);
+        }
         assert_eq!(state.positions.len(), 4);
     }
 
@@ -616,7 +533,7 @@ mod tests {
     }
 
     #[test]
-    fn freed_cash_tops_up_the_kept_stocks_when_the_book_is_full() {
+    fn no_purchase_is_queued_without_a_buy_decision() {
         let mut state = State {
             cash: 0.0,
             ..State::default()
@@ -627,13 +544,12 @@ mod tests {
                 .insert(symbol.into(), held(symbol, 1.0, 100.0));
         }
         let sells: BTreeMap<String, String> = [("A".to_string(), "weak".to_string())].into();
-        let topped = queue(&mut state, &sells, &BTreeMap::new(), 10.0);
-        assert_eq!(topped, ["B", "C"]);
+        queue(&mut state, &sells, &BTreeMap::new(), 10.0);
+        assert_eq!(state.pending.len(), 1);
         assert_eq!(state.pending["A"].side, "SELL");
-        assert_eq!(state.pending["B"].side, "BUY");
         // With nothing sold and no cash there is nothing to place.
         let mut quiet = state.clone();
-        assert!(queue(&mut quiet, &BTreeMap::new(), &BTreeMap::new(), 10.0).is_empty());
+        queue(&mut quiet, &BTreeMap::new(), &BTreeMap::new(), 10.0);
         assert!(quiet.pending.is_empty());
     }
 

@@ -8,12 +8,10 @@ pub const FEE: f64 = 0.001;
 pub const SLIP: f64 = 0.002;
 /// Orders smaller than this many dollars are not placed.
 pub const MIN_ORDER: f64 = 1.0;
-/// The book holds this many stocks. A sale is always paired with a purchase.
+/// The book holds at most this many stocks. Cash is allowed.
 pub const MAX_POSITIONS: usize = 8;
 /// No purchase may take one stock above this share of the account.
 pub const MAX_WEIGHT: f64 = 0.25;
-/// The fewest stocks the book may hold, so the money fits under [`MAX_WEIGHT`].
-pub const MIN_POSITIONS: usize = 4;
 
 /// A stock must be at least this large to be bought.
 pub const MIN_MARKET_CAP: f64 = 5.0e9;

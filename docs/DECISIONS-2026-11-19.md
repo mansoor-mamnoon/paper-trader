@@ -19,9 +19,13 @@ The skeptic's claim on 18 November that NXT's story was nine days old is also
 incorrect against the stored publication timestamp: it was four calendar days old.
 The fix uses timestamps rather than accepting either model's age claim.
 
-The repeated portfolio replacements and forced full investment also deserve repair:
-the manager could not decline a weak replacement, sales could be cancelled to retain
-four names, and cash could automatically top up holdings with no new buy decision.
+The repeated portfolio replacements exposed an additional policy defect: the manager
+could not decline a weak replacement, sales could be cancelled to retain four names,
+and cash could automatically top up holdings with no new buy decision. The purchase
+schema now permits zero selections. Sales remain valid with fewer than four names;
+both automatic top-up paths have been removed. This deliberately changes the prior
+fully-invested policy. A new regression settles a sale after all replacements are
+declined and verifies the account holds cash with no unintended purchases.
 
 Validation uses deterministic fixtures and regression tests; it does not rerun a
 language model on historical dates or claim a profitable counterfactual. Historical
