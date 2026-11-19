@@ -34,6 +34,12 @@ time before settlement, so an old queued buy cannot bypass the new skeptic check
 without filling orders, fetching new data, or asking a model. Unsupported buys are
 cancelled with an event; original reports and decisions are retained.
 
+Rollout: the check cancelled only the pending GEV buy on 19 November. The account
+branch preserves the [pre-change ledger and verification notes](https://github.com/mansoor-mamnoon/paper-trader/tree/account/archive/decision-audit-2026-11-19).
+No fills or historical decisions were rerun. Validation passed: 81 Rust tests,
+strict Clippy and formatting, dashboard JavaScript syntax, and nine Python tests
+([GitHub CI](https://github.com/mansoor-mamnoon/paper-trader/actions/runs/44488086744)).
+
 These are correctness repairs, not evidence of improved returns. Historical decisions
 and their transcripts remain unchanged. See [the decision audit](docs/DECISIONS-2026-11-19.md).
 

@@ -43,3 +43,12 @@ broken cases, orphan buys, preserved exits and repeated validation.
 Local validation: Rust tests, strict Clippy, formatting, dashboard JavaScript syntax,
 and the Python replay/tuning tests. These checks establish the intended execution
 behavior, not trading quality or future profitability.
+
+Applied to the durable account on 19 November: only GEV's pending buy was cancelled.
+Account commit `8548f1d` includes the pre-change database in
+`archive/decision-audit-2026-11-19/before.sqlite`. All historical table rows were
+compared unchanged; cash and positions were checked within serialization precision.
+The other pending buys and all exits remain. No new desk session was forced.
+
+[CI passed on the implementation](https://github.com/mansoor-mamnoon/paper-trader/actions/runs/44488086744):
+81 Rust tests, strict Clippy, formatting and nine Python tests.
