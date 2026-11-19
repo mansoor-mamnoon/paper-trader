@@ -28,6 +28,12 @@ Forced full investment has also been removed: the manager may select no purchase
 valid exits stand even without replacements, and kept holdings receive no automatic
 top-ups. This changes the prior investment policy deliberately to avoid forced weak trades.
 
+Pending buys are also checked against the report recorded at their original signal
+time before settlement, so an old queued buy cannot bypass the new skeptic check.
+`paper-trader validate-orders --db account.sqlite --output site` applies this check
+without filling orders, fetching new data, or asking a model. Unsupported buys are
+cancelled with an event; original reports and decisions are retained.
+
 These are correctness repairs, not evidence of improved returns. Historical decisions
 and their transcripts remain unchanged. See [the decision audit](docs/DECISIONS-2026-11-19.md).
 

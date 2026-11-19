@@ -30,3 +30,16 @@ declined and verifies the account holds cash with no unintended purchases.
 Validation uses deterministic fixtures and regression tests; it does not rerun a
 language model on historical dates or claim a profitable counterfactual. Historical
 fills and model transcripts are retained as evidence.
+
+## Pending orders and rollout
+
+The settlement path now rechecks queued buys against their signal-time report,
+including buys written before this repair. A missing original report, missing skeptic,
+or broken case cancels the buy and records an event; sell orders are preserved.
+The `validate-orders` command permits this maintenance without settling the book or
+rerunning historical model decisions. It is idempotent. Tests cover valid buys,
+broken cases, orphan buys, preserved exits and repeated validation.
+
+Local validation: Rust tests, strict Clippy, formatting, dashboard JavaScript syntax,
+and the Python replay/tuning tests. These checks establish the intended execution
+behavior, not trading quality or future profitability.

@@ -1033,7 +1033,7 @@ mod tests {
                 Tagged {
                     id: 1,
                     day: "2026-11-13".into(),
-                    published: 1794560400.0,
+                    published: 1_794_560_400.0,
                     title: format!("{symbol} wins $2B AI contract"),
                     source: "Reuters".into(),
                     label: "big_deal".into(),
@@ -1043,7 +1043,7 @@ mod tests {
                 Tagged {
                     id: 2,
                     day: "2026-11-12".into(),
-                    published: 1794474000.0,
+                    published: 1_794_474_000.0,
                     title: format!("{symbol} names new CFO"),
                     label: "noise".into(),
                     ..Tagged::default()

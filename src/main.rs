@@ -35,6 +35,13 @@ enum Cli {
         #[arg(long)]
         output: String,
     },
+    /// Cancel unsupported pending buys using original research; no fills or new model calls
+    ValidateOrders {
+        #[arg(long)]
+        db: String,
+        #[arg(long)]
+        output: String,
+    },
     /// Read the tone of headlines with FinBERT
     Tone {
         /// One or more headlines
@@ -71,6 +78,20 @@ fn main() -> Result<()> {
         Cli::Export { db, output } => {
             let store = Store::open(&db)?;
             println!("{}", site::export(&store, &output)?);
+            Ok(())
+        }
+        Cli::ValidateOrders { db, output } => {
+            let store = Store::open(&db)?;
+            let mut state = store.load()?;
+            store.begin()?;
+            let cancelled = desk::validate_pending(&store, &mut state, store::now())?;
+            store.save(&state)?;
+            store.commit()?;
+            let account = site::export(&store, &output)?;
+            println!(
+                "{}",
+                json!({"cancelled_buys": cancelled, "account": account})
+            );
             Ok(())
         }
         Cli::Bench { models } => bench(&models),

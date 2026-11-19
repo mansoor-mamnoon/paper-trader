@@ -81,7 +81,7 @@ function pending(d) {
     .map(([s, o]) => {
       const share = o.side === "BUY" && total ? ` · ${Math.round(((o.weight || 1) / total) * 100)}% of the cash` : "";
       return `<li><div class="line"><span class="badge ${o.side.toLowerCase()}">${o.side}</span><b>${esc(s)}</b><span class="small muted">${esc(sectorOf(s, o.sector))}${share}</span></div><div class="small">${esc(o.reason)}</div></li>`;
-    }).join("") + '</ul><p class="small muted" style="margin-top:8px">Orders fill at the next session\'s open. Sales fill first, and purchases share all the cash by weight.</p>';
+    }).join("") + '</ul><p class="small muted" style="margin-top:8px">Orders fill at the next session\'s open. Sales fill first. Approved purchases share available cash by weight, subject to the 25% cap; excess stays in cash.</p>';
 }
 
 function today(d) {
@@ -95,6 +95,12 @@ function today(d) {
   $("decisions").innerHTML = list.length
     ? list.map((e) => `<li><div class="line"><span class="badge ${e.kind.toLowerCase()}">${e.kind.replace("_", " ")}</span><b>${esc(e.symbol)}</b></div><div class="small">${esc(e.text)}</div></li>`).join("")
     : '<li class="muted small">No decisions recorded for this day.</li>';
+  const cancellations = (d.events || []).filter(([at, kind, message]) =>
+    at >= r.at && kind === "cancelled" && message.startsWith("Cancelled pending buy"));
+  if (cancellations.length) {
+    $("decisions").innerHTML += cancellations.map(([at, , message]) =>
+      `<li><span class="badge">CANCELLED BUY</span> <span class="small muted">${esc(when(at))}</span><div class="small">${esc(message)}</div></li>`).join("");
+  }
   $("note").innerHTML = r.note ? `<b>Manager's note for tomorrow:</b> ${esc(r.note)}` : "";
   const problems = r.problems || [];
   if (problems.length) {
@@ -134,7 +140,7 @@ function desk(d) {
   for (const e of r?.decisions || []) decided[e.symbol] = e.kind;
   const cards = r?.cards || [];
   $("cards").innerHTML = cards.length ? cards.map((c) => {
-    const heads = (c.headlines || []).slice(0, 6).map((h) => `<li><span class="badge ${["noise", "unrelated"].includes(h.label) ? "" : h.label === "bad_news" ? "hot" : "buy"}">${esc(h.label || "unlabelled")}${h.label ? " " + h.buzz : ""}</span> ${h.tone ? `<span class="badge tone ${esc(h.tone)}" title="FinBERT tone, -1 to +1">${esc(h.tone)} ${(h.tone_score >= 0 ? "+" : "") + Number(h.tone_score).toFixed(2)}</span> ` : ""}${h.link ? `<a href="${esc(h.link)}" rel="noopener">${esc(h.title)}</a>` : esc(h.title)} <span class="muted">${esc(h.day)}</span></li>`).join("");
+    const heads = (c.headlines || []).slice(0, 6).map((h) => `<li><span class="badge ${["noise", "unrelated"].includes(h.label) ? "" : h.label === "bad_news" ? "hot" : "buy"}">${esc(h.label || "unlabelled")}${h.label ? " " + h.buzz : ""}</span> ${h.tone ? `<span class="badge tone ${esc(h.tone)}" title="FinBERT tone, -1 to +1">${esc(h.tone)} ${(h.tone_score >= 0 ? "+" : "") + Number(h.tone_score).toFixed(2)}</span> ` : ""}${h.link ? `<a href="${esc(h.link)}" rel="noopener">${esc(h.title)}</a>` : esc(h.title)} <span class="muted">${h.published > 0 ? "Published " + esc(new Date(h.published * 1000).toISOString().slice(0, 10)) : "Publication date unknown"} · first seen ${esc(h.day)}</span></li>`).join("");
     const verdict = decided[c.symbol];
     return `<div class="card" style="margin-top:18px">
       <div class="head"><div class="line"><b class="mono" style="font-size:1.1rem">${esc(c.symbol)}</b><span>${esc(c.name)}</span>${c.holding ? '<span class="badge keep">held</span>' : '<span class="badge">candidate</span>'}${verdict ? `<span class="badge ${verdict.toLowerCase()}">${verdict.replace("_", " ")}</span>` : ""}</div><span class="label">${esc(sectorName(c.sector))}</span></div>

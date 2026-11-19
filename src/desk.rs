@@ -267,6 +267,38 @@ fn take_over(store: &Store, state: &mut State, at: f64) -> Result<()> {
     Ok(())
 }
 
+/// Recheck persisted buys before settlement, including orders written by older code.
+/// Uses only the report from the signal time; never consults subsequent news or prices.
+/// Call inside the same transaction as saving state or settlement.
+pub fn validate_pending(store: &Store, state: &mut State, at: f64) -> Result<Vec<String>> {
+    let reports: Vec<Report> = store
+        .reports(crate::config::REPORT_DAYS as usize)?
+        .into_iter()
+        .map(|(_, body)| serde_json::from_str(&body))
+        .collect::<std::result::Result<_, _>>()?;
+    let mut cancelled = Vec::new();
+    for (symbol, order) in &state.pending {
+        if order.side != "BUY" {
+            continue;
+        }
+        let supported = reports
+            .iter()
+            .find(|r| (r.at - order.at).abs() < 1e-6)
+            .and_then(|r| r.cards.iter().find(|c| c.symbol == *symbol))
+            .is_some_and(agents::purchase_eligible);
+        if !supported {
+            store.event(at, "cancelled", &format!(
+                "Cancelled pending buy of {symbol}: signal-time report has no completed, unbroken bullish case; original decision retained"
+            ))?;
+            cancelled.push(symbol.clone());
+        }
+    }
+    for symbol in &cancelled {
+        state.pending.remove(symbol);
+    }
+    Ok(cancelled)
+}
+
 /// Run one day. With no `brain` the books are still settled, but nothing is decided: every
 /// trading decision belongs to a model.
 pub fn run(
@@ -393,6 +425,7 @@ pub fn run_with(
     let fills_before = store.fill_count()?;
     store.begin()?;
     take_over(store, &mut state, at)?;
+    validate_pending(store, &mut state, at)?;
     broker::settle(store, &mut state, &quotes, at)?;
     store.save(&state)?;
     store.commit()?;
@@ -1592,6 +1625,67 @@ mod tests {
         assert!(state.positions.is_empty());
         assert!(state.cash > 0.0);
         assert!(state.pending.is_empty());
+    }
+
+    #[test]
+    fn pending_orders_are_checked_against_their_original_report() {
+        let store = Store::open(":memory:").unwrap();
+        let report = run(&store, Some(&brain()), &fixture(), AT, 0.0).unwrap();
+        let mut state = store.load().unwrap();
+        assert!(
+            validate_pending(&store, &mut state, AT + 1.0)
+                .unwrap()
+                .is_empty()
+        );
+        let mut broken = report.clone();
+        broken
+            .cards
+            .iter_mut()
+            .find(|c| c.symbol == "CHIPA")
+            .unwrap()
+            .rebuttal
+            .as_mut()
+            .unwrap()
+            .verdict = "broken".into();
+        store
+            .put_report(DAY, AT, &serde_json::to_string(&broken).unwrap())
+            .unwrap();
+        state.pending.insert(
+            "ORPHAN".into(),
+            Order {
+                side: "BUY".into(),
+                at: AT,
+                ..Order::default()
+            },
+        );
+        state.pending.insert(
+            "EXIT".into(),
+            Order {
+                side: "SELL".into(),
+                at: AT,
+                ..Order::default()
+            },
+        );
+        assert_eq!(
+            validate_pending(&store, &mut state, AT + 2.0).unwrap(),
+            ["CHIPA", "ORPHAN"]
+        );
+        assert_eq!(state.pending["EXIT"].side, "SELL");
+        assert!(state.pending.contains_key("CHIPB"));
+        assert!(
+            validate_pending(&store, &mut state, AT + 3.0)
+                .unwrap()
+                .is_empty()
+        );
+        assert_eq!(
+            store
+                .events(10)
+                .unwrap()
+                .iter()
+                .filter(|e| e.1 == "cancelled")
+                .count(),
+            2
+        );
     }
 
     struct Keyword;

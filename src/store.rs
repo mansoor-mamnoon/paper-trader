@@ -754,7 +754,7 @@ mod tests {
         let item = Headline {
             title: "Acme wins contract".into(),
             source: "Reuters".into(),
-            published: 1794484800.0,
+            published: 1_794_484_800.0,
             link: String::new(),
         };
         store
@@ -786,8 +786,8 @@ mod tests {
     fn newly_seen_old_news_is_not_fresh_evidence() {
         let store = Store::open(":memory:").unwrap();
         for (title, published) in [
-            ("old backlog", 1794009600.0),
-            ("fresh contract", 1794484800.0),
+            ("old backlog", 1_794_009_600.0),
+            ("fresh contract", 1_794_484_800.0),
             ("undated", 0.0),
         ] {
             store
