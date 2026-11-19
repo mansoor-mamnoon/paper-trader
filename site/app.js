@@ -81,7 +81,7 @@ function pending(d) {
     .map(([s, o]) => {
       const share = o.side === "BUY" && total ? ` · ${Math.round(((o.weight || 1) / total) * 100)}% of the cash` : "";
       return `<li><div class="line"><span class="badge ${o.side.toLowerCase()}">${o.side}</span><b>${esc(s)}</b><span class="small muted">${esc(sectorOf(s, o.sector))}${share}</span></div><div class="small">${esc(o.reason)}</div></li>`;
-    }).join("") + '</ul><p class="small muted" style="margin-top:8px">Orders fill at the next session\'s open. Sales fill first, and purchases share all the cash by weight.</p>';
+    }).join("") + '</ul><p class="small muted" style="margin-top:8px">Orders fill at the next session\'s open. Sales fill first. Approved purchases share available cash by weight, subject to the 25% cap; excess stays in cash.</p>';
 }
 
 function today(d) {
@@ -95,6 +95,12 @@ function today(d) {
   $("decisions").innerHTML = list.length
     ? list.map((e) => `<li><div class="line"><span class="badge ${e.kind.toLowerCase()}">${e.kind.replace("_", " ")}</span><b>${esc(e.symbol)}</b></div><div class="small">${esc(e.text)}</div></li>`).join("")
     : '<li class="muted small">No decisions recorded for this day.</li>';
+  const cancellations = (d.events || []).filter(([at, kind, message]) =>
+    at >= r.at && kind === "cancelled" && message.startsWith("Cancelled pending buy"));
+  if (cancellations.length) {
+    $("decisions").innerHTML += cancellations.map(([at, , message]) =>
+      `<li><span class="badge">CANCELLED BUY</span> <span class="small muted">${esc(when(at))}</span><div class="small">${esc(message)}</div></li>`).join("");
+  }
   $("note").innerHTML = r.note ? `<b>Manager's note for tomorrow:</b> ${esc(r.note)}` : "";
   const problems = r.problems || [];
   if (problems.length) {
@@ -134,7 +140,7 @@ function desk(d) {
   for (const e of r?.decisions || []) decided[e.symbol] = e.kind;
   const cards = r?.cards || [];
   $("cards").innerHTML = cards.length ? cards.map((c) => {
-    const heads = (c.headlines || []).slice(0, 6).map((h) => `<li><span class="badge ${["noise", "unrelated"].includes(h.label) ? "" : h.label === "bad_news" ? "hot" : "buy"}">${esc(h.label || "unlabelled")}${h.label ? " " + h.buzz : ""}</span> ${h.tone ? `<span class="badge tone ${esc(h.tone)}" title="FinBERT tone, -1 to +1">${esc(h.tone)} ${(h.tone_score >= 0 ? "+" : "") + Number(h.tone_score).toFixed(2)}</span> ` : ""}${h.link ? `<a href="${esc(h.link)}" rel="noopener">${esc(h.title)}</a>` : esc(h.title)} <span class="muted">${esc(h.day)}</span></li>`).join("");
+    const heads = (c.headlines || []).slice(0, 6).map((h) => `<li><span class="badge ${["noise", "unrelated"].includes(h.label) ? "" : h.label === "bad_news" ? "hot" : "buy"}">${esc(h.label || "unlabelled")}${h.label ? " " + h.buzz : ""}</span> ${h.tone ? `<span class="badge tone ${esc(h.tone)}" title="FinBERT tone, -1 to +1">${esc(h.tone)} ${(h.tone_score >= 0 ? "+" : "") + Number(h.tone_score).toFixed(2)}</span> ` : ""}${h.link ? `<a href="${esc(h.link)}" rel="noopener">${esc(h.title)}</a>` : esc(h.title)} <span class="muted">${h.published > 0 ? "Published " + esc(new Date(h.published * 1000).toISOString().slice(0, 10)) : "Publication date unknown"} · first seen ${esc(h.day)}</span></li>`).join("");
     const verdict = decided[c.symbol];
     return `<div class="card" style="margin-top:18px">
       <div class="head"><div class="line"><b class="mono" style="font-size:1.1rem">${esc(c.symbol)}</b><span>${esc(c.name)}</span>${c.holding ? '<span class="badge keep">held</span>' : '<span class="badge">candidate</span>'}${verdict ? `<span class="badge ${verdict.toLowerCase()}">${verdict.replace("_", " ")}</span>` : ""}</div><span class="label">${esc(sectorName(c.sector))}</span></div>
@@ -180,14 +186,14 @@ function how(d) {
   $("agents").innerHTML = `<table><thead><tr><th>Agent</th><th>Job</th><th>Model</th></tr></thead><tbody>${d.desk.agents.map((a) => `<tr><td><b class="mono">${esc(a.name)}</b></td><td class="small">${esc(a.job)}</td><td class="small">${esc(d.latest?.models?.[a.name] || a.model)}</td></tr>`).join("")}<tr><td><b class="mono">finbert</b></td><td class="small">Scores the tone of every headline of every screened stock, from -1 to +1</td><td class="small">ProsusAI FinBERT, run in Rust</td></tr></tbody></table>`;
   const r = d.rules;
   $("rules").innerHTML = [
-    `Always fully invested in at most ${r.max_positions} individual US stocks.`,
+    `At most ${r.max_positions} individual US stocks; cash is allowed.`,
     "No ETFs, index funds, mutual funds, ETNs, preferreds, warrants or units.",
     `Only companies worth at least $${(r.min_market_cap / 1e9).toFixed(0)} billion, priced at least $${r.min_price} and trading $${(r.min_dollar_volume / 1e6).toFixed(0)} million a day.`,
-    "Every holding gets a KEEP or SELL every day. Every sale is replaced by a purchase.",
+    "Every holding gets a KEEP or SELL every day. Sales may leave cash when replacements are weak.",
     `No purchase may take a stock above ${Math.round((r.max_weight ?? 0.25) * 100)}% of the account; what it cannot take goes to the other purchases.`,
     "No minimum holding period: the manager can replace even a newly bought stock when the evidence justifies the cost.",
-    "Only stocks the analyst made a case for can be bought. The skeptic only argues against.",
-    "The book never drops below four stocks; cash a capped purchase cannot take goes to the other holdings.",
+    "New purchases require a bullish analyst case and a completed skeptic verdict of stands or weakened. Broken cases and failed skeptic research are excluded.",
+    "No minimum position count and no automatic top-ups of kept holdings. Unallocated cash stays in cash.",
     `Orders fill at the next open, with ${(r.fee * 100).toFixed(1)}% fees and ${(r.slippage * 100).toFixed(1)}% slippage each way.`,
     "No stop-losses, no momentum fallback and no rule picks a stock: only the models decide.",
   ].map((t) => `<li>${esc(t)}</li>`).join("");
