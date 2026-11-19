@@ -135,6 +135,18 @@ pub struct Card {
     pub rebuttal: Option<Rebuttal>,
 }
 
+/// New exposure requires an actual catalyst and a completed, unbroken debate.
+/// A missing skeptic is a research failure, not an implicit endorsement.
+pub fn purchase_eligible(card: &Card) -> bool {
+    card.case
+        .as_ref()
+        .is_some_and(|case| bullish_labels().contains(&case.catalyst.as_str()))
+        && card
+            .rebuttal
+            .as_ref()
+            .is_some_and(|r| matches!(r.verdict.as_str(), "stands" | "weakened"))
+}
+
 fn text(value: &Value, key: &str) -> String {
     value[key]
         .as_str()
@@ -208,10 +220,15 @@ fn headline_lines(headlines: &[Tagged], today: &str) -> String {
     }
     let mut out = String::new();
     for (i, h) in headlines.iter().enumerate() {
-        let when = if h.day == today {
+        let published_day = chrono::DateTime::from_timestamp(h.published as i64, 0)
+            .filter(|_| h.published > 0.0)
+            .map(|at| at.format("%Y-%m-%d").to_string());
+        let when = if published_day.as_deref() == Some(today) {
             "today"
         } else {
-            h.day.as_str()
+            published_day
+                .as_deref()
+                .unwrap_or("publication date unknown")
         };
         let label = if h.label.is_empty() {
             String::new()
@@ -251,7 +268,7 @@ pub fn dossier(card: &Card, sector_note: Option<&SectorNote>, today: &str) -> St
     let _ = writeln!(out, "NUMBERS: {}", facts_line(&card.facts));
     let _ = write!(
         out,
-        "HEADLINES (first seen on the day shown; the label and buzz score are the classifier's; FinBERT is a separate small model that scores each headline's tone from -1 to +1 and is a second opinion: a bullish label on a headline FinBERT reads as negative deserves a second look):\n{}",
+        "HEADLINES (published on the day shown; the label and buzz score are the classifier's; FinBERT is a separate small model that scores each headline's tone from -1 to +1 and is a second opinion: a bullish label on a headline FinBERT reads as negative deserves a second look):\n{}",
         headline_lines(&card.headlines, today)
     );
     if let Some(holding) = &card.holding {
@@ -621,9 +638,17 @@ pub fn analyst(
         .as_u64()
         .and_then(|n| (n as usize).checked_sub(1))
         .and_then(|i| card.headlines.get(i))
-        .filter(|h| !matches!(h.label.as_str(), "noise" | "unrelated" | "bad_news"));
+        .filter(|h| bullish_labels().contains(&h.label.as_str()) && h.buzz >= 2);
     // A case must rest on a real headline, or on the sector's driver for a sector catalyst.
-    if catalyst != "none" && cited.is_none() && !(sector_catalyst(&catalyst) && note.is_some()) {
+    let sector_support = answer["evidence"].as_u64() == Some(0)
+        && sector_catalyst(&catalyst)
+        && note.is_some_and(|n| {
+            n.day == today
+                && n.sector == card.sector
+                && n.outlook == "bullish"
+                && !n.driver.trim().is_empty()
+        });
+    if catalyst != "none" && cited.is_none() && !sector_support {
         thesis = format!(
             "No headline in the file supports the case the analyst made, so it does not count. The analyst had said: {thesis}"
         );
@@ -1043,6 +1068,7 @@ mod tests {
                 Tagged {
                     id: 1,
                     day: "2026-11-13".into(),
+                    published: 1794560400.0,
                     title: format!("{symbol} wins $2B AI contract"),
                     source: "Reuters".into(),
                     label: "big_deal".into(),
@@ -1052,6 +1078,7 @@ mod tests {
                 Tagged {
                     id: 2,
                     day: "2026-11-12".into(),
+                    published: 1794474000.0,
                     title: format!("{symbol} names new CFO"),
                     label: "noise".into(),
                     ..Tagged::default()
@@ -1202,7 +1229,13 @@ mod tests {
             assert!(bad.thesis.starts_with("No headline in the file supports"));
         }
         // A sector catalyst may rest on the newsbook when there is an entry.
-        let note = SectorNote::default();
+        let note = SectorNote {
+            day: "2026-11-13".into(),
+            sector: "chips".into(),
+            outlook: "bullish".into(),
+            driver: "AI spending".into(),
+            ..SectorNote::default()
+        };
         let brain = Scripted::new(|_, _, _, _| {
             Ok(
                 json!({"evidence": 0, "catalyst": "demand_boom", "thesis": "Oil.", "upside": 6, "kill": "x"}),
@@ -1213,6 +1246,44 @@ mod tests {
                 .unwrap()
                 .catalyst,
             "demand_boom"
+        );
+    }
+
+    #[test]
+    fn broken_or_missing_research_cannot_fund_a_purchase() {
+        let mut stock = card("NVDA", false);
+        assert!(purchase_eligible(&stock));
+        stock.rebuttal.as_mut().unwrap().verdict = "broken".into();
+        assert!(!purchase_eligible(&stock));
+        stock.rebuttal = None;
+        assert!(!purchase_eligible(&stock));
+        stock.rebuttal = Some(Rebuttal {
+            verdict: "stands".into(),
+            ..Rebuttal::default()
+        });
+        stock.case.as_mut().unwrap().catalyst = "none".into();
+        assert!(!purchase_eligible(&stock));
+    }
+
+    #[test]
+    fn an_empty_sector_note_cannot_rescue_invalid_evidence() {
+        let mut stock = card("ACME", false);
+        stock.headlines[0].label.clear();
+        let brain = Scripted::new(|_, _, _, _| {
+            Ok(json!({
+                "evidence": 1, "catalyst": "demand_boom", "thesis": "Claim.",
+                "upside": 8, "kill": "x"
+            }))
+        });
+        let result = analyst(&brain, &stock, Some(&SectorNote::default()), "2026-11-13").unwrap();
+        assert_eq!(result.catalyst, "none");
+        stock.headlines[0].label = "big_deal".into();
+        stock.headlines[0].buzz = 1;
+        assert_eq!(
+            analyst(&brain, &stock, None, "2026-11-13")
+                .unwrap()
+                .catalyst,
+            "none"
         );
     }
 

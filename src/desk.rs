@@ -763,9 +763,7 @@ pub fn run_with(
         candidates: report
             .cards
             .iter()
-            .filter(|c| {
-                c.holding.is_none() && c.case.as_ref().is_some_and(|k| k.catalyst != "none")
-            })
+            .filter(|c| c.holding.is_none() && agents::purchase_eligible(c))
             .collect(),
     };
     let mut problems = Vec::new();
@@ -1588,6 +1586,32 @@ mod tests {
             .collect();
         assert_eq!(buys, ["CHIPA"]);
         assert_eq!(store.load().unwrap().pending.len(), 1);
+    }
+
+    #[test]
+    fn broken_and_failed_skeptics_are_excluded_from_orders() {
+        for fail in [false, true] {
+            let store = Store::open(":memory:").unwrap();
+            let inner = brain();
+            let brain = Scripted::new(move |agent, subject, user, schema| {
+                if agent == Agent::Skeptic && subject == "CHIPA" {
+                    if fail {
+                        anyhow::bail!("skeptic unavailable");
+                    }
+                    return Ok(json!({"objection": "Unconfirmed earnings beat.",
+                        "priced_in": false, "verdict": "broken"}));
+                }
+                inner.ask(agent, subject, "", user, schema)
+            });
+            let report = run(&store, Some(&brain), &fixture(), AT, 0.0).unwrap();
+            assert!(
+                report
+                    .cards
+                    .iter()
+                    .any(|c| c.symbol == "CHIPA" && c.case.is_some())
+            );
+            assert!(!store.load().unwrap().pending.contains_key("CHIPA"));
+        }
     }
 
     struct Keyword;

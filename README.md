@@ -8,6 +8,25 @@ A $1,000 simulated account run by NVIDIA Nemotron 3 Ultra 550B. One hosted model
 [Dashboard](https://mansoor-mamnoon.github.io/paper-trader/) · [Ops](https://mansoor-mamnoon.github.io/paper-trader/#ops) · [Actions](https://github.com/mansoor-mamnoon/paper-trader/actions)
 </div>
 
+## Decision review — 19 November 2026
+
+The published account through 18 November is $909.50 (−9.05%), against $993.08
+(−0.69%) for its SPY yardstick. This is the whole account's history, across model
+changes, not a Nemotron-only performance measurement. The ledger contains 21 closed trades.
+
+The review found purchases despite a `broken` skeptic verdict (NVDA on 17 November,
+GEV queued on 18 November), weak evidence accepted as a catalyst, and publication
+age confused with the date a headline was first collected. New purchases now require
+completed analyst and skeptic research, a bullish catalyst, and a skeptic verdict of
+`stands` or `weakened`. A broken case or failed skeptic cannot receive new exposure.
+Headline windows and displayed dates use publication time; undated stories cannot
+qualify as fresh news. A headline must have a recognized bullish label and buzz of at
+least 2. A sector-only case requires today's bullish note for that same sector and an
+explicit driver; it cannot rescue a citation to rejected evidence.
+
+These are correctness repairs, not evidence of improved returns. Historical decisions
+and their transcripts remain unchanged. See [the decision audit](docs/DECISIONS-2026-11-19.md).
+
 ## What happens each evening
 
 <img src="docs/architecture.svg" alt="Rust gathers data, six model agents decide, Rust keeps the books" width="100%">

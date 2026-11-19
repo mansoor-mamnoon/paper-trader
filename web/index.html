@@ -36,6 +36,10 @@
       <h1>Nemotron 3 Ultra runs a <span class="mark">$1,000</span> paper account.</h1>
       <p>After the US close, NVIDIA’s hosted 550B model plays all six roles: scout, strategist, classifier, analyst, skeptic and manager. The agents read the news, debate each stock, and decide every holding. Local Qwen3.5 9B answers when hosted inference fails. Every decision and model transcript is public.</p>
     </div>
+    <div class="card">
+      <h2>Decision review · 19 November</h2>
+      <p class="small" style="margin-top:8px">The account through 18 November lost 9.05%, versus 0.69% for SPY, across several desk versions. The review found purchases despite broken cases and news dates based on collection time. New purchases now require completed research and an unbroken skeptic verdict; fresh-news windows use publication dates. These repairs have not yet established better returns. <a href="https://github.com/mansoor-mamnoon/paper-trader/blob/main/docs/DECISIONS-2026-11-19.md">Read the evidence and fixes</a>. The orders below were recorded by the previous code and remain historical evidence until the next desk run.</p>
+    </div>
     <div class="stats" id="stats"></div>
     <div class="card">
       <div class="head"><h2>Equity</h2><div class="legend"><span><i class="sw"></i>Account</span><span><i class="sw spy"></i>SPY yardstick (never held)</span></div></div>
@@ -98,7 +102,7 @@
         <li><b>Scouts</b> write each of 12 sectors' newsbook entries from the last two days of sector news, the tape and their own earlier entries.</li>
         <li><b>Strategist</b> reads the newsbook and picks one to three sectors to trade. Candidates are the 8 most-buzzed stocks in those sectors plus the 4 most-buzzed anywhere else.</li>
         <li><b>Classifier</b> labels every headline of every holding and candidate: product launch, big deal, policy, retail frenzy, noise and so on, with a buzz score.</li>
-        <li><b>Analyst</b> makes the case for each stock and must name the one headline it rests on; a case with no real headline behind it does not count. <b>Skeptic</b> only argues against it, with the same file.</li>
+        <li><b>Analyst</b> makes the case for each stock and must name the one headline it rests on; a case requires a recognized bullish headline with buzz of at least 2, or an explicit bullish sector driver. Publication dates determine freshness. <b>Skeptic</b> only argues against it, with the same file.</li>
         <li><b>Manager</b> must answer KEEP or SELL for every holding of up to eight, then picks replacements for every sale from the candidates the analyst made a case for. There is no minimum holding period; even a newly bought stock can be replaced when the evidence justifies the cost. It reads its own notes, decisions and closed trades from earlier days.</li>
         <li><b>Rust queues the orders</b> for the next open. All cash is spent; if nothing new is bought, freed cash tops up the stocks that were kept.</li>
       </ol>

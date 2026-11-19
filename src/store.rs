@@ -413,11 +413,12 @@ impl Store {
         Ok(())
     }
 
-    /// Headlines for `scope` first seen on or after `since_day`, newest first.
+    /// Headlines for `scope` published on or after `since_day`, newest first.
+    /// First-seen dates are memory metadata, never evidence of freshness.
     pub fn headlines(&self, scope: &str, since_day: &str, limit: usize) -> Result<Vec<Tagged>> {
         let mut stmt = self.db.prepare(
             "SELECT id, day, title, source, published, link, label, buzz, tone, tone_score FROM headlines \
-             WHERE scope=? AND day>=? ORDER BY day DESC, published DESC, id DESC LIMIT ?",
+             WHERE scope=? AND published>=CAST(strftime('%s', ?) AS REAL) ORDER BY published DESC, id DESC LIMIT ?",
         )?;
         let rows = stmt.query_map(params![scope, since_day, limit as i64], |r| {
             Ok(Tagged {
@@ -753,7 +754,7 @@ mod tests {
         let item = Headline {
             title: "Acme wins contract".into(),
             source: "Reuters".into(),
-            published: 10.0,
+            published: 1794484800.0,
             link: String::new(),
         };
         store
@@ -779,6 +780,32 @@ mod tests {
                 .unwrap()
                 .is_empty()
         );
+    }
+
+    #[test]
+    fn newly_seen_old_news_is_not_fresh_evidence() {
+        let store = Store::open(":memory:").unwrap();
+        for (title, published) in [
+            ("old backlog", 1794009600.0),
+            ("fresh contract", 1794484800.0),
+            ("undated", 0.0),
+        ] {
+            store
+                .remember_headlines(
+                    "2026-11-13",
+                    "ACME",
+                    &[Headline {
+                        title: title.into(),
+                        published,
+                        source: String::new(),
+                        link: String::new(),
+                    }],
+                )
+                .unwrap();
+        }
+        let headlines = store.headlines("ACME", "2026-11-12", 8).unwrap();
+        assert_eq!(headlines.len(), 1);
+        assert_eq!(headlines[0].title, "fresh contract");
     }
 
     #[test]

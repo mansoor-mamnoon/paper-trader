@@ -186,7 +186,7 @@ function how(d) {
     "Every holding gets a KEEP or SELL every day. Every sale is replaced by a purchase.",
     `No purchase may take a stock above ${Math.round((r.max_weight ?? 0.25) * 100)}% of the account; what it cannot take goes to the other purchases.`,
     "No minimum holding period: the manager can replace even a newly bought stock when the evidence justifies the cost.",
-    "Only stocks the analyst made a case for can be bought. The skeptic only argues against.",
+    "New purchases require a bullish analyst case and a completed skeptic verdict of stands or weakened. Broken cases and failed skeptic research are excluded.",
     "The book never drops below four stocks; cash a capped purchase cannot take goes to the other holdings.",
     `Orders fill at the next open, with ${(r.fee * 100).toFixed(1)}% fees and ${(r.slippage * 100).toFixed(1)}% slippage each way.`,
     "No stop-losses, no momentum fallback and no rule picks a stock: only the models decide.",
