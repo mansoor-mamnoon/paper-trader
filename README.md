@@ -40,6 +40,22 @@ original dated information, stores the new transcripts and results, and republis
 the dashboard. It does not fill orders, fetch current market data, or rerun the daily
 desk. See [the follow-up audit](docs/DECISIONS-2026-11-20.md).
 
+A further input conflict was repaired: the screener showed TTWO +6.2% and AMD
++5.3%, while the same report's dated bars showed −3.7% and −7.7%. Scouts were reading
+the undated screen as today's tape. Bar refinement now refreshes screen prices,
+moves and volume; sector tape uses a disclosed sample of same-session bars and
+never labels that sample whole-sector breadth.
+
+Validation: 89 Rust tests, strict Clippy and formatting, nine Python tests, and
+dashboard render checks against the recorded account data.
+
+The [pending-exit review](https://github.com/mansoor-mamnoon/paper-trader/actions/runs/44692293673)
+removed all four unsupported/unvalidated sells. Four hosted calls completed in about
+23 seconds with no reported reasoning tokens or fallback. AES, PANW, TJX and TTWO
+remain held, with no pending orders. All historical fills, original decisions and
+reports remain unchanged; the pre-review ledger, checks and new transcripts are
+preserved. This establishes execution and evidence handling, not better future returns.
+
 ## Decision review — 19 November 2026
 
 The published account through 18 November is $909.50 (−9.05%), against $993.08

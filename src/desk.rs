@@ -152,9 +152,54 @@ pub fn tape(members: &[&Listing]) -> String {
     )
 }
 
+/// Sector direction is only known for the bar-verified sample, not the entire screener.
+fn session_tape(
+    members: &[&Listing],
+    quotes: &BTreeMap<String, Quote>,
+    session: Option<f64>,
+) -> String {
+    let Some(session) = session else {
+        return "No session-verified tape; screener snapshot is undated".into();
+    };
+    let verified: Vec<Listing> = members
+        .iter()
+        .filter_map(|listing| {
+            let quote = quotes.get(&listing.symbol)?;
+            let last = quote.last()?;
+            let change = quote.change(1)?;
+            if last.at != session {
+                return None;
+            }
+            let mut listing = (*listing).clone();
+            listing.price = last.close;
+            listing.change = change;
+            listing.volume = last.volume;
+            Some(listing)
+        })
+        .collect();
+    if verified.is_empty() {
+        return "No session-verified stocks in this sector; do not infer today's breadth from the undated screener".into();
+    }
+    let date = chrono::DateTime::from_timestamp(session as i64, 0)
+        .map_or_else(|| "unknown".into(), |at| at.format("%Y-%m-%d").to_string());
+    format!(
+        "Verified {date} bars for {} of {} eligible stocks (buzz-selected sample, not whole-sector breadth): {}",
+        verified.len(),
+        members.len(),
+        tape(&verified.iter().collect::<Vec<_>>())
+    )
+}
+
 fn buzz_line(item: &Buzz) -> String {
+    let session = item
+        .session_at
+        .and_then(|at| chrono::DateTime::from_timestamp(at as i64, 0))
+        .map_or_else(
+            || "undated screener snapshot, session not verified".into(),
+            |at| format!("daily bar {}", at.format("%Y-%m-%d")),
+        );
     let mut line = format!(
-        "{} ({}): {:+.1}% today",
+        "{} ({}): {:+.1}% ({session})",
         item.listing.symbol,
         item.listing.company(),
         item.listing.change
@@ -615,7 +660,11 @@ pub fn run_with(
     for sector in &SECTORS {
         report.tapes.insert(
             sector.id.into(),
-            tape(members.get(sector.id).map_or(&[][..], Vec::as_slice)),
+            session_tape(
+                members.get(sector.id).map_or(&[][..], Vec::as_slice),
+                &quotes,
+                quotes.get("SPY").and_then(Quote::last).map(|b| b.at),
+            ),
         );
     }
     report.metrics.stages.insert(first_step, stage.end());
@@ -1944,6 +1993,24 @@ mod tests {
                 .is_empty()
         );
         assert_eq!(reviewer.count(Agent::Manager), 2);
+    }
+
+    #[test]
+    fn sector_tape_is_an_explicitly_partial_same_session_sample() {
+        let a = stock("A", "Technology", "Semiconductors", -50.0);
+        let b = stock("B", "Technology", "Semiconductors", 90.0);
+        let current = bars(51.0, 1.0e6);
+        let session = current.last().unwrap().at;
+        let mut stale = current.clone();
+        stale.bars.pop();
+        let quotes = [("A".into(), current), ("B".into(), stale)].into();
+        let line = session_tape(&[&a, &b], &quotes, Some(session));
+        assert!(line.contains("1 of 2 eligible stocks"));
+        assert!(line.contains("not whole-sector breadth"));
+        assert!(line.contains("A +2.0%"));
+        assert!(!line.contains("B +90.0%"));
+        let empty = session_tape(&[&a, &b], &BTreeMap::new(), Some(session));
+        assert!(empty.contains("No session-verified stocks"));
     }
 
     struct Keyword;

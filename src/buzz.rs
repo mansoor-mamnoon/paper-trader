@@ -150,6 +150,9 @@ pub struct Buzz {
     pub score: f64,
     /// Latest volume against the 20-session average, once bars are known.
     pub relative_volume: Option<f64>,
+    /// Session of the daily bar replacing the undated screener quote.
+    #[serde(default)]
+    pub session_at: Option<f64>,
     /// FinBERT's net tone over the stock's fresh headlines, once they are read.
     #[serde(default)]
     pub news_tone: Option<f64>,
@@ -194,6 +197,7 @@ pub fn score_all(eligible: &[Listing], attention: &BTreeMap<String, Attention>) 
                 attention: seen,
                 score,
                 relative_volume: None,
+                session_at: None,
                 news_tone: None,
             }
         })
@@ -231,9 +235,18 @@ pub fn add_news(scored: &mut [Buzz], tones: &BTreeMap<String, Vec<f64>>) {
     rank(scored);
 }
 
-/// Add up to 3 points for unusual volume once the bars are known, and rank again.
+/// Replace undated screener prices/moves with dated daily bars, add unusual volume, and rank again.
 pub fn refine(scored: &mut [Buzz], quotes: &BTreeMap<String, Quote>) {
     for item in scored.iter_mut() {
+        if let Some(quote) = quotes.get(&item.listing.symbol)
+            && let (Some(last), Some(change)) = (quote.last(), quote.change(1))
+        {
+            item.score += move_points(change) - move_points(item.listing.change);
+            item.listing.change = change;
+            item.listing.price = last.close;
+            item.listing.volume = last.volume;
+            item.session_at = Some(last.at);
+        }
         if item.relative_volume.is_some() {
             continue;
         }
@@ -273,6 +286,36 @@ mod tests {
             market_cap: 5.0e9,
             ..Listing::default()
         }
+    }
+
+    #[test]
+    fn dated_bars_replace_a_stale_screener_move_without_double_counting() {
+        let mut ranked = score_all(&[listing("TTWO", 6.2, 1.0e8)], &BTreeMap::new());
+        let quote = Quote {
+            bars: vec![
+                Bar {
+                    at: 100.0,
+                    open: 100.0,
+                    close: 100.0,
+                    volume: 1.0e6,
+                },
+                Bar {
+                    at: 200.0,
+                    open: 100.0,
+                    close: 96.3,
+                    volume: 2.0e6,
+                },
+            ],
+            ..Quote::default()
+        };
+        let quotes = [("TTWO".into(), quote)].into();
+        refine(&mut ranked, &quotes);
+        assert!((ranked[0].listing.change + 3.7).abs() < 1e-9);
+        assert_eq!(ranked[0].listing.price, 96.3);
+        assert_eq!(ranked[0].session_at, Some(200.0));
+        let score = ranked[0].score;
+        refine(&mut ranked, &quotes);
+        assert_eq!(ranked[0].score, score);
     }
 
     #[test]
