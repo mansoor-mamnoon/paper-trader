@@ -151,6 +151,7 @@ function desk(d) {
       <div class="head"><div class="line"><b class="mono" style="font-size:1.1rem">${esc(c.symbol)}</b><span>${esc(c.name)}</span>${c.holding ? '<span class="badge keep">held</span>' : '<span class="badge">candidate</span>'}${verdict ? `<span class="badge ${verdict.toLowerCase()}">${verdict.replace("_", " ")}</span>` : ""}</div><span class="label">${esc(sectorName(c.sector))}</span></div>
       <p class="small mono">${esc(factsLine(c.facts))}</p>
       ${heads ? `<ul class="heads">${heads}</ul>` : '<p class="small muted">No headlines found.</p>'}
+      ${c.holding?.entry_evidence ? `<p class="small"><b>Entry evidence (historical context):</b> ${esc(c.holding.entry_evidence.title)}</p>` : ""}
       <div class="argue">
         <div><span class="label">Analyst${c.case ? ` · ${esc(c.case.catalyst)} · upside ${c.case.upside}/10` : ""}</span><p class="small">${c.case ? esc(c.case.thesis) + (c.case.evidence ? `<br><b>Rests on:</b> ${esc(c.case.evidence)}` : "") + `<br><i>Wrong if: ${esc(c.case.kill)}</i>` : "No case was made."}</p></div>
         <div class="skeptic"><span class="label">Skeptic${c.rebuttal ? ` · case ${esc(c.rebuttal.verdict)}${c.rebuttal.priced_in ? " · priced in" : ""}` : ""}</span><p class="small">${c.rebuttal ? esc(c.rebuttal.objection) : "No rebuttal."}</p></div>
@@ -198,6 +199,7 @@ function how(d) {
     `No purchase may take a stock above ${Math.round((r.max_weight ?? 0.25) * 100)}% of the account; what it cannot take goes to the other purchases.`,
     "No minimum holding period: the manager can replace even a newly bought stock when the evidence justifies the cost.",
     "New purchases require a bullish analyst case and a completed skeptic verdict of stands or weakened. Broken cases and failed skeptic research are excluded.",
+    "Ordinary exits require a factual check and a real supporting quotation. Unsupported or failed checks keep the holding; required position-count trims remain possible.",
     "No minimum position count and no automatic top-ups of kept holdings. Unallocated cash stays in cash.",
     `Orders fill at the next open, with ${(r.fee * 100).toFixed(1)}% fees and ${(r.slippage * 100).toFixed(1)}% slippage each way.`,
     "No stop-losses, no momentum fallback and no rule picks a stock: only the models decide.",
