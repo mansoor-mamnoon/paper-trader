@@ -80,7 +80,7 @@ function pending(d) {
     .sort((a, b) => a[1].side.localeCompare(b[1].side) * -1)
     .map(([s, o]) => {
       const share = o.side === "BUY" && total ? ` · ${Math.round(((o.weight || 1) / total) * 100)}% of the cash` : "";
-      return `<li><div class="line"><span class="badge ${o.side.toLowerCase()}">${o.side}</span><b>${esc(s)}</b><span class="small muted">${esc(sectorOf(s, o.sector))}${share}</span></div><div class="small">${esc(o.reason)}</div></li>`;
+      return `<li><div class="line"><span class="badge ${o.side.toLowerCase()}">${o.side}</span><b>${esc(s)}</b><span class="small muted">${esc(sectorOf(s, o.sector))}${share}${o.side === "SELL" && o.exit_checked ? " · fact-checked" : ""}</span></div><div class="small">${esc(o.reason)}</div></li>`;
     }).join("") + '</ul><p class="small muted" style="margin-top:8px">Orders fill at the next session\'s open. Sales fill first. Approved purchases share available cash by weight, subject to the 25% cap; excess stays in cash.</p>';
 }
 
@@ -96,12 +96,17 @@ function today(d) {
     ? list.map((e) => `<li><div class="line"><span class="badge ${e.kind.toLowerCase()}">${e.kind.replace("_", " ")}</span><b>${esc(e.symbol)}</b></div><div class="small">${esc(e.text)}</div></li>`).join("")
     : '<li class="muted small">No decisions recorded for this day.</li>';
   const cancellations = (d.events || []).filter(([at, kind, message]) =>
-    at >= r.at && kind === "cancelled" && message.startsWith("Cancelled pending buy"));
+    at >= r.at && kind === "cancelled" && message.startsWith("Cancelled pending "));
   if (cancellations.length) {
     $("decisions").innerHTML += cancellations.map(([at, , message]) =>
-      `<li><span class="badge">CANCELLED BUY</span> <span class="small muted">${esc(when(at))}</span><div class="small">${esc(message)}</div></li>`).join("");
+      `<li><span class="badge">ORDER CANCELLED</span> <span class="small muted">${esc(when(at))}</span><div class="small">${esc(message)}</div></li>`).join("");
   }
-  $("note").innerHTML = r.note ? `<b>Manager's note for tomorrow:</b> ${esc(r.note)}` : "";
+  const exitChecks = Object.entries(r.exit_checks || {});
+  if (exitChecks.length) {
+    $("decisions").innerHTML += exitChecks.map(([symbol, check]) =>
+      `<li><span class="badge">EXIT CHECK</span> <b>${esc(symbol)}</b> · ${check.approved ? "approved" : "blocked"}<div class="small">${esc(check.reason)}</div>${check.quote ? `<div class="small muted">Evidence: ${esc(check.quote)}</div>` : ""}</li>`).join("");
+  }
+  $("note").innerHTML = r.note ? `<b>Manager's note for tomorrow (orders have not filled):</b> ${esc(r.note)}` : "";
   const problems = r.problems || [];
   if (problems.length) {
     $("notice").hidden = false;

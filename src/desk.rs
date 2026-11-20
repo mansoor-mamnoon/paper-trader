@@ -295,6 +295,109 @@ fn take_over(store: &Store, state: &mut State, at: f64) -> Result<()> {
     Ok(())
 }
 
+/// Review old pending exits without settling or fetching new data. Only signal-time
+/// evidence is used. Checked exits are idempotent; unsupported exits are cancelled.
+/// Call inside a transaction, then save state and any new model calls.
+pub fn audit_pending_exits(
+    store: &Store,
+    brain: Option<&dyn Brain>,
+    state: &mut State,
+    at: f64,
+) -> Result<BTreeMap<String, agents::ExitCheck>> {
+    let mut checks = BTreeMap::new();
+    let orders: Vec<_> = state
+        .pending
+        .iter()
+        .filter(|(_, o)| o.side == "SELL" && !o.exit_checked)
+        .map(|(s, o)| (s.clone(), o.clone()))
+        .collect();
+    if orders.is_empty() {
+        return Ok(checks);
+    }
+    let reports: Vec<Report> = store
+        .reports(crate::config::REPORT_DAYS as usize)?
+        .into_iter()
+        .map(|(_, body)| serde_json::from_str(&body))
+        .collect::<std::result::Result<_, _>>()?;
+    for (symbol, order) in orders {
+        let reviewed = (|| -> Result<agents::ExitCheck> {
+            let brain =
+                brain.ok_or_else(|| anyhow::anyhow!("No model available for exit fact check"))?;
+            let report = reports
+                .iter()
+                .find(|r| (r.at - order.at).abs() < 1e-6)
+                .ok_or_else(|| anyhow::anyhow!("No original decision report"))?;
+            let mut card = report
+                .cards
+                .iter()
+                .find(|c| c.symbol == symbol && c.holding.is_some())
+                .cloned()
+                .ok_or_else(|| anyhow::anyhow!("No original holding dossier"))?;
+            let position = state
+                .positions
+                .get(&symbol)
+                .ok_or_else(|| anyhow::anyhow!("Position no longer held"))?;
+            if let Some(holding) = card.holding.as_mut() {
+                holding.entry_evidence = entry_evidence(store, &symbol, position.opened_at)?;
+            }
+            // Recover material news omitted by the old newest-eight selection. Bound
+            // publication AND first-seen time to the original report, never to today.
+            let recovered = store.research_headlines(
+                &symbol,
+                &store::days_before(&report.day, HEADLINE_DAYS),
+                64,
+            )?;
+            for h in recovered {
+                if h.published <= report.at
+                    && h.day <= report.day
+                    && h.buzz >= 2
+                    && !card.headlines.iter().any(|old| old.id == h.id)
+                {
+                    card.headlines.push(h);
+                }
+            }
+            agents::audit_exit(
+                brain,
+                &card,
+                report.newsbook.iter().find(|n| n.sector == card.sector),
+                &report.day,
+                &order.reason,
+            )
+        })();
+        let check = reviewed.unwrap_or_else(|error| agents::ExitCheck {
+            proposed: order.reason.clone(),
+            reason: format!("Exit check unavailable; retained holding: {error}"),
+            ..agents::ExitCheck::default()
+        });
+        if check.approved {
+            if let Some(order) = state.pending.get_mut(&symbol) {
+                order.exit_checked = true;
+                order.reason.clone_from(&check.reason);
+            }
+            store.event(
+                at,
+                "exit_review",
+                &format!(
+                    "Confirmed pending sell of {symbol} after factual review: {}",
+                    check.reason
+                ),
+            )?;
+        } else {
+            state.pending.remove(&symbol);
+            store.event(
+                at,
+                "cancelled",
+                &format!(
+                    "Cancelled pending sell of {symbol} after factual review: {}",
+                    check.reason
+                ),
+            )?;
+        }
+        checks.insert(symbol, check);
+    }
+    Ok(checks)
+}
+
 /// Recheck persisted buys before settlement, including orders written by older code.
 /// Uses only the report from the signal time; never consults subsequent news or prices.
 /// Call inside the same transaction as saving state or settlement.
@@ -453,6 +556,7 @@ pub fn run_with(
     let fills_before = store.fill_count()?;
     store.begin()?;
     take_over(store, &mut state, at)?;
+    audit_pending_exits(store, brain, &mut state, at)?;
     validate_pending(store, &mut state, at)?;
     broker::settle(store, &mut state, &quotes, at)?;
     store.save(&state)?;
@@ -911,6 +1015,7 @@ pub fn run_with(
                 sector: card.map(|c| c.sector.clone()).unwrap_or_default(),
                 thesis: case.map(|c| c.thesis.clone()).unwrap_or_default(),
                 catalyst: case.map(|c| c.catalyst.clone()).unwrap_or_default(),
+                exit_checked: false,
             },
         );
     }
@@ -1794,6 +1899,51 @@ mod tests {
                 .iter()
                 .any(|d| d.symbol == "OLDA" && d.kind == "KEEP")
         );
+    }
+
+    #[test]
+    fn old_pending_exits_are_reviewed_once_without_rewriting_history() {
+        let store = Store::open(":memory:").unwrap();
+        let mut initial = State {
+            cash: 0.0,
+            engine: ENGINE.into(),
+            ..State::default()
+        };
+        for symbol in ["OLDA", "OLDB"] {
+            initial.positions.insert(symbol.into(), held(symbol));
+        }
+        store.save(&initial).unwrap();
+        let report = run(&store, Some(&brain()), &fixture(), AT, 0.0).unwrap();
+        let original = store.reports(1).unwrap();
+        let mut state = store.load().unwrap();
+        for order in state.pending.values_mut().filter(|o| o.side == "SELL") {
+            order.exit_checked = false;
+        }
+        let inner = brain();
+        let reviewer = Scripted::new(move |agent, subject, user, schema| {
+            if subject == "exit:OLDA" {
+                return Ok(json!({
+                    "approved":false, "source":"none", "evidence":0, "quote":"",
+                    "reason":"The proposal misattributes entry-day facts."
+                }));
+            }
+            inner.ask(agent, subject, "", user, schema)
+        });
+        let checks = audit_pending_exits(&store, Some(&reviewer), &mut state, AT + 1.0).unwrap();
+        assert!(!checks["OLDA"].approved);
+        assert!(checks["OLDB"].approved);
+        assert!(!state.pending.contains_key("OLDA"));
+        assert!(state.pending["OLDB"].exit_checked);
+        assert_eq!(store.reports(1).unwrap(), original);
+        assert_eq!(state.positions, store.load().unwrap().positions);
+        assert!(store.fills(100).unwrap().is_empty());
+        assert_eq!(report.day, DAY);
+        assert!(
+            audit_pending_exits(&store, Some(&reviewer), &mut state, AT + 2.0)
+                .unwrap()
+                .is_empty()
+        );
+        assert_eq!(reviewer.count(Agent::Manager), 2);
     }
 
     struct Keyword;

@@ -1,0 +1,71 @@
+name: Review pending exits
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: stock-account
+  cancel-in-progress: false
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
+        run: cargo build --release --locked
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/paper-trader-llm
+          key: llm-${{ hashFiles('src/models.rs', 'src/sentiment.rs') }}
+      - uses: actions/checkout@v7
+        with:
+          ref: account
+          path: account
+      - name: Archive and review pending exits using original evidence
+        env:
+          PAPER_TRADER_API_KEY: ${{ secrets.PAPER_TRADER_API_KEY }}
+          PAPER_TRADER_API_URL: ${{ vars.PAPER_TRADER_API_URL }}
+          PAPER_TRADER_API_MODEL: ${{ vars.PAPER_TRADER_API_MODEL }}
+          PAPER_TRADER_API_RPM: ${{ vars.PAPER_TRADER_API_RPM }}
+          PAPER_TRADER_API_TPM: ${{ vars.PAPER_TRADER_API_TPM }}
+          PAPER_TRADER_API_TIMEOUT_SECONDS: ${{ vars.PAPER_TRADER_API_TIMEOUT_SECONDS }}
+        run: |
+          set -euo pipefail
+          review_dir="account/archive/exit-review-${GITHUB_RUN_ID}"
+          mkdir -p "$review_dir"
+          sqlite3 account/account.sqlite ".backup '$review_dir/before.sqlite'"
+          ./target/release/paper-trader audit-exits --db account/account.sqlite --output account/site | tee "$review_dir/review.json"
+          test "$(sqlite3 account/account.sqlite 'PRAGMA integrity_check')" = ok
+      - name: Apply dashboard
+        run: cp -r web/* account/site/
+      - name: Configure visitor analytics
+        env:
+          GOATCOUNTER_CODE: ${{ vars.GOATCOUNTER_CODE }}
+          GA4_ID: ${{ vars.GA4_ID }}
+        run: |
+          gc=$(printf '%s' "$GOATCOUNTER_CODE" | tr -cd 'A-Za-z0-9-')
+          ga=$(printf '%s' "$GA4_ID" | tr -cd 'A-Za-z0-9-')
+          printf 'window.PT_ANALYTICS = { goatcounter: "%s", ga4: "%s" };\n' "$gc" "$ga" > account/site/analytics-config.js
+      - name: Save reviewed queue and evidence
+        working-directory: account
+        run: |
+          git config user.name 'paper-trader[bot]'
+          git config user.email 'paper-trader@users.noreply.github.com'
+          git add account.sqlite site archive
+          git diff --cached --quiet || git commit -m 'Record factual review of pending exits'
+          git push origin HEAD:account
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: account/site
+      - name: Publish dashboard
+        id: deployment
+        uses: actions/deploy-pages@v5

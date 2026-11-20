@@ -312,6 +312,7 @@ pub fn queue(
                 symbol.clone(),
                 Order {
                     side: "SELL".into(),
+                    exit_checked: true,
                     at,
                     reason: reason.clone(),
                     weight: 1.0,
@@ -377,6 +378,7 @@ mod tests {
             sector: "chips".into(),
             thesis: "thesis".into(),
             catalyst: "deal".into(),
+            exit_checked: false,
         }
     }
 

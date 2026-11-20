@@ -33,6 +33,13 @@ the holding; portfolio-size trims remain mandatory. The skeptic itself sees toda
 case without historical entry-day statistics. This reduces specific failure paths;
 an exact source quotation is not a guarantee that a model's interpretation is correct.
 
+Old pending sells also pass this check before settlement. A sale that already passed
+is marked and does not call the model again. The manual **Review pending exits**
+workflow archives the account, checks only unreviewed pending sells against their
+original dated information, stores the new transcripts and results, and republishes
+the dashboard. It does not fill orders, fetch current market data, or rerun the daily
+desk. See [the follow-up audit](docs/DECISIONS-2026-11-20.md).
+
 ## Decision review — 19 November 2026
 
 The published account through 18 November is $909.50 (−9.05%), against $993.08

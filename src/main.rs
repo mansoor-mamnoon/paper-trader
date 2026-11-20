@@ -42,6 +42,13 @@ enum Cli {
         #[arg(long)]
         output: String,
     },
+    /// Fact-check pending exits without filling orders or fetching market data
+    AuditExits {
+        #[arg(long)]
+        db: String,
+        #[arg(long)]
+        output: String,
+    },
     /// Read the tone of headlines with FinBERT
     Tone {
         /// One or more headlines
@@ -92,6 +99,25 @@ fn main() -> Result<()> {
                 "{}",
                 json!({"cancelled_buys": cancelled, "account": account})
             );
+            Ok(())
+        }
+        Cli::AuditExits { db, output } => {
+            progress::enable(std::time::Duration::from_secs(30));
+            let store = Store::open(&db)?;
+            let mut state = store.load()?;
+            let brain = LocalBrain::from_env()?;
+            let day = store
+                .reports(1)?
+                .first()
+                .map(|r| r.0.clone())
+                .ok_or_else(|| anyhow::anyhow!("No decision report"))?;
+            store.begin()?;
+            let checks = desk::audit_pending_exits(&store, Some(&brain), &mut state, store::now())?;
+            store.record_calls(&day, &brain.take_calls())?;
+            store.save(&state)?;
+            store.commit()?;
+            let account = site::export(&store, &output)?;
+            println!("{}", json!({"exit_checks": checks, "account": account}));
             Ok(())
         }
         Cli::Bench { models } => bench(&models),

@@ -367,7 +367,7 @@ pub fn summary(card: &Card) -> String {
             "  Skeptic (case {}{}): {}",
             rebuttal.verdict,
             if rebuttal.priced_in {
-                ", move already priced in"
+                ", claims move is priced in"
             } else {
                 ""
             },
@@ -1028,7 +1028,10 @@ pub fn pick(
 
 /// The manager's note to itself for tomorrow.
 pub fn note(brain: &dyn Brain, book: &Book, decisions: &[Entry]) -> Result<String> {
-    let mut user = format!("{}\nWHAT YOU DECIDED TODAY:\n", book_text(book));
+    let mut user = format!(
+        "{}\nORDERS DECIDED TODAY (queued for the next open, not completed fills):\n",
+        book_text(book)
+    );
     if decisions.is_empty() {
         user.push_str("  (no changes)\n");
     }
@@ -1036,6 +1039,7 @@ pub fn note(brain: &dyn Brain, book: &Book, decisions: &[Entry]) -> Result<Strin
         let _ = writeln!(user, "  {} {}: {}", entry.kind, entry.symbol, entry.text);
     }
     user.push_str("\nWrite a note to yourself for tomorrow in two or three sentences: what you are betting on, what you expect to happen, and what would change your mind.");
+    user.push_str("\nDescribe intended future exposure. Pending sells are not filled yet: do not claim the book already holds cash or that positions have already been sold.\n");
     let schema = object(&json!({"note": string(520)}), &["note"]);
     let answer = brain.ask(Agent::Manager, "note", MANAGER, &user, &schema)?;
     Ok(text(&answer, "note"))
@@ -1195,7 +1199,7 @@ mod tests {
             assert!(text.contains(expected), "missing {expected:?} in\n{text}");
         }
         let brief = summary(&card("ACME", true));
-        assert!(brief.contains("Skeptic (case weakened, move already priced in)"));
+        assert!(brief.contains("Skeptic (case weakened, claims move is priced in)"));
         assert!(brief.contains("News (published 2026-11-13, big_deal)"));
         assert!(!brief.contains("names new CFO"));
     }

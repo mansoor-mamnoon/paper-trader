@@ -56,6 +56,9 @@ fn one() -> f64 {
 pub struct Order {
     /// `BUY` or `SELL`.
     pub side: String,
+    /// A sale passed the exit fact check, or is required by the position-count cap.
+    #[serde(default)]
+    pub exit_checked: bool,
     pub at: f64,
     pub reason: String,
     /// A buy's share of the cash available at the open, relative to the other buys.
