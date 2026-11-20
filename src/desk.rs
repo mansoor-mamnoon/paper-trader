@@ -105,6 +105,8 @@ pub struct Report {
     pub cards: Vec<Card>,
     /// KEEP, SELL, BUY and `TOP_UP` lines.
     pub decisions: Vec<Entry>,
+    /// Independent factual checks of proposed sales.
+    pub exit_checks: BTreeMap<String, agents::ExitCheck>,
     /// The manager's note to itself.
     pub note: String,
     /// The most-buzzed stocks of the day, whatever their sector.
@@ -242,6 +244,32 @@ fn memory(store: &Store, day: &str) -> Result<Memory> {
         trades,
         record,
     })
+}
+
+/// Recover the actual citation from the last buy decision before the position opened.
+/// Keeping it separate prevents a busy news feed from erasing the entry thesis.
+fn entry_evidence(store: &Store, symbol: &str, opened_at: f64) -> Result<Option<store::Tagged>> {
+    for (_, body) in store.reports(crate::config::REPORT_DAYS as usize)? {
+        let report: Report = serde_json::from_str(&body)?;
+        if report.at > opened_at
+            || !report
+                .decisions
+                .iter()
+                .any(|d| d.symbol == symbol && d.kind == "BUY")
+        {
+            continue;
+        }
+        let Some(card) = report.cards.iter().find(|c| c.symbol == symbol) else {
+            continue;
+        };
+        return Ok(card.case.as_ref().and_then(|case| {
+            card.headlines
+                .iter()
+                .find(|h| h.title == case.evidence)
+                .cloned()
+        }));
+    }
+    Ok(None)
 }
 
 /// Take the account over from the desk this one replaced: its queued orders came from rules
@@ -701,7 +729,7 @@ pub fn run_with(
     for symbol in &researched {
         let listing = by_symbol.get(symbol.as_str()).copied();
         let position = state.positions.get(symbol);
-        let headlines = store.headlines(symbol, &since, HEADLINES_PER_STOCK)?;
+        let headlines = store.research_headlines(symbol, &since, HEADLINES_PER_STOCK)?;
         report.funnel.headlines += headlines.len();
         report.cards.push(Card {
             symbol: symbol.clone(),
@@ -728,6 +756,7 @@ pub fn run_with(
                     },
                     days_held: ((at - p.opened_at) / 86400.0).floor().max(0.0) as i64,
                     thesis: p.thesis.clone(),
+                    entry_evidence: entry_evidence(store, symbol, p.opened_at)?,
                     history: store.journal_for(symbol, &day, 4)?,
                 }),
                 None => None,
@@ -814,6 +843,31 @@ pub fn run_with(
         Err(error) => problems.push(format!(
             "The manager's review failed, so no holding was sold today: {error}"
         )),
+    }
+    for card in &book.holdings {
+        let Some(proposed) = sells.remove(&card.symbol) else {
+            continue;
+        };
+        match agents::audit_exit(brain, card, notes.get(&card.sector), &day, &proposed) {
+            Ok(check) => {
+                if check.approved {
+                    sells.insert(card.symbol.clone(), check.reason.clone());
+                } else {
+                    keeps.insert(
+                        card.symbol.clone(),
+                        format!("Exit blocked by factual check: {}", check.reason),
+                    );
+                }
+                report.exit_checks.insert(card.symbol.clone(), check);
+            }
+            Err(error) => {
+                keeps.insert(
+                    card.symbol.clone(),
+                    "Exit check failed; holding retained pending supported research".into(),
+                );
+                problems.push(format!("Exit check failed for {}: {error}", card.symbol));
+            }
+        }
     }
     let allowed: Vec<String> = book.candidates.iter().map(|c| c.symbol.clone()).collect();
     let surplus = broker::sales_required(&state).saturating_sub(sells.len());
@@ -1133,6 +1187,11 @@ mod tests {
                 }),
                 (Agent::Skeptic, _) => {
                     json!({"objection": "Late.", "priced_in": false, "verdict": "stands"})
+                }
+                (Agent::Manager, subject) if subject.starts_with("exit:") => {
+                    let symbol = subject.trim_start_matches("exit:");
+                    json!({"approved": true, "source":"headline", "evidence":1,
+                        "quote":format!("{symbol} lands record AI order"), "reason":"Supported exit in fixture"})
                 }
                 (Agent::Manager, "holdings") => {
                     let mut out = serde_json::Map::new();
@@ -1510,7 +1569,11 @@ mod tests {
         assert_eq!(kinds("SELL"), ["OLDA", "OLDB"]);
         assert_eq!(kinds("BUY"), ["CHIPA"]);
         assert!(!kinds("KEEP").contains(&"OLDA".to_string()));
-        assert_eq!(brain.count(Agent::Manager), 3, "review, purchases, note");
+        assert_eq!(
+            brain.count(Agent::Manager),
+            5,
+            "review, two exit checks, purchases, note"
+        );
     }
 
     #[test]
@@ -1685,6 +1748,51 @@ mod tests {
                 .filter(|e| e.1 == "cancelled")
                 .count(),
             2
+        );
+    }
+
+    #[test]
+    fn entry_citation_is_recovered_without_treating_it_as_fresh_news() {
+        let store = Store::open(":memory:").unwrap();
+        let report = run(&store, Some(&brain()), &fixture(), AT, 0.0).unwrap();
+        let evidence = entry_evidence(&store, "CHIPA", AT + 86400.0)
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            evidence.title,
+            report.cards[0].case.as_ref().unwrap().evidence
+        );
+        assert!(entry_evidence(&store, "CHIPA", AT - 1.0).unwrap().is_none());
+    }
+
+    #[test]
+    fn unsupported_exit_checks_keep_the_holding() {
+        let store = Store::open(":memory:").unwrap();
+        let mut state = State {
+            cash: 0.0,
+            engine: ENGINE.into(),
+            ..State::default()
+        };
+        state.positions.insert("OLDA".into(), held("OLDA"));
+        store.save(&state).unwrap();
+        let inner = brain();
+        let brain = Scripted::new(move |agent, subject, user, schema| {
+            if subject == "exit:OLDA" {
+                return Ok(json!({
+                    "approved":false, "source":"none", "evidence":0, "quote":"",
+                    "reason":"Date arithmetic is wrong; the entry thesis is not disproved."
+                }));
+            }
+            inner.ask(agent, subject, "", user, schema)
+        });
+        let report = run(&store, Some(&brain), &fixture(), AT, 0.0).unwrap();
+        assert!(!report.exit_checks["OLDA"].approved);
+        assert!(store.load().unwrap().pending.is_empty());
+        assert!(
+            report
+                .decisions
+                .iter()
+                .any(|d| d.symbol == "OLDA" && d.kind == "KEEP")
         );
     }
 

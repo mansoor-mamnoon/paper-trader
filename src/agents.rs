@@ -117,6 +117,9 @@ pub struct Holding {
     pub days_held: i64,
     /// The case made when it was bought.
     pub thesis: String,
+    /// Original cited headline, retained independently of today's news window.
+    #[serde(default)]
+    pub entry_evidence: Option<Tagged>,
     /// Earlier decisions about it, newest first.
     pub history: Vec<Entry>,
 }
@@ -253,7 +256,7 @@ fn headline_lines(headlines: &[Tagged], today: &str) -> String {
 /// The full file on a stock, as the analyst and the skeptic read it.
 pub fn dossier(card: &Card, sector_note: Option<&SectorNote>, today: &str) -> String {
     let mut out = format!(
-        "STOCK: {} ({})\nSECTOR: {}\n",
+        "DATE: {today} (calendar date; fiscal-year labels are not publication dates)\nSTOCK: {} ({})\nSECTOR: {}\n",
         card.symbol,
         card.name,
         sectors::name_of(&card.sector)
@@ -272,6 +275,13 @@ pub fn dossier(card: &Card, sector_note: Option<&SectorNote>, today: &str) -> St
         headline_lines(&card.headlines, today)
     );
     if let Some(holding) = &card.holding {
+        if let Some(headline) = &holding.entry_evidence {
+            let _ = writeln!(
+                out,
+                "ENTRY EVIDENCE (historical context, not a new catalyst):\n{}",
+                headline_lines(std::slice::from_ref(headline), today)
+            );
+        }
         let _ = writeln!(
             out,
             "THE ACCOUNT OWNS THIS STOCK: held {} days, ${:.2} paid, now worth ${:.2} ({}).",
@@ -330,7 +340,13 @@ pub fn summary(card: &Card) -> String {
         .take(3)
         .collect();
     for h in fresh {
-        let _ = writeln!(out, "  News ({}, {}): {}", h.day, h.label, h.title);
+        let published = chrono::DateTime::from_timestamp(h.published as i64, 0)
+            .map_or_else(|| "unknown".into(), |at| at.format("%Y-%m-%d").to_string());
+        let _ = writeln!(
+            out,
+            "  News (published {published}, {}): {}",
+            h.label, h.title
+        );
     }
     match &card.case {
         Some(case) => {
@@ -668,7 +684,7 @@ pub fn analyst(
     })
 }
 
-const SKEPTIC: &str = "You are the skeptic on a trading desk that buys stocks on news buzz. The analyst has made a case for a stock. Attack it using the same file. Is the catalyst real, about this company, and fresh, or is it old news? Has the price already made the move, so a buyer today is late? Is the buzz fading compared with yesterday? Did the analyst lean on something the file does not say? Give the single strongest objection. Then give your verdict. Stands: the objection is minor. Weakened: the catalyst is real but the timing, the price or the fading buzz makes the trade worse than the analyst says; most honest cases with a flaw are this. Broken: the catalyst is false, is not about this company, is contradicted by the file, or the headline the analyst cites does not say what the analyst claims. You only ever argue against buying: if the analyst found no catalyst, agree and say what makes the stock worth avoiding, and never make the case for it yourself. Do not object for the sake of it: if the case is good, say it stands.";
+const SKEPTIC: &str = "You are the skeptic on a trading desk that buys stocks on news buzz. The analyst has made a case for a stock. Attack it using the same file. Is the catalyst real, about this company, and fresh, or is it old news? Has the price already made the move, so a buyer today is late? Is the buzz fading compared with yesterday? Did the analyst lean on something the file does not say? Use the explicit DATE in the file for date arithmetic. Fiscal labels such as Q3 2027 can be reported during calendar 2026; they do not make a published report future or fabricated. Distinguish the current analyst case from the historical entry thesis: do not attribute entry-day volume or social claims to today's analyst. A lack of new headlines is not proof the entry thesis is false. A price move alone is not proof that a catalyst is fully priced in. Give the single strongest objection. Then give your verdict. Stands: the objection is minor. Weakened: the catalyst is real but the timing, the price or the fading buzz makes the trade worse than the analyst says; most honest cases with a flaw are this. Broken: the catalyst is false, is not about this company, is contradicted by the file, or the headline the analyst cites does not say what the analyst claims. You only ever argue against buying: if the analyst found no catalyst, agree and say what makes the stock worth avoiding, and never make the case for it yourself. Do not object for the sake of it: if the case is good, say it stands.";
 
 /// Attack the analyst's case for one stock.
 pub fn skeptic(
@@ -678,9 +694,12 @@ pub fn skeptic(
     note: Option<&SectorNote>,
     today: &str,
 ) -> Result<Rebuttal> {
+    // Critique today's case without importing entry-day statistics as current claims.
+    let mut current = card.clone();
+    current.holding = None;
     let user = format!(
         "{}\nTHE ANALYST'S CASE (catalyst {}, upside {}/10): {}\nThe headline the analyst rests it on: {}\nThe analyst says the case is wrong if: {}\n\nCheck the case against that headline word for word. Give your strongest objection, say whether the move is already priced in, and give your verdict.",
-        dossier(card, note, today),
+        dossier(&current, note, today),
         case.catalyst,
         case.upside,
         case.thesis,
@@ -811,7 +830,7 @@ pub fn review(brain: &dyn Brain, book: &Book) -> Result<BTreeMap<String, (bool, 
         properties.insert(
             (*symbol).to_string(),
             object(
-                &json!({"reason": string(260), "action": {"type": "string", "enum": ["KEEP", "SELL"]}}),
+                &json!({"reason": string(700), "action": {"type": "string", "enum": ["KEEP", "SELL"]}}),
                 &["reason", "action"],
             ),
         );
@@ -835,6 +854,86 @@ pub fn review(brain: &dyn Brain, book: &Book) -> Result<BTreeMap<String, (bool, 
         );
     }
     Ok(out)
+}
+
+/// A factual check of a proposed exit, kept beside the decision for inspection.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct ExitCheck {
+    pub approved: bool,
+    pub proposed: String,
+    pub reason: String,
+    pub source: String,
+    pub evidence: usize,
+    pub quote: String,
+}
+
+/// Check a sale from the raw dossier and current analyst, without repeating the skeptic.
+/// Approval must quote an actual source; errors keep the position rather than create an exit.
+pub fn audit_exit(
+    brain: &dyn Brain,
+    card: &Card,
+    note: Option<&SectorNote>,
+    today: &str,
+    proposed: &str,
+) -> Result<ExitCheck> {
+    let system = "You check factual support for a proposed stock sale. You are not required to agree with the manager or sell. Use only the supplied file. Correct date arithmetic against DATE; fiscal Q3 2027 can be reported in calendar 2026. Compare today's analyst only with today's numbers; entry-thesis statistics describe the earlier entry day. Missing fresh headlines or an absent buy case do not invalidate an existing position. A one-day price move or proximity to a high alone does not prove a catalyst is exhausted. Reject a sale whose core reason is a date error, misattributed historical claim, missing context, or unsupported assertion. Approve when verified bad news, thesis failure, material deterioration or a supported risk assessment actually justifies this exit after costs. Quote the exact source supporting your finding. A valid quotation alone is not enough: the source must support the proposed conclusion. For an approved exit select headline and its 1-based number, numbers (current NUMBERS line), or entry (original entry headline). If evidence is insufficient, reject and explain the uncertainty; do not invent prices, dates or business facts.";
+    let user = format!(
+        "{}\nCURRENT ANALYST (separate from entry thesis): {}\nPROPOSED EXIT: {proposed}\nReturn approved, the source and exact quote, then a complete factual reason. evidence is a headline number only for source headline, otherwise 0.",
+        dossier(card, note, today),
+        card.case
+            .as_ref()
+            .map_or("No current case", |c| c.thesis.as_str())
+    );
+    let schema = object(
+        &json!({
+            "approved": {"type":"boolean"},
+            "source": {"type":"string", "enum":["headline","numbers","entry","none"]},
+            "evidence": {"type":"integer", "minimum":0, "maximum":card.headlines.len()},
+            "quote": string(300), "reason": string(700),
+        }),
+        &["approved", "source", "evidence", "quote", "reason"],
+    );
+    let answer = brain.ask(
+        Agent::Manager,
+        &format!("exit:{}", card.symbol),
+        system,
+        &user,
+        &schema,
+    )?;
+    let mut check = ExitCheck {
+        approved: answer["approved"]
+            .as_bool()
+            .ok_or_else(|| anyhow!("exit check missing approval"))?,
+        proposed: proposed.into(),
+        reason: text(&answer, "reason"),
+        source: text(&answer, "source"),
+        evidence: answer["evidence"].as_u64().unwrap_or(0) as usize,
+        quote: text(&answer, "quote"),
+    };
+    let source = match check.source.as_str() {
+        "headline" => check
+            .evidence
+            .checked_sub(1)
+            .and_then(|i| card.headlines.get(i))
+            .map(|h| h.title.clone()),
+        "numbers" if check.evidence == 0 => Some(facts_line(&card.facts)),
+        "entry" if check.evidence == 0 => card
+            .holding
+            .as_ref()
+            .and_then(|h| h.entry_evidence.as_ref())
+            .map(|h| h.title.clone()),
+        _ => None,
+    };
+    if check.reason.is_empty() {
+        bail!("exit check missing reason");
+    }
+    if check.approved
+        && (check.quote.is_empty() || !source.is_some_and(|s| s.contains(&check.quote)))
+    {
+        check.approved = false;
+        check.reason = "Exit blocked: the auditor did not quote a real supporting source.".into();
+    }
+    Ok(check)
 }
 
 /// Choose exactly `count` more holdings to sell from `kept`, because the book is over its
@@ -1055,6 +1154,7 @@ mod tests {
                 pnl_pct: 5.0,
                 days_held: 3,
                 thesis: "Contract win".into(),
+                entry_evidence: None,
                 history: vec![Entry {
                     day: "2026-11-12".into(),
                     kind: "KEEP".into(),
@@ -1096,7 +1196,7 @@ mod tests {
         }
         let brief = summary(&card("ACME", true));
         assert!(brief.contains("Skeptic (case weakened, move already priced in)"));
-        assert!(brief.contains("News (2026-11-13, big_deal)"));
+        assert!(brief.contains("News (published 2026-11-13, big_deal)"));
         assert!(!brief.contains("names new CFO"));
     }
 
@@ -1250,6 +1350,47 @@ mod tests {
                 .catalyst,
             "none"
         );
+    }
+
+    #[test]
+    fn the_skeptic_sees_current_claims_and_a_calendar_date() {
+        let mut stock = card("TJX", true);
+        stock.holding.as_mut().unwrap().thesis = "Yesterday 2.8x volume and 5x Reddit".into();
+        let brain = Scripted::new(|_, _, user, _| {
+            assert!(user.contains("DATE: 2026-11-19"));
+            assert!(!user.contains("Yesterday 2.8x volume"));
+            Ok(json!({"objection":"Current risk", "priced_in":false, "verdict":"weakened"}))
+        });
+        skeptic(
+            &brain,
+            &stock,
+            stock.case.as_ref().unwrap(),
+            None,
+            "2026-11-19",
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn an_exit_approval_cannot_quote_invented_evidence() {
+        let stock = card("AES", true);
+        for (quote, approved) in [
+            ("December 2026 is 18 months away", false),
+            ("AES wins $2B AI contract", true),
+        ] {
+            let brain = Scripted::new(move |_, _, _, _| {
+                Ok(json!({
+                    "approved":true, "source":"headline", "evidence":1,
+                    "quote":quote, "reason":"Checked reason"
+                }))
+            });
+            assert_eq!(
+                audit_exit(&brain, &stock, None, "2026-11-19", "Proposed sale")
+                    .unwrap()
+                    .approved,
+                approved
+            );
+        }
     }
 
     #[test]

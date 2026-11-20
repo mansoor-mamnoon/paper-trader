@@ -416,24 +416,48 @@ impl Store {
     /// Headlines for `scope` published on or after `since_day`, newest first.
     /// First-seen dates are memory metadata, never evidence of freshness.
     pub fn headlines(&self, scope: &str, since_day: &str, limit: usize) -> Result<Vec<Tagged>> {
+        self.select_headlines(scope, since_day, limit, false)
+    }
+
+    /// Retain material labelled news before filling the remaining slots with recent items.
+    /// Both positive catalysts and bad news survive a flood of unrelated market wraps.
+    pub fn research_headlines(
+        &self,
+        scope: &str,
+        since_day: &str,
+        limit: usize,
+    ) -> Result<Vec<Tagged>> {
+        self.select_headlines(scope, since_day, limit, true)
+    }
+
+    fn select_headlines(
+        &self,
+        scope: &str,
+        since_day: &str,
+        limit: usize,
+        material_first: bool,
+    ) -> Result<Vec<Tagged>> {
         let mut stmt = self.db.prepare(
             "SELECT id, day, title, source, published, link, label, buzz, tone, tone_score FROM headlines \
-             WHERE scope=? AND published>=CAST(strftime('%s', ?) AS REAL) ORDER BY published DESC, id DESC LIMIT ?",
+             WHERE scope=? AND published>=CAST(strftime('%s', ?) AS REAL) ORDER BY CASE WHEN ? AND buzz>=2 AND label NOT IN ('noise','unrelated','') THEN 0 ELSE 1 END, published DESC, id DESC LIMIT ?",
         )?;
-        let rows = stmt.query_map(params![scope, since_day, limit as i64], |r| {
-            Ok(Tagged {
-                id: r.get(0)?,
-                day: r.get(1)?,
-                title: r.get(2)?,
-                source: r.get::<_, Option<String>>(3)?.unwrap_or_default(),
-                published: r.get::<_, Option<f64>>(4)?.unwrap_or(0.0),
-                link: r.get::<_, Option<String>>(5)?.unwrap_or_default(),
-                label: r.get(6)?,
-                buzz: r.get(7)?,
-                tone: r.get(8)?,
-                tone_score: r.get(9)?,
-            })
-        })?;
+        let rows = stmt.query_map(
+            params![scope, since_day, material_first, limit as i64],
+            |r| {
+                Ok(Tagged {
+                    id: r.get(0)?,
+                    day: r.get(1)?,
+                    title: r.get(2)?,
+                    source: r.get::<_, Option<String>>(3)?.unwrap_or_default(),
+                    published: r.get::<_, Option<f64>>(4)?.unwrap_or(0.0),
+                    link: r.get::<_, Option<String>>(5)?.unwrap_or_default(),
+                    label: r.get(6)?,
+                    buzz: r.get(7)?,
+                    tone: r.get(8)?,
+                    tone_score: r.get(9)?,
+                })
+            },
+        )?;
         Ok(rows.collect::<rusqlite::Result<_>>()?)
     }
 
@@ -806,6 +830,41 @@ mod tests {
         let headlines = store.headlines("ACME", "2026-11-12", 8).unwrap();
         assert_eq!(headlines.len(), 1);
         assert_eq!(headlines[0].title, "fresh contract");
+    }
+
+    #[test]
+    fn material_news_survives_newer_market_wraps() {
+        let store = Store::open(":memory:").unwrap();
+        for i in 0..12 {
+            store
+                .remember_headlines(
+                    "2026-11-19",
+                    "PANW",
+                    &[Headline {
+                        title: format!("headline {i}"),
+                        published: 1_795_000_000.0 + f64::from(i),
+                        source: String::new(),
+                        link: String::new(),
+                    }],
+                )
+                .unwrap();
+        }
+        let oldest = store
+            .headlines("PANW", "2026-11-17", 12)
+            .unwrap()
+            .pop()
+            .unwrap();
+        store.label_headline(oldest.id, "earnings_beat", 3).unwrap();
+        let chosen = store.research_headlines("PANW", "2026-11-17", 8).unwrap();
+        assert_eq!(chosen.len(), 8);
+        assert_eq!(chosen[0].id, oldest.id);
+        assert!(
+            !store
+                .headlines("PANW", "2026-11-17", 8)
+                .unwrap()
+                .iter()
+                .any(|h| h.id == oldest.id)
+        );
     }
 
     #[test]

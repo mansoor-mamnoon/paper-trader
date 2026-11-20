@@ -8,6 +8,31 @@ A $1,000 simulated account run by NVIDIA Nemotron 3 Ultra 550B. One hosted model
 [Dashboard](https://mansoor-mamnoon.github.io/paper-trader/) · [Ops](https://mansoor-mamnoon.github.io/paper-trader/#ops) · [Actions](https://github.com/mansoor-mamnoon/paper-trader/actions)
 </div>
 
+## Follow-up review — 20 November 2026
+
+The 19 November session queued sales of AES, PANW, TJX and TTWO and selected no
+purchases. This used the previous fixes; cash itself is permitted. The review found
+new factual failures: AES's December 2, 2026 close was called 18 months away, PANW's
+entry catalyst was crowded out of the eight-headline window, TJX's skeptic attacked
+entry-day statistics rather than today's analyst case, and Walmart's fiscal Q3 2027
+was mistaken for a future calendar event.
+
+The run logs also explain the manager fallback: both hosted attempts consumed all
+2,500 output tokens in reasoning and returned no answer. Nemotron requests now
+explicitly disable thinking and request nonempty content for constrained JSON tasks,
+following [NVIDIA's model guidance](https://docs.dynamo.nvidia.com/dynamo/v1.5.0/recipes/nemotron-3-ultra).
+This avoids that specific failure mode; fallback remains available for other failures.
+Dossiers now carry the calendar date and distinguish fiscal labels and historical
+entry claims. Material classified news survives newer market wraps, and original
+entry citations are retained separately as historical context, not fresh buy evidence.
+
+Proposed exits now receive a separate factual check against the dated dossier,
+current analyst and original entry evidence. The check omits the skeptic's narrative
+and must quote a real source when approving a sale. A rejected or failed check keeps
+the holding; portfolio-size trims remain mandatory. The skeptic itself sees today's
+case without historical entry-day statistics. This reduces specific failure paths;
+an exact source quotation is not a guarantee that a model's interpretation is correct.
+
 ## Decision review — 19 November 2026
 
 The published account through 18 November is $909.50 (−9.05%), against $993.08
@@ -103,7 +128,7 @@ gh variable set PAPER_TRADER_API_URL --body https://integrate.api.nvidia.com/v1
 gh variable set PAPER_TRADER_API_MODEL --body nvidia/nemotron-3-ultra-550b-a55b
 ```
 
-`PAPER_TRADER_API_RPM` and `PAPER_TRADER_API_TPM` set the requests and tokens allowed per minute (defaults 20 and 60,000). Workers reserve request and token quota under one shared limiter before sending, including the full output budget. The client paces requests, retries transient failures and validates each answer against its JSON schema. Nemotron uses the standard chat-completions request with a 2,500-token output budget, including any reasoning tokens. The DeepSeek-specific chat-template settings are not sent to Nemotron. Returned reasoning-token counts and reasoning-content length are logged when available. The dashboard records the model that actually answered each question.
+`PAPER_TRADER_API_RPM` and `PAPER_TRADER_API_TPM` set the requests and tokens allowed per minute (defaults 20 and 60,000). Workers reserve request and token quota under one shared limiter before sending, including the full output budget. The client paces requests, retries transient failures and validates each answer against its JSON schema. Nemotron uses a 2,500-token output budget with `enable_thinking: false` and `force_nonempty_content: true` for schema-constrained desk answers. The DeepSeek-specific chat-template settings are not sent to Nemotron. Returned reasoning-token counts and reasoning-content length are logged when available. The dashboard records the model that actually answered each question.
 
 [NVIDIA documents free endpoint access for prototyping](https://docs.api.nvidia.com/nim/docs/run-anywhere); provider availability, limits and terms can change. There is no paid API fallback or automatic purchase of credits. An unavailable endpoint falls back to the local model on the free public GitHub runner.
 

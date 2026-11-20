@@ -192,6 +192,12 @@ impl Remote {
             body["chat_template_kwargs"] =
                 json!({"thinking_mode": "chat", "enable_thinking": false});
         }
+        if self.model == "nvidia/nemotron-3-ultra-550b-a55b" {
+            // Strict JSON tasks need answer tokens; the previous default spent the
+            // entire 2,500-token budget on hidden reasoning and forced local fallback.
+            body["chat_template_kwargs"] =
+                json!({"enable_thinking": false, "force_nonempty_content": true});
+        }
         body["response_format"] = if self.strict.load(Ordering::Relaxed) {
             json!({"type": "json_schema", "json_schema": {"name": "answer", "strict": true, "schema": schema}})
         } else {
@@ -435,44 +441,54 @@ mod tests {
     #[test]
     fn a_benchmark_probe_reports_http_errors_without_retrying_or_disabling_the_model() {
         use std::io::{BufRead, BufReader, Read, Write};
-        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
-        let address = listener.local_addr().unwrap();
-        let server = std::thread::spawn(move || {
-            let (mut stream, _) = listener.accept().unwrap();
-            let mut reader = BufReader::new(stream.try_clone().unwrap());
-            let mut length = 0;
-            loop {
-                let mut line = String::new();
-                reader.read_line(&mut line).unwrap();
-                if line == "\r\n" {
-                    break;
+        for model in [
+            "deepseek-ai/deepseek-v4.1-flash",
+            "nvidia/nemotron-3-ultra-550b-a55b",
+        ] {
+            let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+            let address = listener.local_addr().unwrap();
+            let server = std::thread::spawn(move || {
+                let (mut stream, _) = listener.accept().unwrap();
+                let mut reader = BufReader::new(stream.try_clone().unwrap());
+                let mut length = 0;
+                loop {
+                    let mut line = String::new();
+                    reader.read_line(&mut line).unwrap();
+                    if line == "\r\n" {
+                        break;
+                    }
+                    if let Some(value) = line.to_ascii_lowercase().strip_prefix("content-length:") {
+                        length = value.trim().parse::<usize>().unwrap();
+                    }
                 }
-                if let Some(value) = line.to_ascii_lowercase().strip_prefix("content-length:") {
-                    length = value.trim().parse::<usize>().unwrap();
-                }
+                let mut request = vec![0; length];
+                reader.read_exact(&mut request).unwrap();
+                let body = r#"{"error":"rate limited"}"#;
+                write!(stream, "HTTP/1.1 429 Too Many Requests\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()).unwrap();
+                serde_json::from_slice::<Value>(&request).unwrap()
+            });
+            let mut r = remote(20, 60_000);
+            r.url = format!("http://{address}/v1");
+            r.model = model.into();
+            let error = r
+                .probe("system", "user", &json!({"type":"object"}))
+                .unwrap_err();
+            assert!(error.to_string().contains("HTTP 429"));
+            assert!(
+                r.usable(),
+                "a probe does not alter the production circuit breaker"
+            );
+            let body = server.join().unwrap();
+            assert_eq!(body["stream"], false);
+            if model.starts_with("deepseek") {
+                assert_eq!(body["chat_template_kwargs"]["thinking_mode"], "chat");
+            } else {
+                assert_eq!(body["chat_template_kwargs"]["force_nonempty_content"], true);
+                assert!(body["chat_template_kwargs"].get("thinking_mode").is_none());
             }
-            let mut request = vec![0; length];
-            reader.read_exact(&mut request).unwrap();
-            let body = r#"{"error":"rate limited"}"#;
-            write!(stream, "HTTP/1.1 429 Too Many Requests\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()).unwrap();
-            serde_json::from_slice::<Value>(&request).unwrap()
-        });
-        let mut r = remote(20, 60_000);
-        r.url = format!("http://{address}/v1");
-        r.model = "deepseek-ai/deepseek-v4.1-flash".into();
-        let error = r
-            .probe("system", "user", &json!({"type":"object"}))
-            .unwrap_err();
-        assert!(error.to_string().contains("HTTP 429"));
-        assert!(
-            r.usable(),
-            "a probe does not alter the production circuit breaker"
-        );
-        let body = server.join().unwrap();
-        assert_eq!(body["stream"], false);
-        assert_eq!(body["chat_template_kwargs"]["thinking_mode"], "chat");
-        assert_eq!(body["chat_template_kwargs"]["enable_thinking"], false);
-        assert!(body["chat_template_kwargs"].get("thinking").is_none());
+            assert_eq!(body["chat_template_kwargs"]["enable_thinking"], false);
+            assert!(body["chat_template_kwargs"].get("thinking").is_none());
+        }
     }
 
     #[test]
