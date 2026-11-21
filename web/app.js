@@ -104,7 +104,7 @@ function today(d) {
   const exitChecks = Object.entries(r.exit_checks || {});
   if (exitChecks.length) {
     $("decisions").innerHTML += exitChecks.map(([symbol, check]) =>
-      `<li><span class="badge">EXIT CHECK</span> <b>${esc(symbol)}</b> · ${check.approved ? "approved" : "blocked"}<div class="small">${esc(check.reason)}</div>${check.quote ? `<div class="small muted">Evidence: ${esc(check.quote)}</div>` : ""}</li>`).join("");
+      `<li><span class="badge">EXIT CHECK</span> <b>${esc(symbol)}</b> · ${check.approved ? "approved" : "blocked"}<div class="small">${esc(check.reason)}</div>${check.proposed ? `<details><summary>Original proposed exit (model claim)</summary><p class="small">${esc(check.proposed)}</p></details>` : ""}${check.quote ? `<div class="small muted">Evidence: ${esc(check.quote)}</div>` : ""}</li>`).join("");
   }
   $("note").innerHTML = r.note ? `<b>Manager's note for tomorrow (orders have not filled):</b> ${esc(r.note)}` : "";
   const problems = r.problems || [];
@@ -125,6 +125,7 @@ function newsbook(d) {
       <div class="head"><h3>${esc(sectorName(id))}</h3><span class="badge ${now.outlook === "bullish" ? "buy" : now.outlook === "bearish" ? "hot" : ""}">${esc(now.outlook)}</span></div>
       <div class="label">${esc(now.day)} · heat ${now.heat}/10</div><div class="heat"><span style="width:${now.heat * 10}%"></span></div>
       <p class="small"><b>${esc(now.driver)}.</b> ${esc(now.entry)}</p>
+      ${now.day === d.latest?.day && d.latest?.tapes?.[id] ? `<p class="small muted"><b>Recorded sector sample:</b> ${esc(d.latest.tapes[id])}</p>` : ""}
       ${before.length ? `<details><summary>Earlier entries (${before.length})</summary><ul class="list">${before.map((n) => `<li><span class="label">${esc(n.day)} · heat ${n.heat}</span><br>${esc(n.entry)}</li>`).join("")}</ul></details>` : ""}
     </div>`;
   }).join("") : '<div class="card muted">The newsbook is empty until the desk runs.</div>';
@@ -150,8 +151,10 @@ function desk(d) {
     return `<div class="card" style="margin-top:18px">
       <div class="head"><div class="line"><b class="mono" style="font-size:1.1rem">${esc(c.symbol)}</b><span>${esc(c.name)}</span>${c.holding ? '<span class="badge keep">held</span>' : '<span class="badge">candidate</span>'}${verdict ? `<span class="badge ${verdict.toLowerCase()}">${verdict.replace("_", " ")}</span>` : ""}</div><span class="label">${esc(sectorName(c.sector))}</span></div>
       <p class="small mono">${esc(factsLine(c.facts))}</p>
+      ${c.sector_tape || r.tapes?.[c.sector] ? `<p class="small muted"><b>Recorded sector sample:</b> ${esc(c.sector_tape || r.tapes[c.sector])}</p>` : ""}
       ${heads ? `<ul class="heads">${heads}</ul>` : '<p class="small muted">No headlines found.</p>'}
       ${c.holding?.entry_evidence ? `<p class="small"><b>Entry evidence (historical context):</b> ${esc(c.holding.entry_evidence.title)}</p>` : ""}
+      ${(c.holding?.reviews || []).length ? `<details><summary>Prior order review outcomes</summary><ul class="list">${c.holding.reviews.map((review) => `<li class="small">${esc(review)}</li>`).join("")}</ul></details>` : ""}
       <div class="argue">
         <div><span class="label">Analyst${c.case ? ` · ${esc(c.case.catalyst)} · upside ${c.case.upside}/10` : ""}</span><p class="small">${c.case ? esc(c.case.thesis) + (c.case.evidence ? `<br><b>Rests on:</b> ${esc(c.case.evidence)}` : "") + `<br><i>Wrong if: ${esc(c.case.kill)}</i>` : "No case was made."}</p></div>
         <div class="skeptic"><span class="label">Skeptic${c.rebuttal ? ` · case ${esc(c.rebuttal.verdict)}${c.rebuttal.priced_in ? " · priced in" : ""}` : ""}</span><p class="small">${c.rebuttal ? esc(c.rebuttal.objection) : "No rebuttal."}</p></div>
