@@ -93,7 +93,7 @@ function today(d) {
   const order = { SELL: 0, BUY: 1, TOP_UP: 2, KEEP: 3 };
   const list = (r.decisions || []).slice().sort((a, b) => (order[a.kind] ?? 9) - (order[b.kind] ?? 9));
   $("decisions").innerHTML = list.length
-    ? list.map((e) => `<li><div class="line"><span class="badge ${e.kind.toLowerCase()}">${e.kind.replace("_", " ")}</span><b>${esc(e.symbol)}</b></div><div class="small">${esc(e.text)}</div></li>`).join("")
+    ? list.map((e) => `<li><div class="line"><span class="badge ${e.kind.toLowerCase()}">${e.kind.replace("_", " ")}</span><b>${esc(e.symbol)}</b></div><details><summary>Decision reason</summary><p class="small">${esc(e.text)}</p></details></li>`).join("")
     : '<li class="muted small">No decisions recorded for this day.</li>';
   const cancellations = (d.events || []).filter(([at, kind, message]) =>
     at >= r.at && kind === "cancelled" && message.startsWith("Cancelled pending "));
@@ -103,10 +103,10 @@ function today(d) {
   }
   const exitChecks = Object.entries(r.exit_checks || {});
   if (exitChecks.length) {
-    $("decisions").innerHTML += exitChecks.map(([symbol, check]) =>
-      `<li><span class="badge">EXIT CHECK</span> <b>${esc(symbol)}</b> · ${check.approved ? "approved" : "blocked"}<div class="small">${esc(check.reason)}</div>${check.proposed ? `<details><summary>Original proposed exit (model claim)</summary><p class="small">${esc(check.proposed)}</p></details>` : ""}${check.quote ? `<div class="small muted">Evidence: ${esc(check.quote)}</div>` : ""}</li>`).join("");
+    $("decisions").innerHTML += `<li><details><summary>Exit checks (${exitChecks.length})</summary><ul class="list">` + exitChecks.map(([symbol, check]) =>
+      `<li><span class="badge">EXIT CHECK</span> <b>${esc(symbol)}</b> · ${check.approved ? "approved" : "blocked"}<div class="small">${esc(check.reason)}</div>${check.proposed ? `<details><summary>Original proposed exit (model claim)</summary><p class="small">${esc(check.proposed)}</p></details>` : ""}${check.quote ? `<div class="small muted">Evidence: ${esc(check.quote)}</div>` : ""}</li>`).join("") + '</ul></details></li>';
   }
-  $("note").innerHTML = r.note ? `<b>Manager's note for tomorrow (orders have not filled):</b> ${esc(r.note)}` : "";
+  $("note").innerHTML = r.note ? `<details><summary>Manager's note</summary><p class="small">${esc(r.note)}</p></details>` : "";
   const problems = r.problems || [];
   if (problems.length) {
     $("notice").hidden = false;
@@ -125,7 +125,7 @@ function newsbook(d) {
       <div class="head"><h3>${esc(sectorName(id))}</h3><span class="badge ${now.outlook === "bullish" ? "buy" : now.outlook === "bearish" ? "hot" : ""}">${esc(now.outlook)}</span></div>
       <div class="label">${esc(now.day)} · heat ${now.heat}/10</div><div class="heat"><span style="width:${now.heat * 10}%"></span></div>
       <p class="small"><b>${esc(now.driver)}.</b> ${esc(now.entry)}</p>
-      ${now.day === d.latest?.day && d.latest?.tapes?.[id] ? `<p class="small muted"><b>Recorded sector sample:</b> ${esc(d.latest.tapes[id])}</p>` : ""}
+      ${now.day === d.latest?.day && d.latest?.tapes?.[id] ? `<details><summary>Recorded sector sample</summary><p class="small muted">${esc(d.latest.tapes[id])}</p></details>` : ""}
       ${before.length ? `<details><summary>Earlier entries (${before.length})</summary><ul class="list">${before.map((n) => `<li><span class="label">${esc(n.day)} · heat ${n.heat}</span><br>${esc(n.entry)}</li>`).join("")}</ul></details>` : ""}
     </div>`;
   }).join("") : '<div class="card muted">The newsbook is empty until the desk runs.</div>';
@@ -151,7 +151,7 @@ function desk(d) {
     return `<div class="card" style="margin-top:18px">
       <div class="head"><div class="line"><b class="mono" style="font-size:1.1rem">${esc(c.symbol)}</b><span>${esc(c.name)}</span>${c.holding ? '<span class="badge keep">held</span>' : '<span class="badge">candidate</span>'}${verdict ? `<span class="badge ${verdict.toLowerCase()}">${verdict.replace("_", " ")}</span>` : ""}</div><span class="label">${esc(sectorName(c.sector))}</span></div>
       <p class="small mono">${esc(factsLine(c.facts))}</p>
-      ${c.sector_tape || r.tapes?.[c.sector] ? `<p class="small muted"><b>Recorded sector sample:</b> ${esc(c.sector_tape || r.tapes[c.sector])}</p>` : ""}
+      ${c.sector_tape || r.tapes?.[c.sector] ? `<details><summary>Recorded sector sample</summary><p class="small muted">${esc(c.sector_tape || r.tapes[c.sector])}</p></details>` : ""}
       ${heads ? `<ul class="heads">${heads}</ul>` : '<p class="small muted">No headlines found.</p>'}
       ${c.holding?.entry_evidence ? `<p class="small"><b>Entry evidence (historical context):</b> ${esc(c.holding.entry_evidence.title)}</p>` : ""}
       ${(c.holding?.reviews || []).length ? `<details><summary>Prior order review outcomes</summary><ul class="list">${c.holding.reviews.map((review) => `<li class="small">${esc(review)}</li>`).join("")}</ul></details>` : ""}
@@ -192,20 +192,16 @@ async function loadCalls() {
 }
 
 function how(d) {
-  $("agents").innerHTML = `<table><thead><tr><th>Agent</th><th>Job</th><th>Model</th></tr></thead><tbody>${d.desk.agents.map((a) => `<tr><td><b class="mono">${esc(a.name)}</b></td><td class="small">${esc(a.job)}</td><td class="small">${esc(d.latest?.models?.[a.name] || a.model)}</td></tr>`).join("")}<tr><td><b class="mono">finbert</b></td><td class="small">Scores the tone of every headline of every screened stock, from -1 to +1</td><td class="small">ProsusAI FinBERT, run in Rust</td></tr></tbody></table>`;
+  $("agents").innerHTML = `<table><thead><tr><th>Agent</th><th>Job</th><th>Model</th></tr></thead><tbody>${d.desk.agents.map((a) => `<tr><td><b class="mono">${esc(a.name)}</b></td><td class="small">${esc(a.job)}</td><td class="small">${esc(d.latest?.models?.[a.name] || a.model)}</td></tr>`).join("")}<tr><td><b class="mono">finbert</b></td><td class="small">Scores headline sentiment from -1 to +1</td><td class="small">ProsusAI FinBERT, run in Rust</td></tr></tbody></table>`;
   const r = d.rules;
   $("rules").innerHTML = [
-    `At most ${r.max_positions} individual US stocks; cash is allowed.`,
-    "No ETFs, index funds, mutual funds, ETNs, preferreds, warrants or units.",
-    `Only companies worth at least $${(r.min_market_cap / 1e9).toFixed(0)} billion, priced at least $${r.min_price} and trading $${(r.min_dollar_volume / 1e6).toFixed(0)} million a day.`,
-    "Every holding gets a KEEP or SELL every day. Sales may leave cash when replacements are weak.",
-    `No purchase may take a stock above ${Math.round((r.max_weight ?? 0.25) * 100)}% of the account; what it cannot take goes to the other purchases.`,
-    "No minimum holding period: the manager can replace even a newly bought stock when the evidence justifies the cost.",
-    "New purchases require a bullish analyst case and a completed skeptic verdict of stands or weakened. Broken cases and failed skeptic research are excluded.",
-    "Ordinary exits require a factual check and a real supporting quotation. Unsupported or failed checks keep the holding; required position-count trims remain possible.",
-    "No minimum position count and no automatic top-ups of kept holdings. Unallocated cash stays in cash.",
-    `Orders fill at the next open, with ${(r.fee * 100).toFixed(1)}% fees and ${(r.slippage * 100).toFixed(1)}% slippage each way.`,
-    "No stop-losses, no momentum fallback and no rule picks a stock: only the models decide.",
+    `Up to ${r.max_positions} individual US stocks, with cash allowed.`,
+    `Companies must be worth $${(r.min_market_cap / 1e9).toFixed(0)} billion or more, priced at least $${r.min_price}, and trade $${(r.min_dollar_volume / 1e6).toFixed(0)} million a day. Funds and non-company securities are excluded.`,
+    `A purchase cannot take a stock above ${Math.round((r.max_weight ?? 0.25) * 100)}% of the account. Kept holdings receive no automatic top-ups.`,
+    "Purchases require a bullish case and a completed skeptic verdict of stands or weakened.",
+    "Ordinary sales require a factual check with a supporting quotation. Failed checks retain the holding; position-count trims remain possible.",
+    `Orders fill at the next open. Sales fill first, with ${(r.fee * 100).toFixed(1)}% fees and ${(r.slippage * 100).toFixed(1)}% adverse slippage each way.`,
+    "Holdings can be sold at any age. There are no automatic stop-loss or take-profit orders.",
   ].map((t) => `<li>${esc(t)}</li>`).join("");
   const sources = d.latest?.sources || [];
   const fixed = ["Nasdaq stock screener: every US-listed stock in one request", "Nasdaq Trader symbol directory: the list of funds to exclude", "Yahoo Finance: daily bars and per-stock headlines", "Google News and Bing News: sector news searches"];
