@@ -8,6 +8,31 @@ A $1,000 simulated account run by NVIDIA Nemotron 3 Ultra 550B. One hosted model
 [Dashboard](https://mansoor-mamnoon.github.io/paper-trader/) · [Ops](https://mansoor-mamnoon.github.io/paper-trader/#ops) · [Actions](https://github.com/mansoor-mamnoon/paper-trader/actions)
 </div>
 
+## Latest session review — 20 November 2026
+
+The account ended the 20 November session at **$904.61 (−9.54% since inception)**,
+versus **$938.15 (−6.19%)** for SPY. It lost $10.05 (1.10%) from the previous session.
+AES, PANW, TJX and TTWO remained held, with $0 cash, zero fills and zero pending
+orders. All 66 calls used hosted Nemotron successfully, without local fallback.
+The manager proposed four sales; the exit checker blocked all four. No cash or
+approved sale could fund new purchases, so no purchase-selection call ran.
+
+The review found that the manager's memory still presented cancelled sales and a
+“100% cash” note without their cancellation reviews. It repeated the rejected AES
+18-month closing claim. The strategist also claimed zero software gainers despite
+10% advancing in the verified sample, and the PANW checker treated a newly
+published recap and model labels as proof of a new event.
+
+Subsequent decisions now receive order-review outcomes, authoritative ledger
+ownership and raw sector samples. Prompts distinguish publication dates from event
+dates, model opinions from observations, and historical proposals from actual fills.
+The dashboard exposes the recorded samples and original proposed exits beside their
+review outcomes. Original decisions and the ledger remain unchanged; the day was
+not rerun. See the [session evidence, changes and limitations](docs/SESSION-2026-11-20.md).
+
+Validation: 92 Rust tests, strict Clippy and formatting, nine Python tests, JavaScript
+syntax and recorded-data render checks. These repairs do not establish better returns.
+
 ## Follow-up review — 20 November 2026
 
 The 19 November session queued sales of AES, PANW, TJX and TTWO and selected no
