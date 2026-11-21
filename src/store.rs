@@ -340,7 +340,11 @@ impl Store {
                     "Confirmed pending sell of ",
                 ]
                 .iter()
-                .any(|prefix| message.starts_with(&format!("{prefix}{symbol} ")));
+                .any(|prefix| {
+                    message
+                        .strip_prefix(&format!("{prefix}{symbol}"))
+                        .is_some_and(|rest| rest.starts_with(' ') || rest.starts_with(':'))
+                });
                 if !matches {
                     continue;
                 }
@@ -795,6 +799,37 @@ mod tests {
         // Saving drops what the old desk kept and this one does not use.
         let saved = serde_json::to_string(&state).unwrap();
         assert!(!saved.contains("universe") && !saved.contains("scan_cursor"));
+    }
+
+    #[test]
+    fn reviews_match_exact_symbols_and_respect_the_evidence_cutoff() {
+        let store = Store::open(":memory:").unwrap();
+        store
+            .event(
+                10.0,
+                "cancelled",
+                "Cancelled pending buy of GEV: unsupported",
+            )
+            .unwrap();
+        store
+            .event(
+                11.0,
+                "cancelled",
+                "Cancelled pending sell of GE after factual review: date error",
+            )
+            .unwrap();
+        store
+            .event(
+                12.0,
+                "exit_review",
+                "Confirmed pending sell of GE after factual review: supported",
+            )
+            .unwrap();
+        assert!(store.order_reviews(9.0, None).unwrap().is_empty());
+        assert_eq!(store.order_reviews(10.0, Some("GEV")).unwrap().len(), 1);
+        assert!(store.order_reviews(10.0, Some("GE")).unwrap().is_empty());
+        assert_eq!(store.order_reviews(11.0, Some("GE")).unwrap().len(), 1);
+        assert_eq!(store.order_reviews(12.0, Some("GE")).unwrap().len(), 2);
     }
 
     #[test]
