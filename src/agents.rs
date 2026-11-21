@@ -122,6 +122,9 @@ pub struct Holding {
     pub entry_evidence: Option<Tagged>,
     /// Earlier decisions about it, newest first.
     pub history: Vec<Entry>,
+    /// Later order reviews, kept separate from original historical claims.
+    #[serde(default)]
+    pub reviews: Vec<String>,
 }
 
 /// Everything the desk knows about one stock today.
@@ -291,14 +294,23 @@ pub fn dossier(card: &Card, sector_note: Option<&SectorNote>, today: &str) -> St
             signed(holding.pnl_pct)
         );
         if !holding.thesis.is_empty() {
-            let _ = writeln!(out, "Why it was bought: {}", holding.thesis);
+            let _ = writeln!(
+                out,
+                "Historical entry thesis (claims, not current facts): {}",
+                holding.thesis
+            );
         }
         for entry in &holding.history {
             let _ = writeln!(
                 out,
-                "  {} the desk said {}: {}",
+                "  {} original journal proposal {} (not proof of execution): {}",
                 entry.day, entry.kind, entry.text
             );
+        }
+    }
+    if let Some(holding) = &card.holding {
+        for review in &holding.reviews {
+            let _ = writeln!(out, "ORDER REVIEW OUTCOME: {review}");
         }
     }
     out
@@ -328,9 +340,14 @@ pub fn summary(card: &Card) -> String {
         for entry in holding.history.iter().take(3) {
             let _ = writeln!(
                 out,
-                "  {} you said {}: {}",
+                "  {} original journal proposal {} (not proof of execution): {}",
                 entry.day, entry.kind, entry.text
             );
+        }
+    }
+    if let Some(holding) = &card.holding {
+        for review in &holding.reviews {
+            let _ = writeln!(out, "  ORDER REVIEW OUTCOME: {review}");
         }
     }
     let fresh: Vec<&Tagged> = card
@@ -726,7 +743,7 @@ pub fn skeptic(
     })
 }
 
-const MANAGER: &str = "You manage a $1,000 stock account that trades news buzz. Rules you cannot change: cash is allowed when evidence is weak, it holds at most eight individual stocks, no stock may grow past a quarter of the account by purchase, and every holding is decided again every day. Your choices must pass the evidence checks. Holding is the default. Sell a stock when its case is broken: bad news, the catalyst has clearly played out, or the buzz and the volume have died away for several days. Also sell when a candidate is clearly better after the cost of swapping. A quiet day or a small dip is not a reason to sell. A stock bought on a false or unsupported thesis should be sold. A lack of new headlines does not invalidate an existing thesis. Distinguish a factual contradiction from a quiet day; a price dip alone does not prove a catalyst is priced in. Do not sell because of an executive change or an upcoming earnings date. Each swap costs about 0.6% in fees and slippage, so a replacement must clearly beat what it replaces after that cost; do not swap one story for another that is only slightly better. There is no minimum holding period: you may sell any holding, including one bought at the latest open, when the evidence supports replacing it after costs. Buy only stocks the analyst made a case for; the skeptic tells you what could go wrong, not what to buy. Broken or missing skeptic research disqualifies a new purchase. Do not treat speculative rebounds, distance below highs or small weights as repairs for weak evidence. Cash is preferable to a forced replacement. Weigh the analyst against the skeptic and decide.";
+const MANAGER: &str = "You manage a $1,000 stock account that trades news buzz. Rules you cannot change: cash is allowed when evidence is weak, it holds at most eight individual stocks, no stock may grow past a quarter of the account by purchase, and every holding is decided again every day. Your choices must pass the evidence checks. Earlier notes and decisions are historical model claims, not facts or fills. Order review outcomes supersede cancelled proposals; do not repeat rejected reasons without new supporting evidence. Use DATE for calendar arithmetic. Holding is the default. Sell a stock when its case is broken: bad news, the catalyst has clearly played out, or the buzz and the volume have died away for several days. Also sell when a candidate is clearly better after the cost of swapping. A quiet day or a small dip is not a reason to sell. A stock bought on a false or unsupported thesis should be sold. A lack of new headlines does not invalidate an existing thesis. Distinguish a factual contradiction from a quiet day; a price dip alone does not prove a catalyst is priced in. Do not sell because of an executive change or an upcoming earnings date. Each swap costs about 0.6% in fees and slippage, so a replacement must clearly beat what it replaces after that cost; do not swap one story for another that is only slightly better. There is no minimum holding period: you may sell any holding, including one bought at the latest open, when the evidence supports replacing it after costs. Buy only stocks the analyst made a case for; the skeptic tells you what could go wrong, not what to buy. Broken or missing skeptic research disqualifies a new purchase. Do not treat speculative rebounds, distance below highs or small weights as repairs for weak evidence. Cash is preferable to a forced replacement. Weigh the analyst against the skeptic and decide.";
 
 /// What the manager remembers from earlier days.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -739,17 +756,20 @@ pub struct Memory {
     pub trades: Vec<String>,
     /// The account's record by catalyst in one line each.
     pub record: Vec<String>,
+    #[serde(default)]
+    pub reviews: Vec<String>,
 }
 
 fn memory_text(memory: &Memory) -> String {
-    let mut out = String::from("YOUR NOTES FROM EARLIER DAYS:\n");
+    let mut out =
+        String::from("HISTORICAL MODEL NOTES (claims and intentions, not verified executions):\n");
     if memory.notes.is_empty() {
         out.push_str("  (none yet)\n");
     }
     for note in &memory.notes {
         let _ = writeln!(out, "  {}: {}", note.day, note.text);
     }
-    out.push_str("YOUR RECENT DECISIONS:\n");
+    out.push_str("ORIGINAL JOURNAL PROPOSALS (orders may have been cancelled):\n");
     if memory.decisions.is_empty() {
         out.push_str("  (none yet)\n");
     }
@@ -771,6 +791,10 @@ fn memory_text(memory: &Memory) -> String {
         for line in &memory.record {
             let _ = writeln!(out, "  {line}");
         }
+    }
+    out.push_str("ORDER REVIEW OUTCOMES (supersede conflicting historical proposals):\n");
+    for review in &memory.reviews {
+        let _ = writeln!(out, "  {review}");
     }
     out
 }
@@ -794,6 +818,7 @@ pub struct Book<'a> {
     pub memory: &'a Memory,
     pub holdings: Vec<&'a Card>,
     pub candidates: Vec<&'a Card>,
+    pub account_status: String,
 }
 
 fn book_text(book: &Book) -> String {
@@ -804,8 +829,9 @@ fn book_text(book: &Book) -> String {
         .map(|s| sectors::name_of(s))
         .collect();
     format!(
-        "DATE: {}\n\n{}\nTODAY'S SECTOR FOCUS: {}. {}\n\n{}\n{}",
+        "DATE: {}\nCURRENT LEDGER (authoritative for ownership; notes are not fills): {}\n\n{}\nTODAY'S SECTOR FOCUS: {}. {}\n\n{}\n{}",
         book.day,
+        book.account_status,
         memory_text(book.memory),
         if focus.is_empty() {
             "none chosen".to_string()
@@ -1159,6 +1185,7 @@ mod tests {
                 days_held: 3,
                 thesis: "Contract win".into(),
                 entry_evidence: None,
+                reviews: Vec::new(),
                 history: vec![Entry {
                     day: "2026-11-12".into(),
                     kind: "KEEP".into(),
@@ -1194,7 +1221,7 @@ mod tests {
             "today [big_deal, buzz 3/3]: ACME wins $2B AI contract (Reuters)",
             "2026-11-12 [noise, buzz 0/3]: ACME names new CFO",
             "held 3 days",
-            "2026-11-12 the desk said KEEP: still running",
+            "2026-11-12 original journal proposal KEEP (not proof of execution): still running",
         ] {
             assert!(text.contains(expected), "missing {expected:?} in\n{text}");
         }
@@ -1216,6 +1243,7 @@ mod tests {
             memory,
             holdings: holdings.iter().collect(),
             candidates: candidates.iter().collect(),
+            account_status: "Test ledger".into(),
         }
     }
 
@@ -1241,6 +1269,39 @@ mod tests {
         let partial =
             Scripted::new(|_, _, _, _| Ok(json!({"AAA": {"action": "KEEP", "reason": "x"}})));
         assert!(review(&partial, &book).is_err());
+    }
+
+    #[test]
+    fn cancelled_orders_and_current_ownership_reach_future_decisions() {
+        let mut stock = card("AES", true);
+        let correction = "Cancelled pending sell of AES after factual review: December 2 is 13 days away, not 18 months.";
+        let holding = stock.holding.as_mut().unwrap();
+        holding.reviews.push(correction.into());
+        holding.history[0].kind = "SELL".into();
+        holding.history[0].text = "18-month closing timeline".into();
+        assert!(dossier(&stock, None, "2026-11-20").contains(correction));
+        assert!(summary(&stock).contains(correction));
+        let holdings = [stock];
+        let memory = Memory {
+            reviews: vec![correction.into()],
+            notes: vec![Entry {
+                text: "Account is 100% cash".into(),
+                ..Entry::default()
+            }],
+            ..Memory::default()
+        };
+        let focus = Focus::default();
+        let mut book = book(&focus, &memory, &holdings, &[]);
+        book.account_status = "Cash $0.00; currently held: AES; pending orders: none".into();
+        let brain = Scripted::new(move |_, _, user, _| {
+            assert!(user.contains(correction));
+            assert!(user.contains("CURRENT LEDGER (authoritative for ownership"));
+            assert!(user.contains("Cash $0.00; currently held: AES"));
+            assert!(user.contains("not proof of execution"));
+            assert!(user.contains("claims and intentions, not verified executions"));
+            Ok(json!({"AES":{"action":"KEEP","reason":"Original exit was cancelled"}}))
+        });
+        assert!(!review(&brain, &book).unwrap()["AES"].0);
     }
 
     #[test]

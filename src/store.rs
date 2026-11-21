@@ -320,6 +320,39 @@ impl Store {
         Ok(rows.collect::<rusqlite::Result<_>>()?)
     }
 
+    /// Order review outcomes available at the decision cutoff, including legacy reviews
+    /// stored only as events. Original journal proposals remain untouched.
+    pub fn order_reviews(&self, before: f64, symbol: Option<&str>) -> Result<Vec<String>> {
+        let mut stmt = self.db.prepare(
+            "SELECT at, message FROM events WHERE at<=? AND kind IN ('cancelled','exit_review') \
+             ORDER BY at DESC, id DESC",
+        )?;
+        let rows = stmt.query_map([before], |r| {
+            Ok((r.get::<_, f64>(0)?, r.get::<_, String>(1)?))
+        })?;
+        let mut reviews = Vec::new();
+        for row in rows {
+            let (at, message) = row?;
+            if let Some(symbol) = symbol {
+                let matches = [
+                    "Cancelled pending sell of ",
+                    "Cancelled pending buy of ",
+                    "Confirmed pending sell of ",
+                ]
+                .iter()
+                .any(|prefix| message.starts_with(&format!("{prefix}{symbol} ")));
+                if !matches {
+                    continue;
+                }
+            }
+            reviews.push(format!("{}: {message}", crate::market::day_of(at)));
+            if reviews.len() == 16 {
+                break;
+            }
+        }
+        Ok(reviews)
+    }
+
     pub fn fill(&self, fill: &Fill) -> Result<()> {
         self.db.execute(
             "INSERT INTO fills(at,signal_at,symbol,side,quantity,price,notional,fee,realized_pnl,reason) \

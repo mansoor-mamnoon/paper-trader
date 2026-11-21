@@ -251,7 +251,7 @@ fn facts(
     }
 }
 
-fn memory(store: &Store, day: &str) -> Result<Memory> {
+fn memory(store: &Store, day: &str, at: f64) -> Result<Memory> {
     let decisions = store
         .journal_since(&store::days_before(day, 7))?
         .into_iter()
@@ -288,6 +288,7 @@ fn memory(store: &Store, day: &str) -> Result<Memory> {
         decisions,
         trades,
         record,
+        reviews: store.order_reviews(at, None)?,
     })
 }
 
@@ -384,6 +385,7 @@ pub fn audit_pending_exits(
                 .ok_or_else(|| anyhow::anyhow!("Position no longer held"))?;
             if let Some(holding) = card.holding.as_mut() {
                 holding.entry_evidence = entry_evidence(store, &symbol, position.opened_at)?;
+                holding.reviews = store.order_reviews(order.at, Some(&symbol))?;
             }
             // Recover material news omitted by the old newest-eight selection. Bound
             // publication AND first-seen time to the original report, never to today.
@@ -911,6 +913,7 @@ pub fn run_with(
                     thesis: p.thesis.clone(),
                     entry_evidence: entry_evidence(store, symbol, p.opened_at)?,
                     history: store.journal_for(symbol, &day, 4)?,
+                    reviews: store.order_reviews(at, Some(symbol))?,
                 }),
                 None => None,
             },
@@ -964,11 +967,27 @@ pub fn run_with(
 
     // 7. The manager decides.
     let stage = Lap::start("manager decides the book");
-    let remembered = memory(store, &day)?;
+    let remembered = memory(store, &day, at)?;
     let book = Book {
         day: &day,
         focus: &report.focus,
         memory: &remembered,
+        account_status: format!(
+            "Cash ${:.2}; currently held: {}; pending orders before today's decisions: {}",
+            state.cash,
+            state
+                .positions
+                .keys()
+                .cloned()
+                .collect::<Vec<_>>()
+                .join(", "),
+            state
+                .pending
+                .iter()
+                .map(|(s, o)| format!("{} {s}", o.side))
+                .collect::<Vec<_>>()
+                .join(", ")
+        ),
         holdings: report
             .cards
             .iter()
@@ -1993,6 +2012,30 @@ mod tests {
                 .is_empty()
         );
         assert_eq!(reviewer.count(Agent::Manager), 2);
+        let remembered = memory(&store, DAY, AT + 2.0).unwrap();
+        assert!(
+            remembered
+                .reviews
+                .iter()
+                .any(|r| r.contains("Cancelled pending sell of OLDA"))
+        );
+        assert!(
+            remembered
+                .reviews
+                .iter()
+                .any(|r| r.contains("misattributes entry-day facts"))
+        );
+        assert!(memory(&store, DAY, AT).unwrap().reviews.is_empty());
+        assert_eq!(
+            store.order_reviews(AT + 2.0, Some("OLDA")).unwrap().len(),
+            1
+        );
+        assert!(
+            store
+                .order_reviews(AT + 2.0, Some("OLD"))
+                .unwrap()
+                .is_empty()
+        );
     }
 
     #[test]
