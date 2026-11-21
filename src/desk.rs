@@ -387,6 +387,7 @@ pub fn audit_pending_exits(
                 holding.entry_evidence = entry_evidence(store, &symbol, position.opened_at)?;
                 holding.reviews = store.order_reviews(order.at, Some(&symbol))?;
             }
+            card.sector_tape = report.tapes.get(&card.sector).cloned().unwrap_or_default();
             // Recover material news omitted by the old newest-eight selection. Bound
             // publication AND first-seen time to the original report, never to today.
             let recovered = store.research_headlines(
@@ -886,13 +887,15 @@ pub fn run_with(
         let position = state.positions.get(symbol);
         let headlines = store.research_headlines(symbol, &since, HEADLINES_PER_STOCK)?;
         report.funnel.headlines += headlines.len();
+        let sector = listing.map_or_else(
+            || position.map(|p| p.sector.clone()).unwrap_or_default(),
+            |l| sectors::sector_of(l).id.to_string(),
+        );
         report.cards.push(Card {
             symbol: symbol.clone(),
             name: listing.map_or(symbol.clone(), Listing::company),
-            sector: listing.map_or_else(
-                || position.map(|p| p.sector.clone()).unwrap_or_default(),
-                |l| sectors::sector_of(l).id.to_string(),
-            ),
+            sector_tape: report.tapes.get(&sector).cloned().unwrap_or_default(),
+            sector,
             facts: facts(
                 listing,
                 quotes.get(symbol),
@@ -971,6 +974,7 @@ pub fn run_with(
     let book = Book {
         day: &day,
         focus: &report.focus,
+        tapes: report.tapes.clone(),
         memory: &remembered,
         account_status: format!(
             "Cash ${:.2}; currently held: {}; pending orders before today's decisions: {}",
