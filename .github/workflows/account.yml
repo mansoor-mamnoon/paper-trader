@@ -31,9 +31,6 @@ jobs:
   update:
     runs-on: ubuntu-latest
     timeout-minutes: 360
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
@@ -111,18 +108,3 @@ jobs:
           git add -A account.sqlite site INITIALIZED archive
           git diff --cached --quiet || git commit -m 'Record the desk day'
           git push origin HEAD:account
-      - uses: actions/configure-pages@v6
-      - uses: actions/upload-pages-artifact@v5
-        with:
-          path: account/site
-      - name: Publish dashboard
-        id: deployment
-        uses: ./.github/actions/publish-pages
-      - name: Keep the schedule alive
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh workflow enable account.yml --repo "$GITHUB_REPOSITORY" || true
-      - name: Report a desk failure after preserving its evidence
-        if: steps.desk.outcome == 'failure'
-        run: exit 1
