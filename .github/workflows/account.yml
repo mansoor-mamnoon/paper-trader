@@ -58,7 +58,7 @@ jobs:
           free -g | head -2
       - name: Stage Friday closing account and preserve original Monday ledger
         run: |
-          test "$(git -C account rev-parse HEAD:account.sqlite)" = "$(git -C account rev-parse 01911f9:account.sqlite)"
+          test "$(git -C account rev-parse HEAD:account.sqlite)" = "$(git -C account rev-parse 78907dde8b2c61fb249e4724e5ea12d8bb0d3194:account.sqlite)"
           test "$(jq -r .latest.day account/site/api/state.json)" = 2026-11-23
           mkdir -p "account/archive/rerun-${GITHUB_RUN_ID}"
           cp account/account.sqlite "account/archive/rerun-${GITHUB_RUN_ID}/account.sqlite"
