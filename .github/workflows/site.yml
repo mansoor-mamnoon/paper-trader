@@ -7,6 +7,7 @@ on:
     branches: [main]
     paths:
       - 'web/**'
+      - '.github/actions/publish-pages/**'
       - '.github/workflows/site.yml'
 permissions:
   contents: read
@@ -46,4 +47,4 @@ jobs:
           path: account/site
       - name: Publish dashboard
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: ./.github/actions/publish-pages

@@ -150,4 +150,4 @@ jobs:
           path: account/site
       - name: Publish replayed dashboard
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: ./.github/actions/publish-pages

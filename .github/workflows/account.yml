@@ -108,7 +108,7 @@ jobs:
           path: account/site
       - name: Publish dashboard
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: ./.github/actions/publish-pages
       - name: Keep the schedule alive
         if: always()
         env:

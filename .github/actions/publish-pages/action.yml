@@ -1,0 +1,18 @@
+name: Publish uploaded dashboard
+description: Retry Pages deployment once while an uploaded artifact becomes visible
+outputs:
+  page_url:
+    description: Published dashboard URL
+    value: ${{ steps.first.outputs.page_url || steps.retry.outputs.page_url }}
+runs:
+  using: composite
+  steps:
+    - id: first
+      uses: actions/deploy-pages@v5
+      continue-on-error: true
+    - if: steps.first.outcome == 'failure'
+      shell: bash
+      run: sleep 15
+    - id: retry
+      if: steps.first.outcome == 'failure'
+      uses: actions/deploy-pages@v5
