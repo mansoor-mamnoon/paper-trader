@@ -230,6 +230,11 @@ fn facts(
 ) -> Facts {
     let seen = attention.cloned().unwrap_or_default();
     Facts {
+        session_dates: quote
+            .into_iter()
+            .flat_map(|q| q.bars.iter().rev().take(8))
+            .map(|b| market::day_of(b.at))
+            .collect(),
         price: quote
             .and_then(Quote::last)
             .map(|b| b.close)

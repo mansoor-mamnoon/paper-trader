@@ -71,6 +71,9 @@ pub fn bullish_labels() -> Vec<&'static str> {
 /// What the tape and the crowd say about one stock.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Facts {
+    /// Most recent dated bars, newest first, for distinguishing calendar and trading days.
+    #[serde(default)]
+    pub session_dates: Vec<String>,
     pub price: f64,
     pub market_cap: f64,
     pub change_1d: f64,
@@ -221,6 +224,13 @@ pub fn facts_line(facts: &Facts) -> String {
     }
     if !facts.trending.is_empty() {
         let _ = write!(line, "Trending on {}.", facts.trending.join(" and "));
+    }
+    if !facts.session_dates.is_empty() {
+        let _ = write!(
+            line,
+            " Observed trading sessions (newest first): {}.",
+            facts.session_dates.join(", ")
+        );
     }
     line.trim().to_string()
 }
@@ -1144,7 +1154,7 @@ pub fn note(brain: &dyn Brain, book: &Book, decisions: &[Entry]) -> Result<Strin
     for entry in decisions {
         let _ = writeln!(user, "  {} {}: {}", entry.kind, entry.symbol, entry.text);
     }
-    user.push_str("\nWrite a note to yourself for tomorrow in two or three sentences: what you are betting on, what you expect to happen, and what would change your mind.");
+    user.push_str("\nWrite a note to yourself for tomorrow in two or three sentences: what you are betting on, what you expect to happen, and what would change your mind for each named holding. Tie each exit condition to its own stock and distinguish targets from observed returns.");
     user.push_str("\nDescribe intended future exposure. Pending sells are not filled yet: do not claim the book already holds cash or that positions have already been sold.\n");
     let schema = object(&json!({"note": string(520)}), &["note"]);
     let answer = brain.ask(Agent::Manager, "note", MANAGER, &user, &schema)?;
@@ -1229,6 +1239,7 @@ mod tests {
             sector: "chips".into(),
             sector_tape: String::new(),
             facts: Facts {
+                session_dates: vec!["2026-11-23".into(), "2026-11-20".into()],
                 price: 100.0,
                 market_cap: 5.0e10,
                 change_1d: 4.2,
@@ -1297,6 +1308,7 @@ mod tests {
             "ACME (ACME Corp)",
             "AI chips and semiconductors",
             "Latest session +4.2%, 5 sessions +9.0%",
+            "Observed trading sessions (newest first): 2026-11-23, 2026-11-20",
             "Volume 2.5x",
             "Reddit mentions in the last 24 hours: 120 (the day before: 40)",
             "Trending on Yahoo",
