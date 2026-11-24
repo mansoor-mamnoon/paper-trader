@@ -259,6 +259,19 @@ fn headline_lines(headlines: &[Tagged], today: &str) -> String {
     out
 }
 
+fn entry_line(h: &Tagged) -> String {
+    let date = chrono::DateTime::from_timestamp(h.published as i64, 0)
+        .filter(|_| h.published > 0.0)
+        .map_or_else(
+            || "date unknown".to_string(),
+            |d| d.format("%Y-%m-%d").to_string(),
+        );
+    format!(
+        "ENTRY EVIDENCE (historical context, not a new catalyst): {date}: {}",
+        h.title
+    )
+}
+
 /// The full file on a stock, as the analyst and the skeptic read it.
 pub fn dossier(card: &Card, sector_note: Option<&SectorNote>, today: &str) -> String {
     let mut out = format!(
@@ -288,14 +301,14 @@ pub fn dossier(card: &Card, sector_note: Option<&SectorNote>, today: &str) -> St
         "HEADLINES (published on the day shown; the label and buzz score are the classifier's; FinBERT is a separate small model that scores each headline's tone from -1 to +1 and is a second opinion: a bullish label on a headline FinBERT reads as negative deserves a second look):\n{}",
         headline_lines(&card.headlines, today)
     );
+    if let Some(headline) = card
+        .holding
+        .as_ref()
+        .and_then(|h| h.entry_evidence.as_ref())
+    {
+        let _ = writeln!(out, "{}", entry_line(headline));
+    }
     if let Some(holding) = &card.holding {
-        if let Some(headline) = &holding.entry_evidence {
-            let _ = writeln!(
-                out,
-                "ENTRY EVIDENCE (historical context, not a new catalyst):\n{}",
-                headline_lines(std::slice::from_ref(headline), today)
-            );
-        }
         let _ = writeln!(
             out,
             "THE ACCOUNT OWNS THIS STOCK: held {} days, ${:.2} paid, now worth ${:.2} ({}).",
@@ -348,6 +361,9 @@ pub fn summary(card: &Card) -> String {
                 &holding.thesis
             }
         );
+        if let Some(h) = &holding.entry_evidence {
+            let _ = writeln!(out, "{}", entry_line(h));
+        }
         for entry in holding.history.iter().take(3) {
             let _ = writeln!(
                 out,
@@ -667,7 +683,7 @@ pub fn analyst(
     today: &str,
 ) -> Result<Case> {
     let user = format!(
-        "{}\nFirst give in `evidence` the number of the one headline above that your case rests on, or 0 if no headline supports a case. Quote only what that headline says: do not add names, numbers or events it does not contain. Then state the main catalyst, the case in one or two concise complete sentences within the field limit, the upside score, and in `kill` the one development that would prove the case wrong.",
+        "{}\nFirst give in `evidence` the number from HEADLINES only (historical ENTRY EVIDENCE has no number) for the one headline that your case rests on, or 0 if no headline supports a case. Quote only what that headline says: do not add names, numbers or events it does not contain. Then state the main catalyst, the case in one or two concise complete sentences within the field limit, the upside score, and in `kill` the one development that would prove the case wrong.",
         dossier(card, note, today)
     );
     let schema = case_schema(card.headlines.len());
@@ -694,7 +710,7 @@ pub fn analyst(
         });
     if catalyst != "none" && cited.is_none() && !sector_support {
         thesis = format!(
-            "No headline in the file supports the case the analyst made, so it does not count. The analyst had said: {thesis}"
+            "No qualifying current source was cited for new exposure. The analyst had said: {thesis}"
         );
         catalyst = "none".into();
         upside = upside.min(3);
@@ -724,14 +740,22 @@ pub fn skeptic(
 ) -> Result<Rebuttal> {
     // Critique today's case without importing entry-day statistics as current claims.
     let mut current = card.clone();
-    current.holding = None;
+    let historical = current
+        .holding
+        .take()
+        .and_then(|h| h.entry_evidence)
+        .as_ref()
+        .map(entry_line)
+        .unwrap_or_default();
     let user = format!(
-        "{}\nTHE ANALYST'S CASE (catalyst {}, upside {}/10): {}\nThe headline the analyst rests it on: {}\nThe analyst says the case is wrong if: {}\n\nCheck the case against that headline word for word. Give your strongest objection, say whether the move is already priced in, and give your verdict.",
+        "{}\n{historical}\nTHE ANALYST'S CASE (catalyst {}, upside {}/10): {}\nThe headline the analyst rests it on: {}\nThe analyst says the case is wrong if: {}\n\nCheck the case against that headline word for word. Give your strongest objection, say whether the move is already priced in, and give your verdict.",
         dossier(&current, note, today),
         case.catalyst,
         case.upside,
         case.thesis,
-        if case.evidence.is_empty() {
+        if case.catalyst == "none" {
+            "(no qualifying current catalyst)"
+        } else if case.evidence.is_empty() {
             "(none: it rests on the sector's driver)"
         } else {
             &case.evidence
@@ -1377,7 +1401,7 @@ mod tests {
             let bad = ask(evidence, "takeover");
             assert_eq!(bad.catalyst, "none");
             assert!(bad.upside <= 3 && bad.evidence.is_empty());
-            assert!(bad.thesis.starts_with("No headline in the file supports"));
+            assert!(bad.thesis.starts_with("No qualifying current source"));
         }
         // A sector catalyst may rest on the newsbook when there is an entry.
         let note = SectorNote {
@@ -1442,7 +1466,13 @@ mod tests {
     fn the_skeptic_sees_current_claims_and_a_calendar_date() {
         let mut stock = card("TJX", true);
         stock.holding.as_mut().unwrap().thesis = "Yesterday 2.8x volume and 5x Reddit".into();
+        stock.holding.as_mut().unwrap().entry_evidence = Some(Tagged {
+            title: "Historical CEO outlook".into(),
+            ..Tagged::default()
+        });
+        assert!(summary(&stock).contains("Historical CEO outlook"));
         let brain = Scripted::new(|_, _, user, _| {
+            assert!(user.contains("Historical CEO outlook"));
             assert!(user.contains("DATE: 2026-11-19"));
             assert!(!user.contains("Yesterday 2.8x volume"));
             Ok(json!({"objection":"Current risk", "priced_in":false, "verdict":"weakened"}))
