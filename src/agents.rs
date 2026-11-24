@@ -274,8 +274,8 @@ fn entry_line(h: &Tagged) -> String {
     )
 }
 
-/// The full file on a stock, as the analyst and the skeptic read it.
-pub fn dossier(card: &Card, sector_note: Option<&SectorNote>, today: &str) -> String {
+/// Signal-time evidence shared by both researchers.
+fn current_dossier(card: &Card, sector_note: Option<&SectorNote>, today: &str) -> String {
     let mut out = format!(
         "DATE: {today} (calendar date; fiscal-year labels are not publication dates)\nSTOCK: {} ({})\nSECTOR: {}\n",
         card.symbol,
@@ -304,6 +304,11 @@ pub fn dossier(card: &Card, sector_note: Option<&SectorNote>, today: &str) -> St
         "HEADLINES (published on the day shown; the label and buzz score are the classifier's; FinBERT is a separate small model that scores each headline's tone from -1 to +1 and is a second opinion: a bullish label on a headline FinBERT reads as negative deserves a second look):\n{}",
         headline_lines(&card.headlines, today)
     );
+    out
+}
+
+pub fn dossier(card: &Card, sector_note: Option<&SectorNote>, today: &str) -> String {
+    let mut out = current_dossier(card, sector_note, today);
     if let Some(headline) = card
         .holding
         .as_ref()
@@ -384,7 +389,11 @@ pub fn summary(card: &Card) -> String {
         .headlines
         .iter()
         .filter(|h| h.buzz >= 2 && !matches!(h.label.as_str(), "noise" | "unrelated"))
-        .take(3)
+        .take(if card.holding.is_some() {
+            card.headlines.len()
+        } else {
+            3
+        })
         .collect();
     for h in fresh {
         let published = chrono::DateTime::from_timestamp(h.published as i64, 0)
@@ -698,8 +707,8 @@ pub fn analyst(
     today: &str,
 ) -> Result<Case> {
     let user = format!(
-        "{}\nFirst give in `evidence` the number from HEADLINES only (historical ENTRY EVIDENCE has no number) for the one headline that your case rests on, or 0 if no headline supports a case. Quote only what that headline says: do not add names, numbers or events it does not contain. Then state the main catalyst, the case in one or two concise complete sentences within the field limit, the upside score, and in `kill` the one development that would prove the case wrong.",
-        dossier(card, note, today)
+        "{}\nFirst give in `evidence` the number from HEADLINES only for the one headline that your case rests on, or 0 if no headline supports a case. Quote only what that headline says: do not add names, numbers or events it does not contain. Then state the main catalyst, the case in one or two concise complete sentences within the field limit, the upside score, and in `kill` the one development that would prove the case wrong.",
+        current_dossier(card, note, today)
     );
     let schema = case_schema(card.headlines.len());
     let answer = brain.ask(Agent::Analyst, &card.symbol, ANALYST, &user, &schema)?;
@@ -754,12 +763,10 @@ pub fn skeptic(
     today: &str,
 ) -> Result<Rebuttal> {
     // Critique today's case without importing entry-day statistics as current claims.
-    let mut current = card.clone();
-    let historical = current
+    let historical = card
         .holding
-        .take()
-        .and_then(|h| h.entry_evidence)
         .as_ref()
+        .and_then(|h| h.entry_evidence.as_ref())
         .map(entry_line)
         .unwrap_or_default();
     let source = if case.catalyst == "none" {
@@ -771,7 +778,7 @@ pub fn skeptic(
     };
     let user = format!(
         "{}\n{historical}\nTHE ANALYST'S CASE (catalyst {}, upside {}/10): {}\nThe headline the analyst rests it on: {}\nThe analyst says the case is wrong if: {}\n\nSource for new exposure: {source}\nIndependently decide if this source explicitly reports the claimed catalyst for this company or an applicable sector business driver. For supported cases, copy the exact words establishing the event into support_quote. Otherwise return an empty support_quote. A fund tracking the company is a different security. A results announcement does not establish a beat. A price rally, CEO change or higher trading volume does not establish increased business demand. Distinguish evidence of a deal or target raise from claims about its size or return. Check each material claim against its attributed source. Give your strongest objection, say whether the move is already priced in, and give your verdict.",
-        dossier(&current, note, today),
+        current_dossier(card, note, today),
         case.catalyst,
         case.upside,
         case.thesis,
@@ -1128,7 +1135,7 @@ pub fn pick(
 /// The manager's note to itself for tomorrow.
 pub fn note(brain: &dyn Brain, book: &Book, decisions: &[Entry]) -> Result<String> {
     let mut user = format!(
-        "{}\nORDERS DECIDED TODAY (queued for the next open, not completed fills):\n",
+        "{}\nFINAL DECISIONS (KEEP retains a position; BUY and SELL are instructions for the next open):\n",
         book_text(book)
     );
     if decisions.is_empty() {
@@ -1528,6 +1535,14 @@ mod tests {
             ..Tagged::default()
         });
         assert!(summary(&stock).contains("Historical CEO outlook"));
+        let analyst_brain = Scripted::new(|_, _, user, _| {
+            assert!(!user.contains("Historical CEO outlook"));
+            assert!(!user.contains("Yesterday 2.8x volume"));
+            Ok(
+                json!({"evidence":0,"catalyst":"none","thesis":"No new catalyst.","upside":1,"kill":"n/a"}),
+            )
+        });
+        analyst(&analyst_brain, &stock, None, "2026-11-19").unwrap();
         let brain = Scripted::new(|_, _, user, _| {
             assert!(user.contains("Historical CEO outlook"));
             assert!(user.contains("DATE: 2026-11-19"));
