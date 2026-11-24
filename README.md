@@ -10,7 +10,7 @@ A $1,000 paper account that trades US stocks from news and market attention. NVI
 
 ## Latest decision review
 
-The revised desk replayed November 23 from the November 20 closing ledger. It kept AES, PANW, TJX and TTWO directly. The original run proposed selling AES and TJX before its exit checker blocked both. The replay completed 61 hosted calls, queued no orders and closed at $909.97. [Original review and replay comparison](docs/SESSION-2026-11-23.md)
+The latest November 23 replay used an evidence-first holding review. The manager kept AES, PANW, TJX and TTWO directly. Across four holdings it proposed zero sales, invoked zero exit checks and queued no orders. Equity closed at $909.97. The original session had two blocked proposals, and the preceding replay also had zero. [Decision review and replay comparisons](docs/SESSION-2026-11-23.md)
 
 ## Daily process
 
@@ -27,7 +27,7 @@ A classifier labels headlines. An analyst builds each stock's case from a cited 
 - Up to eight individual stocks, with cash allowed.
 - A purchase cannot take a stock above 25% of account equity. Kept holdings receive no automatic top-ups.
 - Purchases require a bullish case and completed skeptic research with a verdict of `stands` or `weakened` and a supporting quote matched to the cited source.
-- Ordinary sales require a separate factual check with a supporting source quotation. Failed checks retain the holding; position-count trims remain possible.
+- For each holding, the manager identifies the strongest source for selling, weighs the strongest fact for keeping it, then chooses KEEP or SELL. Every proposed ordinary sale receives an independent factual check requiring a supporting quotation. Failed checks retain the holding; position-count trims remain possible.
 - Sales fill before purchases, with a 0.1% fee and 0.2% adverse slippage on each side.
 - Holdings can be sold at any age. There are no automatic stop-loss or take-profit orders.
 
