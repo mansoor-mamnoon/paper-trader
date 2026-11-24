@@ -50,6 +50,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           ref: account
+          fetch-depth: 0
           path: account
       - name: Validate account
         run: |
@@ -58,15 +59,16 @@ jobs:
           test "$(sqlite3 account/account.sqlite 'PRAGMA integrity_check')" = ok
           df -h / | tail -1
           free -g | head -2
-      - name: Archive account before a forced rerun
-        if: inputs.force
+      - name: Stage Friday closing account and preserve original Monday ledger
         run: |
+          test "$(git -C account rev-parse HEAD:account.sqlite)" = "$(git -C account rev-parse 01911f9:account.sqlite)"
+          test "$(jq -r .latest.day account/site/api/state.json)" = 2026-11-23
           mkdir -p "account/archive/rerun-${GITHUB_RUN_ID}"
           cp account/account.sqlite "account/archive/rerun-${GITHUB_RUN_ID}/account.sqlite"
+          git -C account show b6fc6e0669b59b6968c7db570e42ae7faadab729:account.sqlite > "$RUNNER_TEMP/replay.sqlite"
       - name: Run the desk and export the dashboard
         timeout-minutes: 345
         id: desk
-        continue-on-error: true
         env:
           # Nemotron 3 Ultra 550B via NVIDIA; the key stays in Actions secrets.
           # The local model remains available if the free endpoint is unavailable.
@@ -80,10 +82,17 @@ jobs:
           FORCE_RERUN: ${{ inputs.force }}
           AS_OF: ${{ inputs.as_of }}
         run: |
-          args=(run --db account/account.sqlite --output account/site --minutes 0)
+          args=(run --db "$RUNNER_TEMP/replay.sqlite" --output "$RUNNER_TEMP/replay-site" --minutes 0)
           if [ "$FORCE_RERUN" = true ]; then args+=(--force); fi
           if [ -n "$AS_OF" ]; then args+=(--as-of "$AS_OF"); fi
           ./target/release/paper-trader "${args[@]}"
+      - name: Verify completed replay and promote its account
+        run: |
+          state="$RUNNER_TEMP/replay-site/api/state.json"
+          jq -e '.latest.day == "2026-11-23" and (.latest.at == 1795469912.5308976) and (.latest.funnel.candidates > 0) and (.latest.decisions | length >= 4) and (.latest.note | length > 0) and ([.latest.cards[] | select(.holding != null)] | length == 4) and (.latest.problems | length == 0)' "$state"
+          test "$(sqlite3 "$RUNNER_TEMP/replay.sqlite" 'PRAGMA integrity_check')" = ok
+          cp "$RUNNER_TEMP/replay.sqlite" account/account.sqlite
+          cp -R "$RUNNER_TEMP/replay-site/." account/site/
       - name: Apply static dashboard
         run: cp -r web/* account/site/
       - name: Configure visitor analytics
