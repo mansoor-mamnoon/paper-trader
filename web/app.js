@@ -89,7 +89,7 @@ function today(d) {
   if (!r) { $("decisions").innerHTML = '<li class="muted">The desk has not run yet.</li>'; return; }
   $("today-day").textContent = r.day;
   const focus = (r.focus?.sectors || []).map(sectorName);
-  $("focus").innerHTML = focus.length ? `<b>Sector focus:</b> ${esc(focus.join(", "))}. ${esc(r.focus.thesis)}` : "";
+  $("focus").innerHTML = focus.length ? `<b>Sector focus:</b> ${esc(focus.join(", "))}. ${esc(r.focus.thesis)}` : esc(r.focus?.thesis || "");
   const order = { SELL: 0, BUY: 1, TOP_UP: 2, KEEP: 3 };
   const list = (r.decisions || []).slice().sort((a, b) => (order[a.kind] ?? 9) - (order[b.kind] ?? 9));
   $("decisions").innerHTML = list.length
@@ -146,7 +146,7 @@ function desk(d) {
   for (const e of r?.decisions || []) decided[e.symbol] = e.kind;
   const cards = r?.cards || [];
   $("cards").innerHTML = cards.length ? cards.map((c) => {
-    const heads = (c.headlines || []).slice(0, 6).map((h) => `<li><span class="badge ${["noise", "unrelated"].includes(h.label) ? "" : h.label === "bad_news" ? "hot" : "buy"}">${esc(h.label || "unlabelled")}${h.label ? " " + h.buzz : ""}</span> ${h.tone ? `<span class="badge tone ${esc(h.tone)}" title="FinBERT tone, -1 to +1">${esc(h.tone)} ${(h.tone_score >= 0 ? "+" : "") + Number(h.tone_score).toFixed(2)}</span> ` : ""}${h.link ? `<a href="${esc(h.link)}" rel="noopener">${esc(h.title)}</a>` : esc(h.title)} <span class="muted">${h.published > 0 ? "Published " + esc(new Date(h.published * 1000).toISOString().slice(0, 10)) : "Publication date unknown"} · first seen ${esc(h.day)}</span></li>`).join("");
+    const heads = (c.headlines || []).map((h) => `<li><span class="badge ${["noise", "unrelated"].includes(h.label) ? "" : h.label === "bad_news" ? "hot" : "buy"}">${esc(h.label || "unlabelled")}${h.label ? " " + h.buzz : ""}</span> ${h.tone ? `<span class="badge tone ${esc(h.tone)}" title="FinBERT tone, -1 to +1">${esc(h.tone)} ${(h.tone_score >= 0 ? "+" : "") + Number(h.tone_score).toFixed(2)}</span> ` : ""}${h.link ? `<a href="${esc(h.link)}" rel="noopener">${esc(h.title)}</a>` : esc(h.title)} <span class="muted">${h.published > 0 ? "Published " + esc(new Date(h.published * 1000).toISOString().slice(0, 10)) : "Publication date unknown"} · first seen ${esc(h.day)}</span></li>`).join("");
     const verdict = decided[c.symbol];
     return `<div class="card" style="margin-top:18px">
       <div class="head"><div class="line"><b class="mono" style="font-size:1.1rem">${esc(c.symbol)}</b><span>${esc(c.name)}</span>${c.holding ? '<span class="badge keep">held</span>' : '<span class="badge">candidate</span>'}${verdict ? `<span class="badge ${verdict.toLowerCase()}">${verdict.replace("_", " ")}</span>` : ""}</div><span class="label">${esc(sectorName(c.sector))}</span></div>
@@ -198,7 +198,7 @@ function how(d) {
     `Up to ${r.max_positions} individual US stocks, with cash allowed.`,
     `Companies must be worth $${(r.min_market_cap / 1e9).toFixed(0)} billion or more, priced at least $${r.min_price}, and trade $${(r.min_dollar_volume / 1e6).toFixed(0)} million a day. Funds and non-company securities are excluded.`,
     `A purchase cannot take a stock above ${Math.round((r.max_weight ?? 0.25) * 100)}% of the account. Kept holdings receive no automatic top-ups.`,
-    "Purchases require a bullish case and a completed skeptic verdict of stands or weakened.",
+    "Purchases require a bullish case, a skeptic verdict of stands or weakened, and a supporting quotation matched to the cited headline or sector driver.",
     "Ordinary sales require a factual check with a supporting quotation. Failed checks retain the holding; position-count trims remain possible.",
     `Orders fill at the next open. Sales fill first, with ${(r.fee * 100).toFixed(1)}% fees and ${(r.slippage * 100).toFixed(1)}% adverse slippage each way.`,
     "Holdings can be sold at any age. There are no automatic stop-loss or take-profit orders.",
