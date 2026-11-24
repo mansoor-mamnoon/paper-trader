@@ -8,13 +8,17 @@ A $1,000 paper account that trades US stocks from news and market attention. NVI
 [Dashboard](https://mansoor-mamnoon.github.io/paper-trader/) · [Ops](https://mansoor-mamnoon.github.io/paper-trader/#ops) · [Actions](https://github.com/mansoor-mamnoon/paper-trader/actions)
 </div>
 
+## Latest decision review
+
+On November 23 the desk kept AES, PANW, TJX and TTWO. Factual checks blocked proposed sales of AES and TJX. With $0 cash and no approved sales, the desk queued no buys. Equity closed at $909.97. The review covers all twelve candidates and traces errors in historical citations, session counts and the evidence used to qualify purchases. [November 23 review](docs/SESSION-2026-11-23.md)
+
 ## Daily process
 
 <img src="docs/architecture.svg" alt="Rust gathers data, six model agents decide, Rust keeps the books" width="100%">
 
 Rust settles queued orders at the next session's open, applies fees and slippage, and updates the account. It screens US stocks using Reddit mentions, trending lists, price moves and trading volume. Eligible companies must be worth at least $5 billion, cost at least $3 a share and trade at least $25 million a day. Funds and other non-company securities are excluded.
 
-FinBERT scores headline sentiment across the screened stocks and holdings. Twelve sector scouts write the newsbook, and a strategist selects one to three sectors. The research pool includes eight stocks from those sectors and four from the rest of the market.
+FinBERT scores headline sentiment across the screened stocks and holdings. Twelve sector scouts write the newsbook, and a strategist selects up to three sectors with cited driver headlines. The research pool includes eight stocks from those sectors and four from the rest of the market.
 
 A classifier labels headlines. An analyst builds each stock's case from a cited headline or a bullish sector driver. A skeptic checks the case against the same evidence. The manager reviews every holding and chooses any purchases. Rust checks the decisions, queues orders for the next open and saves the account.
 
@@ -22,7 +26,7 @@ A classifier labels headlines. An analyst builds each stock's case from a cited 
 
 - Up to eight individual stocks, with cash allowed.
 - A purchase cannot take a stock above 25% of account equity. Kept holdings receive no automatic top-ups.
-- Purchases require a bullish case and completed skeptic research with a verdict of `stands` or `weakened`.
+- Purchases require a bullish case and completed skeptic research with a verdict of `stands` or `weakened` and a supporting quote matched to the cited source.
 - Ordinary sales require a separate factual check with a supporting source quotation. Failed checks retain the holding; position-count trims remain possible.
 - Sales fill before purchases, with a 0.1% fee and 0.2% adverse slippage on each side.
 - Holdings can be sold at any age. There are no automatic stop-loss or take-profit orders.
@@ -68,7 +72,7 @@ Use `--minutes` to set a research budget in minutes; the default, `0`, researche
 
 ## Scheduled runs
 
-GitHub Actions runs after the US close at 22:37 UTC, with catch-up triggers at 00:47 and 03:23 UTC. Completed sessions skip model work. A watchdog checks for missed runs at 07:17 UTC. The account is saved before GitHub Pages publication.
+GitHub Actions runs after the US close at 22:37 UTC, with catch-up triggers at 00:47 and 03:23 UTC. Completed sessions skip model work. A watchdog checks for missed runs at 07:17 UTC. The account is saved before GitHub Pages publication. A failed deployment gets one retry using the uploaded dashboard.
 
 ```sh
 gh secret set PAPER_TRADER_API_KEY

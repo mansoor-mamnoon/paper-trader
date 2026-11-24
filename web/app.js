@@ -124,7 +124,7 @@ function newsbook(d) {
     return `<div class="card sector ${focus.has(id) ? "focus" : ""}">
       <div class="head"><h3>${esc(sectorName(id))}</h3><span class="badge ${now.outlook === "bullish" ? "buy" : now.outlook === "bearish" ? "hot" : ""}">${esc(now.outlook)}</span></div>
       <div class="label">${esc(now.day)} · heat ${now.heat}/10</div><div class="heat"><span style="width:${now.heat * 10}%"></span></div>
-      <p class="small"><b>${esc(now.driver)}.</b> ${esc(now.entry)}</p>
+      <p class="small"><b>${now.driver ? esc(now.driver) : "No cited driver"}</b> ${esc(now.entry)}</p>
       ${now.day === d.latest?.day && d.latest?.tapes?.[id] ? `<details><summary>Recorded sector sample</summary><p class="small muted">${esc(d.latest.tapes[id])}</p></details>` : ""}
       ${before.length ? `<details><summary>Earlier entries (${before.length})</summary><ul class="list">${before.map((n) => `<li><span class="label">${esc(n.day)} · heat ${n.heat}</span><br>${esc(n.entry)}</li>`).join("")}</ul></details>` : ""}
     </div>`;
@@ -157,7 +157,7 @@ function desk(d) {
       ${(c.holding?.reviews || []).length ? `<details><summary>Prior order review outcomes</summary><ul class="list">${c.holding.reviews.map((review) => `<li class="small">${esc(review)}</li>`).join("")}</ul></details>` : ""}
       <div class="argue">
         <div><span class="label">Analyst${c.case ? ` · ${esc(c.case.catalyst)} · upside ${c.case.upside}/10` : ""}</span><p class="small">${c.case ? esc(c.case.thesis) + (c.case.evidence ? `<br><b>Rests on:</b> ${esc(c.case.evidence)}` : "") + `<br><i>Wrong if: ${esc(c.case.kill)}</i>` : "No case was made."}</p></div>
-        <div class="skeptic"><span class="label">Skeptic${c.rebuttal ? ` · case ${esc(c.rebuttal.verdict)}${c.rebuttal.priced_in ? " · priced in" : ""}` : ""}</span><p class="small">${c.rebuttal ? esc(c.rebuttal.objection) : "No rebuttal."}</p></div>
+        <div class="skeptic"><span class="label">Skeptic${c.rebuttal ? ` · case ${esc(c.rebuttal.verdict)}${c.rebuttal.priced_in ? " · priced in" : ""}` : ""}</span><p class="small">${c.rebuttal ? esc(c.rebuttal.objection) : "No rebuttal."}</p>${c.rebuttal && "support_quote" in c.rebuttal ? `<p class="small muted">${c.rebuttal.support_quote ? "Purchase evidence: " + esc(c.rebuttal.support_quote) : "No verified purchase citation."}</p>` : ""}</div>
       </div></div>`;
   }).join("") : '<div class="card muted">No stocks were argued yet.</div>';
 }
