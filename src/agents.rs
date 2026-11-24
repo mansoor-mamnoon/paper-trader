@@ -395,23 +395,29 @@ pub fn summary(card: &Card) -> String {
             let _ = writeln!(out, "  ORDER REVIEW OUTCOME: {review}");
         }
     }
-    let fresh: Vec<&Tagged> = card
+    for (index, h) in card
         .headlines
         .iter()
-        .filter(|h| h.buzz >= 2 && !matches!(h.label.as_str(), "noise" | "unrelated"))
+        .enumerate()
+        .filter(|(_, h)| {
+            card.holding.is_some()
+                || (h.buzz >= 2 && !matches!(h.label.as_str(), "noise" | "unrelated"))
+        })
         .take(if card.holding.is_some() {
             card.headlines.len()
         } else {
             3
         })
-        .collect();
-    for h in fresh {
+    {
         let published = chrono::DateTime::from_timestamp(h.published as i64, 0)
+            .filter(|_| h.published > 0.0)
             .map_or_else(|| "unknown".into(), |at| at.format("%Y-%m-%d").to_string());
         let _ = writeln!(
             out,
-            "  News (published {published}, {}): {}",
-            h.label, h.title
+            "  H{} (published {published}, {}): {}",
+            index + 1,
+            h.label,
+            h.title
         );
     }
     match &card.case {
@@ -931,6 +937,9 @@ fn book_text(book: &Book) -> String {
     )
 }
 
+/// The manager and independent exit reviewer apply the same evidence standard.
+const EXIT_STANDARD: &str = "Assess what changed since entry. Check the original dated entry source, subsequent order-review corrections, and any contrary headline. Verify quoted numbers, their time horizons, and event dates against this holding's own file. A failed new-buy case, one quiet session, or missing current headlines does not establish that a holding thesis failed. Verified bad news, thesis failure, material deterioration, or a demonstrably better replacement after switching costs can justify a sale. Separate observable evidence from the portfolio judgment.";
+
 /// Decide KEEP or SELL for every holding. Returns `symbol -> (sell, reason)` and always
 /// covers every holding, or fails.
 pub fn review(brain: &dyn Brain, book: &Book) -> Result<BTreeMap<String, (bool, String)>> {
@@ -939,18 +948,32 @@ pub fn review(brain: &dyn Brain, book: &Book) -> Result<BTreeMap<String, (bool, 
     }
     let symbols: Vec<&str> = book.holdings.iter().map(|c| c.symbol.as_str()).collect();
     let mut properties = serde_json::Map::new();
-    for symbol in &symbols {
+    for card in &book.holdings {
+        let mut sources = vec!["none".to_string(), "numbers".to_string()];
+        if card
+            .holding
+            .as_ref()
+            .is_some_and(|h| h.entry_evidence.is_some())
+        {
+            sources.push("entry".into());
+        }
+        sources.extend((1..=card.headlines.len()).map(|i| format!("H{i}")));
         properties.insert(
-            (*symbol).to_string(),
+            card.symbol.clone(),
             object(
-                &json!({"reason": string(700), "action": {"type": "string", "enum": ["KEEP", "SELL"]}}),
-                &["reason", "action"],
+                &json!({
+                    "exit_source": {"type":"string","enum":sources},
+                    "case_for_keeping": string(160),
+                    "reason": string(360),
+                    "action": {"type": "string", "enum": ["KEEP", "SELL"]}
+                }),
+                &["exit_source", "case_for_keeping", "reason", "action"],
             ),
         );
     }
     let schema = object(&Value::Object(properties), &symbols);
     let user = format!(
-        "{}\nDecide every holding now: {}. For each one give the reason first, then KEEP or SELL.",
+        "{}\n{EXIT_STANDARD}\nDecide every holding now: {}. First choose the strongest source supporting an exit for this specific holding (H-number, numbers, entry, or none). Then state the strongest dated fact favoring KEEP. Weigh them in reason and choose the action last. Use KEEP when the exit premise fails that comparison. Choose SELL when the facts justify it even if the entry once had merit. Never infer an obligation to sell from available replacements or from a broken purchase verdict.",
         book_text(book),
         symbols.join(", ")
     );
@@ -961,10 +984,16 @@ pub fn review(brain: &dyn Brain, book: &Book) -> Result<BTreeMap<String, (bool, 
         if action != "KEEP" && action != "SELL" {
             return Err(anyhow!("the manager gave no decision for {symbol}"));
         }
-        out.insert(
-            symbol.to_string(),
-            (action == "SELL", text(&answer[symbol], "reason")),
-        );
+        let mut reason = text(&answer[symbol], "reason");
+        if action == "SELL" {
+            let source = text(&answer[symbol], "exit_source");
+            let counter = text(&answer[symbol], "case_for_keeping");
+            let _ = write!(
+                reason,
+                " Manager's cited exit source: {source}. Case for keeping: {counter}"
+            );
+        }
+        out.insert(symbol.to_string(), (action == "SELL", reason));
     }
     Ok(out)
 }
@@ -991,7 +1020,7 @@ pub fn audit_exit(
 ) -> Result<ExitCheck> {
     let system = "You check factual support for a proposed stock sale. You are not required to agree with the manager or sell. Use only the supplied file. Current NUMBERS and the verified sector sample take precedence over headline price moves and model commentary. A headline published today may recap an earlier event; a bullish classifier label or FinBERT score cannot establish event freshness or business truth. Distinguish observed facts from investment judgments; do not demand proof that a catalyst is false when a supported risk assessment justifies an exit. Correct date arithmetic against DATE; fiscal Q3 2027 can be reported in calendar 2026. Compare today's analyst only with today's numbers; entry-thesis statistics describe the earlier entry day. Missing fresh headlines or an absent buy case do not invalidate an existing position. A one-day price move or proximity to a high alone does not prove a catalyst is exhausted. Reject a sale whose core reason is a date error, misattributed historical claim, missing context, or unsupported assertion. Approve when verified bad news, thesis failure, material deterioration or a supported risk assessment actually justifies this exit after costs. Quote the exact source supporting your finding. A valid quotation alone is not enough: the source must support the proposed conclusion. For an approved exit select headline and its 1-based number, numbers (current NUMBERS line), or entry (original entry headline). If evidence is insufficient, reject and explain the uncertainty; do not invent prices, dates or business facts.";
     let user = format!(
-        "{}\nCURRENT ANALYST (separate from entry thesis): {}\nPROPOSED EXIT: {proposed}\nReturn approved, the source and exact quote, then a complete factual reason. evidence is a headline number only for source headline, otherwise 0.",
+        "{EXIT_STANDARD}\n{}\nCURRENT ANALYST (separate from entry thesis): {}\nPROPOSED EXIT: {proposed}\nReturn approved, the source and exact quote, then a complete factual reason. evidence is a headline number only for source headline, otherwise 0.",
         dossier(card, note, today),
         card.case
             .as_ref()
@@ -1318,8 +1347,9 @@ mod tests {
         }
         let brief = summary(&card("ACME", true));
         assert!(brief.contains("Skeptic (case weakened, claims move is priced in)"));
-        assert!(brief.contains("News (published 2026-11-13, big_deal)"));
-        assert!(!brief.contains("names new CFO"));
+        assert!(brief.contains("H1 (published 2026-11-13, big_deal)"));
+        assert!(brief.contains("names new CFO"));
+        assert!(!summary(&card("ACME", false)).contains("names new CFO"));
     }
 
     fn book<'a>(
@@ -1347,13 +1377,29 @@ mod tests {
         let book = book(&focus, &memory, &holdings, &candidates);
         let brain = Scripted::new(|_, _, _, schema| {
             assert_eq!(schema["required"], json!(["AAA", "BBB"]));
+            let fields = &schema["properties"]["BBB"]["properties"];
+            assert_eq!(
+                fields["exit_source"]["enum"],
+                json!(["none", "numbers", "H1", "H2"])
+            );
+            assert_eq!(
+                fields.as_object().unwrap().keys().collect::<Vec<_>>(),
+                ["exit_source", "case_for_keeping", "reason", "action"]
+            );
             Ok(
-                json!({"AAA": {"action": "KEEP", "reason": "live"}, "BBB": {"action": "SELL", "reason": "faded"}}),
+                json!({"AAA": {"action": "KEEP", "reason": "live"}, "BBB": {"exit_source":"H2","case_for_keeping":"Original contract remains in place.","action": "SELL", "reason": "faded"}}),
             )
         });
         let verdicts = review(&brain, &book).unwrap();
         assert_eq!(verdicts["AAA"], (false, "live".to_string()));
-        assert_eq!(verdicts["BBB"], (true, "faded".to_string()));
+        assert!(verdicts["BBB"].0);
+        assert!(
+            verdicts["BBB"]
+                .1
+                .contains("Original contract remains in place")
+        );
+        assert!(verdicts["BBB"].1.contains("H2"));
+        assert!(brain.asked.borrow()[0].2.contains("H2 (published"));
         let asked = brain.asked.borrow();
         assert!(asked[0].2.contains("CANDIDATES YOU COULD BUY INSTEAD"));
         assert!(asked[0].2.contains("CCC (CCC Corp)"));
