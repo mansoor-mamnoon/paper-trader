@@ -102,6 +102,9 @@ pub struct Case {
 /// The skeptic's answer to the case.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Rebuttal {
+    /// Exact source passage the skeptic found supports new exposure.
+    #[serde(default)]
+    pub support_quote: String,
     pub objection: String,
     pub priced_in: bool,
     /// `stands`, `weakened` or `broken`.
@@ -150,10 +153,9 @@ pub fn purchase_eligible(card: &Card) -> bool {
     card.case
         .as_ref()
         .is_some_and(|case| bullish_labels().contains(&case.catalyst.as_str()))
-        && card
-            .rebuttal
-            .as_ref()
-            .is_some_and(|r| matches!(r.verdict.as_str(), "stands" | "weakened"))
+        && card.rebuttal.as_ref().is_some_and(|r| {
+            !r.support_quote.is_empty() && matches!(r.verdict.as_str(), "stands" | "weakened")
+        })
 }
 
 fn text(value: &Value, key: &str) -> String {
@@ -590,7 +592,7 @@ pub fn strategist(
     })
 }
 
-const CLASSIFIER: &str = "You label news headlines for a trading desk that buys stocks on fresh buzz. For each numbered headline about the named company, choose the one label that fits and score its buzz from 0 to 3: 0 is nothing an investor would act on, 1 is minor, 2 is a real catalyst, 3 is a major catalyst that people will be talking about. Judge only what the headline says. A headline about another company, or about the market in general, is unrelated.";
+const CLASSIFIER: &str = "You label news headlines for a trading desk that buys stocks on fresh buzz. For each numbered headline about the named company, choose the one label that fits and score its buzz from 0 to 3: 0 is nothing an investor would act on, 1 is minor, 2 is a real catalyst, 3 is a major catalyst that people will be talking about. Judge only what the headline says. Classify the subject of the event. A headline about a leveraged fund tracking this stock is unrelated. A results release without an explicit beat or guidance increase is noise. A price move or executive change alone is noise even when it affects peers. A headline about another company, or about the market in general, is unrelated.";
 
 /// Label a batch of one stock's headlines. Returns `(headline id, label, buzz)`.
 pub fn classify(
@@ -747,8 +749,15 @@ pub fn skeptic(
         .as_ref()
         .map(entry_line)
         .unwrap_or_default();
+    let source = if case.catalyst == "none" {
+        ""
+    } else if case.evidence.is_empty() {
+        note.map_or("", |n| n.driver.as_str())
+    } else {
+        &case.evidence
+    };
     let user = format!(
-        "{}\n{historical}\nTHE ANALYST'S CASE (catalyst {}, upside {}/10): {}\nThe headline the analyst rests it on: {}\nThe analyst says the case is wrong if: {}\n\nCheck the case against that headline word for word. Give your strongest objection, say whether the move is already priced in, and give your verdict.",
+        "{}\n{historical}\nTHE ANALYST'S CASE (catalyst {}, upside {}/10): {}\nThe headline the analyst rests it on: {}\nThe analyst says the case is wrong if: {}\n\nSource for new exposure: {source}\nIndependently decide if this source explicitly reports the claimed catalyst for this company or an applicable sector business driver. For supported cases, copy the exact words establishing the event into support_quote. Otherwise return an empty support_quote. A fund tracking the company is a different security. A results announcement does not establish a beat. A price rally, CEO change or higher trading volume does not establish increased business demand. Distinguish evidence of a deal or target raise from claims about its size or return. Check each material claim against its attributed source. Give your strongest objection, say whether the move is already priced in, and give your verdict.",
         dossier(&current, note, today),
         case.catalyst,
         case.upside,
@@ -764,14 +773,22 @@ pub fn skeptic(
     );
     let schema = object(
         &json!({
+            "support_quote": {"type":"string", "maxLength":350},
             "objection": string(360),
             "priced_in": {"type": "boolean"},
             "verdict": {"type": "string", "enum": ["stands", "weakened", "broken"]},
         }),
-        &["objection", "priced_in", "verdict"],
+        &["support_quote", "objection", "priced_in", "verdict"],
     );
     let answer = brain.ask(Agent::Skeptic, &card.symbol, SKEPTIC, &user, &schema)?;
+    let quote = text(&answer, "support_quote");
+    let support_quote = if source.contains(&quote) {
+        quote
+    } else {
+        String::new()
+    };
     Ok(Rebuttal {
+        support_quote,
         objection: text(&answer, "objection"),
         priced_in: answer["priced_in"].as_bool().unwrap_or(false),
         verdict: text(&answer, "verdict"),
@@ -1245,6 +1262,7 @@ mod tests {
                 evidence: String::new(),
             }),
             rebuttal: Some(Rebuttal {
+                support_quote: "wins $2B AI contract".into(),
                 objection: "Up 9% already.".into(),
                 priced_in: true,
                 verdict: "weakened".into(),
@@ -1428,6 +1446,9 @@ mod tests {
     fn broken_or_missing_research_cannot_fund_a_purchase() {
         let mut stock = card("NVDA", false);
         assert!(purchase_eligible(&stock));
+        stock.rebuttal.as_mut().unwrap().support_quote.clear();
+        assert!(!purchase_eligible(&stock));
+        stock.rebuttal.as_mut().unwrap().support_quote = "wins $2B AI contract".into();
         stock.rebuttal.as_mut().unwrap().verdict = "broken".into();
         assert!(!purchase_eligible(&stock));
         stock.rebuttal = None;
@@ -1460,6 +1481,29 @@ mod tests {
                 .catalyst,
             "none"
         );
+    }
+
+    #[test]
+    fn a_skeptic_cannot_qualify_a_candidate_with_another_sources_quote() {
+        let mut stock = card("SYM", false);
+        let case = stock.case.as_mut().unwrap();
+        case.evidence = "Symbotic Reports Fourth Quarter and Fiscal Year 2026 Results".into();
+        let brain = Scripted::new(|_, _, _, _| {
+            Ok(json!({
+                "support_quote":"raised guidance", "objection":"Late", "priced_in":true, "verdict":"weakened"
+            }))
+        });
+        stock.rebuttal = Some(
+            skeptic(
+                &brain,
+                &stock,
+                stock.case.as_ref().unwrap(),
+                None,
+                "2026-11-23",
+            )
+            .unwrap(),
+        );
+        assert!(!purchase_eligible(&stock));
     }
 
     #[test]

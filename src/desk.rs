@@ -1363,7 +1363,7 @@ mod tests {
                     "kill": "Order cancelled",
                 }),
                 (Agent::Skeptic, _) => {
-                    json!({"objection": "Late.", "priced_in": false, "verdict": "stands"})
+                    json!({"support_quote":"lands record AI order", "objection": "Late.", "priced_in": false, "verdict": "stands"})
                 }
                 (Agent::Manager, subject) if subject.starts_with("exit:") => {
                     let symbol = subject.trim_start_matches("exit:");
