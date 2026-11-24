@@ -530,7 +530,7 @@ pub fn scout(brain: &dyn Brain, brief: &ScoutBrief) -> Result<SectorNote> {
     })
 }
 
-const STRATEGIST: &str = "You set sector strategy for a small stock account that trades news buzz and may hold cash. Read the sector newsbook and choose the one to three sectors where excitement is strongest and most likely to keep pushing prices up over the next few days. Prefer sectors with a concrete driver, such as a law, a spending wave, a product cycle or a wave of deals, over sectors that are merely busy. Only select sectors with a cited business or policy driver. Ignore executive changes, price recaps and unsupported explanations for a rally. Concentrate: fewer sectors is better. Numeric tape is authoritative over scout narratives and earlier choices. Preserve sample coverage: a buzz-selected sample does not establish whole-sector breadth. Never turn 10% advancing into zero gainers. Write concise, complete sentences within the field limits. Your earlier choices are shown so you can stay with a story that is working or leave one that has faded.";
+const STRATEGIST: &str = "You set sector strategy for a small stock account that trades news buzz and may hold cash. Read the sector newsbook and choose up to three sectors where excitement is strongest and most likely to keep pushing prices up over the next few days. Prefer sectors with a concrete driver, such as a law, a spending wave, a product cycle or a wave of deals, over sectors that are merely busy. Only select sectors with a cited business or policy driver. Ignore executive changes, price recaps and unsupported explanations for a rally. Concentrate: fewer sectors is better. Numeric tape is authoritative over scout narratives and earlier choices. Preserve sample coverage: a buzz-selected sample does not establish whole-sector breadth. Never turn 10% advancing into zero gainers. Write concise, complete sentences within the field limits. Your earlier choices are shown so you can stay with a story that is working or leave one that has faded.";
 
 /// The strategist's choice.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -584,7 +584,7 @@ pub fn strategist(
     }
     let _ = write!(
         user,
-        "\nChoose 1 to {max} sector ids and explain the choice in two or three sentences."
+        "\nChoose zero to {max} sector ids with qualifying business events and explain the choice in two or three sentences."
     );
     let ids: Vec<&str> = notes
         .iter()
@@ -600,7 +600,7 @@ pub fn strategist(
     let schema = object(
         &json!({
             "thesis": string(500),
-            "focus": {"type": "array", "minItems": 1, "maxItems": max, "items": {"type": "string", "enum": ids}},
+            "focus": {"type": "array", "minItems": 0, "maxItems": max, "items": {"type": "string", "enum": ids}},
         }),
         &["thesis", "focus"],
     );
@@ -614,9 +614,6 @@ pub fn strategist(
         {
             chosen.push(id.to_string());
         }
-    }
-    if chosen.is_empty() {
-        bail!("the strategist chose no sector");
     }
     Ok(Focus {
         sectors: chosen,
@@ -787,7 +784,7 @@ pub fn skeptic(
         &case.evidence
     };
     let user = format!(
-        "{}\n{historical}\nTHE ANALYST'S CASE (catalyst {}, upside {}/10): {}\nThe headline the analyst rests it on: {}\nThe analyst says the case is wrong if: {}\n\nSource for new exposure: {source}\nIndependently decide if this source explicitly reports the claimed catalyst for this company or an applicable sector business driver. For supported cases, copy the exact words establishing the event into support_quote. Otherwise return an empty support_quote. A fund tracking the company is a different security. A results announcement does not establish a beat. A price rally, CEO change or higher trading volume does not establish increased business demand. Distinguish evidence of a deal or target raise from claims about its size or return. Check each material claim against its attributed source. Give your strongest objection, say whether the move is already priced in, and give your verdict.",
+        "{}\n{historical}\nTHE ANALYST'S CASE (catalyst {}, upside {}/10): {}\nThe headline the analyst rests it on: {}\nThe analyst says the case is wrong if: {}\n\nSource for new exposure: {source}\nIndependently decide if this source explicitly reports the claimed catalyst for this company or an applicable sector business driver. For supported cases, copy a contiguous phrase of at least two words establishing the event into support_quote. Otherwise return an empty support_quote. A fund tracking the company is a different security. A results announcement does not establish a beat. A price rally, CEO change or higher trading volume does not establish increased business demand. Distinguish evidence of a deal or target raise from claims about its size or return. Check each material claim against its attributed source. Give your strongest objection, say whether the move is already priced in, and give your verdict.",
         current_dossier(card, note, today),
         case.catalyst,
         case.upside,
@@ -812,7 +809,7 @@ pub fn skeptic(
     );
     let answer = brain.ask(Agent::Skeptic, &card.symbol, SKEPTIC, &user, &schema)?;
     let quote = text(&answer, "support_quote");
-    let support_quote = if source.contains(&quote) {
+    let support_quote = if quote.split_whitespace().count() >= 2 && source.contains(&quote) {
         quote
     } else {
         String::new()

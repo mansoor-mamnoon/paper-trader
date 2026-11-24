@@ -120,15 +120,15 @@ fn key(title: &str) -> String {
         .collect()
 }
 
-/// Drop spam, items older than `max_age_days` (undated items are kept) and repeats, and
+/// Drop spam, items outside the dated signal window and repeats, and
 /// return the rest newest first.
 pub fn clean(mut items: Vec<Headline>, now: f64, max_age_days: i64, limit: usize) -> Vec<Headline> {
     let oldest = now - max_age_days as f64 * 86400.0;
     let mut seen = BTreeSet::new();
     items.retain(|h| {
         !is_spam(&h.title)
-            && (h.published == 0.0 || h.published >= oldest)
-            && h.published <= now + 86400.0
+            && h.published > 0.0
+            && (oldest..=now).contains(&h.published)
             && seen.insert(key(&h.title))
     });
     items.sort_by(|a, b| b.published.total_cmp(&a.published));
@@ -228,15 +228,15 @@ mod tests {
     #[test]
     fn cleaning_drops_spam_old_items_and_repeats() {
         let now = 1_794_229_200.0 + 3600.0 * 5.0;
-        let kept = clean(parse_rss(FEED, 10), now, 4, 10);
+        let mut items = parse_rss(FEED, 10);
+        items.push(Headline {
+            title: "After the signal cutoff".into(),
+            published: now + 1.0,
+            ..items[0].clone()
+        });
+        let kept = clean(items, now, 4, 10);
         let titles: Vec<&str> = kept.iter().map(|h| h.title.as_str()).collect();
-        assert_eq!(
-            titles,
-            [
-                "Acme wins $2B Pentagon AI contract & shares jump",
-                "Undated note"
-            ]
-        );
+        assert_eq!(titles, ["Acme wins $2B Pentagon AI contract & shares jump"]);
     }
 
     #[test]
