@@ -296,6 +296,7 @@ pub fn dossier(card: &Card, sector_note: Option<&SectorNote>, today: &str) -> St
             "SECTOR NEWSBOOK TODAY (heat {}/10, {}): {}",
             note.heat, note.outlook, note.entry
         );
+        let _ = writeln!(out, "Sector driver source: {}", note.driver);
     }
     let _ = writeln!(out, "NUMBERS: {}", facts_line(&card.facts));
     let _ = write!(
@@ -480,15 +481,15 @@ pub fn scout(brain: &dyn Brain, brief: &ScoutBrief) -> Result<SectorNote> {
             note.day, note.heat, note.outlook, note.entry
         );
     }
-    user.push_str("\nWrite today's entry.");
+    user.push_str("\nWrite today's entry. In driver_headline select the numbered source reporting the sector's business or policy event, or 0 if none qualifies. Executive changes, price reactions and commentary alone cannot qualify.");
     let schema = object(
         &json!({
             "entry": string(480),
-            "driver": string(120),
+            "driver_headline": {"type":"integer","minimum":0,"maximum":brief.headlines.len()},
             "heat": {"type": "integer", "minimum": 0, "maximum": 10},
             "outlook": {"type": "string", "enum": ["bullish", "neutral", "bearish"]},
         }),
-        &["entry", "driver", "heat", "outlook"],
+        &["entry", "driver_headline", "heat", "outlook"],
     );
     let answer = brain.ask(Agent::Scout, &brief.sector, SCOUT, &user, &schema)?;
     let entry = text(&answer, "entry");
@@ -501,11 +502,16 @@ pub fn scout(brain: &dyn Brain, brief: &ScoutBrief) -> Result<SectorNote> {
         heat: answer["heat"].as_i64().unwrap_or(0).clamp(0, 10),
         outlook: text(&answer, "outlook"),
         entry,
-        driver: text(&answer, "driver"),
+        driver: answer["driver_headline"]
+            .as_u64()
+            .and_then(|n| n.checked_sub(1))
+            .and_then(|i| brief.headlines.get(i as usize))
+            .cloned()
+            .unwrap_or_default(),
     })
 }
 
-const STRATEGIST: &str = "You set sector strategy for a small stock account that trades news buzz and may hold cash. Read the sector newsbook and choose the one to three sectors where excitement is strongest and most likely to keep pushing prices up over the next few days. Prefer sectors with a concrete driver, such as a law, a spending wave, a product cycle or a wave of deals, over sectors that are merely busy. Concentrate: fewer sectors is better. Numeric tape is authoritative over scout narratives and earlier choices. Preserve sample coverage: a buzz-selected sample does not establish whole-sector breadth. Never turn 10% advancing into zero gainers. Write concise, complete sentences within the field limits. Your earlier choices are shown so you can stay with a story that is working or leave one that has faded.";
+const STRATEGIST: &str = "You set sector strategy for a small stock account that trades news buzz and may hold cash. Read the sector newsbook and choose the one to three sectors where excitement is strongest and most likely to keep pushing prices up over the next few days. Prefer sectors with a concrete driver, such as a law, a spending wave, a product cycle or a wave of deals, over sectors that are merely busy. Only select sectors with a cited business or policy driver. Ignore executive changes, price recaps and unsupported explanations for a rally. Concentrate: fewer sectors is better. Numeric tape is authoritative over scout narratives and earlier choices. Preserve sample coverage: a buzz-selected sample does not establish whole-sector breadth. Never turn 10% advancing into zero gainers. Write concise, complete sentences within the field limits. Your earlier choices are shown so you can stay with a story that is working or leave one that has faded.";
 
 /// The strategist's choice.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -561,9 +567,16 @@ pub fn strategist(
         user,
         "\nChoose 1 to {max} sector ids and explain the choice in two or three sentences."
     );
-    let ids: Vec<&str> = notes.iter().map(|n| n.sector.as_str()).collect();
+    let ids: Vec<&str> = notes
+        .iter()
+        .filter(|n| !n.driver.is_empty())
+        .map(|n| n.sector.as_str())
+        .collect();
     if ids.is_empty() {
-        bail!("no newsbook entries to choose from");
+        return Ok(Focus {
+            sectors: Vec::new(),
+            thesis: "No sector had a cited driver.".into(),
+        });
     }
     let schema = object(
         &json!({
@@ -730,7 +743,7 @@ pub fn analyst(
     })
 }
 
-const SKEPTIC: &str = "You are the skeptic on a trading desk that buys stocks on news buzz. The analyst has made a case for a stock. Attack it using the same file. Is the catalyst real, about this company, and fresh, or is it old news? Has the price already made the move, so a buyer today is late? Is the buzz fading compared with yesterday? Did the analyst lean on something the file does not say? Use the explicit DATE in the file for date arithmetic. Fiscal labels such as Q3 2027 can be reported during calendar 2026; they do not make a published report future or fabricated. Distinguish the current analyst case from the historical entry thesis: do not attribute entry-day volume or social claims to today's analyst. A lack of new headlines is not proof the entry thesis is false. A price move alone is not proof that a catalyst is fully priced in. Give the single strongest objection in one concise complete sentence within the field limit. Then give your verdict. Stands: the objection is minor. Weakened: the catalyst is real but the timing, the price or the fading buzz makes the trade worse than the analyst says; most honest cases with a flaw are this. Broken: the catalyst is false, is not about this company, is contradicted by the file, or the headline the analyst cites does not say what the analyst claims. You only ever argue against buying: if the analyst found no catalyst, agree and say what makes the stock worth avoiding, and never make the case for it yourself. Do not object for the sake of it: if the case is good, say it stands.";
+const SKEPTIC: &str = "You are the skeptic on a trading desk that buys stocks on news buzz. The analyst has made a case for a stock. Attack it using the same file. Is the catalyst real, about this company, and fresh, or is it old news? Has the price already made the move, so a buyer today is late? Is the buzz fading compared with yesterday? Did the analyst lean on something the file does not say? Use the explicit DATE in the file for date arithmetic. Fiscal labels such as Q3 2027 can be reported during calendar 2026; they do not make a published report future or fabricated. Distinguish the current analyst case from the historical entry thesis: do not attribute entry-day volume or social claims to today's analyst. A lack of new headlines is not proof the entry thesis is false. A price move alone is not proof that a catalyst is fully priced in. Respect the date and source of each claim, including conflicting current and entry headlines. Give the single strongest objection in one concise complete sentence within the field limit. Then give your verdict. Stands: the objection is minor. Weakened: the catalyst is real but the timing, the price or the fading buzz makes the trade worse than the analyst says; most honest cases with a flaw are this. Broken: the catalyst is false, is not about this company, is contradicted by the file, or the headline the analyst cites does not say what the analyst claims. You only ever argue against buying: if the analyst found no catalyst, agree and say what makes the stock worth avoiding, and never make the case for it yourself. Do not object for the sake of it: if the case is good, say it stands.";
 
 /// Attack the analyst's case for one stock.
 pub fn skeptic(
@@ -795,7 +808,7 @@ pub fn skeptic(
     })
 }
 
-const MANAGER: &str = "You manage a $1,000 stock account that trades news buzz. Rules you cannot change: cash is allowed when evidence is weak, it holds at most eight individual stocks, no stock may grow past a quarter of the account by purchase, and every holding is decided again every day. Your choices must pass the evidence checks. Earlier notes and decisions are historical model claims, not facts or fills. Order review outcomes supersede cancelled proposals; do not repeat rejected reasons without new supporting evidence. Use DATE for calendar arithmetic. Holding is the default. Sell a stock when its case is broken: bad news, the catalyst has clearly played out, or the buzz and the volume have died away for several days. Also sell when a candidate is clearly better after the cost of swapping. A quiet day or a small dip is not a reason to sell. A stock bought on a false or unsupported thesis should be sold. A lack of new headlines does not invalidate an existing thesis. Distinguish a factual contradiction from a quiet day; a price dip alone does not prove a catalyst is priced in. Do not sell because of an executive change or an upcoming earnings date. Each swap costs about 0.6% in fees and slippage, so a replacement must clearly beat what it replaces after that cost; do not swap one story for another that is only slightly better. There is no minimum holding period: you may sell any holding, including one bought at the latest open, when the evidence supports replacing it after costs. Buy only stocks the analyst made a case for; the skeptic tells you what could go wrong, not what to buy. Broken or missing skeptic research disqualifies a new purchase. Do not treat speculative rebounds, distance below highs or small weights as repairs for weak evidence. Cash is preferable to a forced replacement. Use the verified sector samples and current NUMBERS over narratives, headline moves and historical notes. Headline publication today does not prove the underlying event is new. Classifier labels are model opinions. Weigh the analyst against the skeptic and decide. Write concise, complete sentences within the field limits.";
+const MANAGER: &str = "You manage a $1,000 stock account that trades news buzz. Rules you cannot change: cash is allowed when evidence is weak, it holds at most eight individual stocks, no stock may grow past a quarter of the account by purchase, and every holding is decided again every day. Your choices must pass the evidence checks. Earlier notes and decisions are historical model claims, not facts or fills. Order review outcomes supersede cancelled proposals; do not repeat rejected reasons without new supporting evidence. Use DATE for calendar arithmetic. Holding is the default. Sell a stock when its case is broken: bad news, the catalyst has clearly played out, or the buzz and the volume have died away for several days. Also sell when a candidate is clearly better after the cost of swapping. A quiet day or a small dip is not a reason to sell. A stock bought on a false or unsupported thesis should be sold. A lack of new headlines does not invalidate an existing thesis. Distinguish a factual contradiction from a quiet day; a price dip alone does not prove a catalyst is priced in. Do not sell because of an executive change or an upcoming earnings date. Each swap costs about 0.6% in fees and slippage, so a replacement must clearly beat what it replaces after that cost; do not swap one story for another that is only slightly better. There is no minimum holding period: you may sell any holding, including one bought at the latest open, when the evidence supports replacing it after costs. Buy only stocks the analyst made a case for; the skeptic tells you what could go wrong, not what to buy. Broken or missing skeptic research disqualifies a new purchase. Do not treat speculative rebounds, distance below highs or small weights as repairs for weak evidence. Cash is preferable to a forced replacement. Use the verified sector samples and current NUMBERS over narratives, headline moves and historical notes. Attribute each material figure, target and date to its own headline. An upgrade and a separate article about possible upside do not establish the same target. Distinguish current and historical outlooks when they conflict. Headline publication today does not prove the underlying event is new. Classifier labels are model opinions. Weigh the analyst against the skeptic and decide. Write concise, complete sentences within the field limits.";
 
 /// What the manager remembers from earlier days.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]

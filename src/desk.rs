@@ -781,7 +781,7 @@ pub fn run_with(
                 sectors: report
                     .newsbook
                     .iter()
-                    .filter(|n| n.outlook != "bearish")
+                    .filter(|n| n.outlook != "bearish" && !n.driver.is_empty())
                     .take(2)
                     .map(|n| n.sector.clone())
                     .collect(),
@@ -1343,7 +1343,7 @@ mod tests {
             Ok(match (agent, subject) {
                 (Agent::Scout, sector) => json!({
                     "entry": format!("Entry for {sector}."),
-                    "driver": "driver",
+                    "driver_headline": 1,
                     "heat": if sector == "chips" { 9 } else { 3 },
                     "outlook": "bullish",
                 }),
