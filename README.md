@@ -10,7 +10,7 @@ A $1,000 paper account that trades US stocks from news and market attention. NVI
 
 ## Latest decision review
 
-On November 23 the desk kept AES, PANW, TJX and TTWO. Factual checks blocked proposed sales of AES and TJX. With $0 cash and no approved sales, the desk queued no buys. Equity closed at $909.97. The review covers all twelve candidates and traces errors in historical citations, session counts and the evidence used to qualify purchases. [November 23 review](docs/SESSION-2026-11-23.md)
+The revised desk replayed November 23 from the November 20 closing ledger. It kept AES, PANW, TJX and TTWO directly. The original run proposed selling AES and TJX before its exit checker blocked both. The replay completed 61 hosted calls, queued no orders and closed at $909.97. [Original review and replay comparison](docs/SESSION-2026-11-23.md)
 
 ## Daily process
 
